@@ -1,0 +1,26 @@
+*.arm
+*.cmd
+*.gxc
+*.arn
+*.zip
+*.dcu
+*.tmp
+*.log
+*.~*~
+*.local
+*.identcache
+__history
+*.drc
+*.map
+*.exe
+*.dll
+./bin/*
+./temp/*.*
+./stim/*.*
+./data/*.*
+./HelpSmith Files/*.*
+./WinEDR Setup Project (licensed)/*.*
+
+/data/
+/stim/
+/WinEDR Setup Project (licensed)/
