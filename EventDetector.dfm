@@ -2,8 +2,8 @@ object EventDetFrm: TEventDetFrm
   Left = 855
   Top = 131
   Caption = 'Event Detection'
-  ClientHeight = 661
-  ClientWidth = 843
+  ClientHeight = 680
+  ClientWidth = 862
   Color = clBtnFace
   Font.Charset = ANSI_CHARSET
   Font.Color = clWindowText
@@ -2609,5 +2609,11 @@ object EventDetFrm: TEventDetFrm
     UseBinWidths = False
     Left = 310
     Top = 474
+  end
+  object Timer: TTimer
+    Interval = 100
+    OnTimer = TimerTimer
+    Left = 248
+    Top = 584
   end
 end

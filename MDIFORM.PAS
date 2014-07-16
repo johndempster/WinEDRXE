@@ -298,6 +298,8 @@ unit Mdiform;
 //                 Now works with Heka ITC-18 drivers.
 //                 edr.ini file now stored in C:\Users\Public\Documents\WinEDR
 //                 stim folder now in C:\Users\Public\Documents\WinEDR
+// V3.4.5 16.07.14 SaveEventList() now executed from .timer() every time Insert/Delete events pressed
+//                 to avoid events insertions/deletions being lost when NewFile() function called
   =======================================================================}
 
 interface
@@ -522,7 +524,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.4.4' ;
+     Version := 'V3.4.5' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }

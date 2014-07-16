@@ -79,6 +79,8 @@ unit EventDetector;
 // 26.06.14 ... SaveEventList() removed from Insert/Delete events
 //              to avoid Error writing event file when buttons pressed too fast on slow systems
 //              Access violation when manual event created by user off end recording trapped
+// 16.07.14 ... SaveEventList() now executed from .timer() every time Insert/Delete events pressed
+//              to avoid events insertions/deletions being lost when NewFile() function called
 
 interface
 
@@ -310,6 +312,7 @@ type
     scDetDisplay: TScopeDisplay;
     scEditDisplay: TScopeDisplay;
     scMarkDisplay: TScopeDisplay;
+    Timer: TTimer;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormResize(Sender: TObject);
@@ -393,6 +396,7 @@ type
     procedure cbPlotXVarChange(Sender: TObject);
     procedure cbPlotYVarChange(Sender: TObject);
     procedure edAverageIntervalKeyPress(Sender: TObject; var Key: Char);
+    procedure TimerTimer(Sender: TObject);
   private
     { Private declarations }
 
@@ -449,6 +453,7 @@ type
     RunningMean : Single ;
     AbortFlag : Boolean ;
     ComputationInProgress : Boolean ;
+    SaveEventListRequested : Boolean ;     // Request event list to be saved (by .Timer()) proc)
 
     procedure HeapBuffers( Operation : THeapBufferOp ) ;
     procedure SetupDetector ;
@@ -1178,6 +1183,14 @@ begin
    end ;
 
 
+procedure TEventDetFrm.TimerTimer(Sender: TObject);
+// ----------------
+// Timed procedures
+// ----------------
+begin
+    if SaveEventListRequested then SaveEventList ;
+    end;
+
 function  TEventDetFrm.MatchTemplate(
           var InBuf : Array of SmallInt ;  // Input buffer
           StartAtSample : Integer ;        // Sample to start at
@@ -1854,6 +1867,8 @@ begin
         end ;
 
      if not OK then ShowMessage('Error writing Event file') ;
+
+     SaveEventListRequested := False ;
 
      end ;
 
@@ -2572,8 +2587,8 @@ begin
       DisplayEvent ;
       end ;
 
-   // Update event list file
-   //SaveEventList ;
+   // Request update of event list file
+   SaveEventListRequested := True ;
 
    EventAnalysisFileUpdateRequired := True ;
    BaselineSplinesAvailable := False ;
@@ -2614,8 +2629,8 @@ begin
       bExportToWCPFile.Enabled := False ;
       end ;
 
-   // Update event list file
-   //SaveEventList ;
+   // Request update of event list file
+   SaveEventListRequested := True ;
 
    DisplayEvent ;
    EventAnalysisFileUpdateRequired := True ;
@@ -5013,6 +5028,7 @@ begin
      DetBuf := Nil ;
      EditBuf := Nil ;
      ADC := Nil ;
+     SaveEventListRequested := False ;
      end;
 
 procedure TEventDetFrm.bTDisplayDoubleClick(Sender: TObject);

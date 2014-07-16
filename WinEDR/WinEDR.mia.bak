@@ -1908,23 +1908,23 @@ Removes this InstallAware Software Corporation product
 0
 {99CAA37A-460E-4EF5-8FEC-6D272889DACF}
 $TARGETDIR$\WinEDR.exe
-WinEDR
+WinEDR V3.3.4
 $SHORTCUTFOLDER$
 
 
 
-
-
+|FALSE
+|
 0|
 {C31CE44F-D261-43A5-B6F0-A3D95AD59311}
 $TARGETDIR$\WinEDR.exe
-WinEDR
+WinEDR V3.4.4
 $DESKTOPDIR$
 
 
 
-
-
+|FALSE
+|
 0|
 {727C5CA3-BD31-4B7F-83B0-7FEF17864CFA}
 $TARGETDIR$\Digidata 1200 Support Win 2000,XT\Install Digidata 1200 Driver (Windows NT,2000,XP).bat
