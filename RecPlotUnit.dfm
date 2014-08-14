@@ -1,9 +1,9 @@
 object RecPlotFrm: TRecPlotFrm
   Left = 1023
   Top = 237
-  Width = 319
-  Height = 322
   Caption = 'Real Time Plot'
+  ClientHeight = 295
+  ClientWidth = 311
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -51,10 +51,10 @@ object RecPlotFrm: TRecPlotFrm
     PrinterFontName = 'Arial'
     PrinterLineWidth = 1
     PrinterMarkerSize = 5
-    PrinterLeftMargin = 14
-    PrinterRightMargin = 14
-    PrinterTopMargin = 14
-    PrinterBottomMargin = 14
+    PrinterLeftMargin = 13
+    PrinterRightMargin = 13
+    PrinterTopMargin = 13
+    PrinterBottomMargin = 13
     PrinterDisableColor = False
     MetafileWidth = 500
     MetafileHeight = 400
@@ -120,7 +120,6 @@ object RecPlotFrm: TRecPlotFrm
         Font.Height = -11
         Font.Name = 'Arial'
         Font.Style = []
-        ItemHeight = 14
         ItemIndex = 0
         ParentFont = False
         TabOrder = 1
@@ -174,7 +173,6 @@ object RecPlotFrm: TRecPlotFrm
         Font.Height = -11
         Font.Name = 'Arial'
         Font.Style = []
-        ItemHeight = 14
         ItemIndex = 0
         ParentFont = False
         TabOrder = 1
@@ -227,7 +225,6 @@ object RecPlotFrm: TRecPlotFrm
         Font.Height = -11
         Font.Name = 'Arial'
         Font.Style = []
-        ItemHeight = 14
         ItemIndex = 0
         ParentFont = False
         TabOrder = 1

@@ -443,7 +443,7 @@ var
 begin
 
      if CdrFH.FileName <> '' then FileName := ChangeFileExt(CdrFH.FileName,'.txt')
-                             else FileName := Settings.DataDirectory + DateToStr(Date) + '.txt' ;
+                             else FileName := Main.DataDirectory + DateToStr(Date) + '.txt' ;
      case PlotType of
         ptFrequency : FileName := ANSIReplaceText( FileName, '.txt','(F).txt') ;
         ptResistance : FileName := ANSIReplaceText( FileName, '.txt','(R).txt') ;

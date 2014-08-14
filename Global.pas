@@ -8,7 +8,8 @@ unit Global;
   30.07.06 RecChannel added
   08.03.10 ... Settings.EventDetector.AvgFrequencyInterval added
 
-  20.04.11 ... THistogram size increased to 4000 }
+  20.04.11 ... THistogram size increased to 4000
+  14.08.14 ... ProgDirectory etc. moved to Main. }
 interface
 
 uses sysUtils, Graphics, Classes, stdctrls, ced1401, maths, wintypes ;
@@ -427,9 +428,6 @@ TSettings = record
           BitmapWidth : Integer ;
           BitmapHeight : Integer ;
           {SectorWriteTime : single ;}
-          DataDirectory : string ;
-          ProgDirectory : string ;
-          VProtDirectory : string ;
           VProgramFileName : string ;
 //          WavGenNoDisplay : boolean ;
           LaboratoryInterface : Integer ;

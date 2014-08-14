@@ -300,6 +300,8 @@ unit Mdiform;
 //                 stim folder now in C:\Users\Public\Documents\WinEDR
 // V3.4.5 16.07.14 SaveEventList() now executed from .timer() every time Insert/Delete events pressed
 //                 to avoid events insertions/deletions being lost when NewFile() function called
+// V3.4.6 25.07.14 AmpModule.pas & TritonPanelUnit.pas settings now saved in Settings directory (C:\Users\Public\Documents\WinEDR)
+//
   =======================================================================}
 
 interface
@@ -474,9 +476,11 @@ type
     { Public declarations }
     //SetupChanged : Boolean ;
     Version : string ;
+    ProgDirectory : string ;      // Program folder
     SettingsDirectory : String ;  // Settings folder
     SettingsFileName : String ;   // Settings file name
-
+    DataDirectory : string ;
+    VProtDirectory : string ;
 
    // Cell parameters
    RSeal : Single ; // Seal Resistance (Ohms)
@@ -524,12 +528,12 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.4.5' ;
+     Version := 'V3.4.6' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
-      Settings.ProgDirectory := ExtractFilePath(ParamStr(0)) ;
-      Application.HelpFile := Settings.ProgDirectory + 'WinEDR.chm';
+      Main.ProgDirectory := ExtractFilePath(ParamStr(0)) ;
+      Application.HelpFile := Main.ProgDirectory + 'WinEDR.chm';
 
       { Create channel names list }
       ChannelNames := TStringList.Create ;
@@ -635,7 +639,7 @@ begin
      { Divide factor that the patch/voltage clamp applies to its
        command voltage input. The D/A output voltage is thus scaled up
        by this factor }
-//     Settings.VProtDirectory := Settings.ProgDirectory + 'Stim\' ;
+//     Main.VProtDirectory := Settings.ProgDirectory + 'Stim\' ;
 
      // Create settings directory
      SettingsDirectory := GetSpecialFolder(CSIDL_COMMON_DOCUMENTS) + '\WinEDR\';
@@ -647,19 +651,19 @@ begin
      SettingsFileName := SettingsDirectory + 'winedr.ini' ;
 
      // Stimulus protocols folder
-     Settings.VProtDirectory := GetSpecialFolder(CSIDL_COMMON_DOCUMENTS) + '\WinEDR\stim\';
-      if not SysUtils.DirectoryExists(Settings.VProtDirectory) then begin
-         if SysUtils.ForceDirectories(Settings.VProtDirectory) then
-            WriteToLogFile( 'Protocols folder ' + Settings.VProtDirectory + ' created.')
-         else WriteToLogFile( 'Unable to create protocols folder' + Settings.VProtDirectory) ;
+     Main.VProtDirectory := GetSpecialFolder(CSIDL_COMMON_DOCUMENTS) + '\WinEDR\stim\';
+      if not SysUtils.DirectoryExists(Main.VProtDirectory) then begin
+         if SysUtils.ForceDirectories(Main.VProtDirectory) then
+            WriteToLogFile( 'Protocols folder ' + Main.VProtDirectory + ' created.')
+         else WriteToLogFile( 'Unable to create protocols folder' + Main.VProtDirectory) ;
          end ;
 
       // Create default data directory (in My Documents)
-      Settings.DataDirectory := GetSpecialFolder(CSIDL_PERSONAL) + '\WinEDR Data\';
-      if not SysUtils.DirectoryExists(Settings.DataDirectory) then begin
-         if SysUtils.ForceDirectories(Settings.DataDirectory) then
-            WriteToLogFile( 'Data folder ' + Settings.DataDirectory + ' created.')
-         else WriteToLogFile( 'Unable to create data folder' + Settings.DataDirectory) ;
+      Main.DataDirectory := GetSpecialFolder(CSIDL_PERSONAL) + '\WinEDR Data\';
+      if not SysUtils.DirectoryExists(Main.DataDirectory) then begin
+         if SysUtils.ForceDirectories(Main.DataDirectory) then
+            WriteToLogFile( 'Data folder ' + Main.DataDirectory + ' created.')
+         else WriteToLogFile( 'Unable to create data folder' + Main.DataDirectory) ;
          end ;
 
     { for i := 0 to High(Settings.VCommand) do begin
@@ -712,7 +716,7 @@ begin
      Settings.BitmapWidth := 600 ;
      Settings.BitmapHeight := 500 ;
 
-     Settings.DataDirectory := '' ;
+     Main.DataDirectory := '' ;
 
      { Settings for record hard copy plots }
      Settings.ShowLabels := True ;
@@ -811,10 +815,10 @@ begin
 
      // Load initialization file to get name of last data file used }
      LoadInitializationFile( SettingsFileName ) ;
-     if Settings.DataDirectory = '' then
-        Settings.DataDirectory := Main.GetSpecialFolder(CSIDL_PERSONAL) + '\WinEDR Data\';
-     if Settings.VProtDirectory = '' then
-        Settings.VProtDirectory := GetSpecialFolder(CSIDL_COMMON_DOCUMENTS) + '\WinEDR\stim\';
+     if Main.DataDirectory = '' then
+        Main.DataDirectory := Main.GetSpecialFolder(CSIDL_PERSONAL) + '\WinEDR Data\';
+     if Main.VProtDirectory = '' then
+        Main.VProtDirectory := GetSpecialFolder(CSIDL_COMMON_DOCUMENTS) + '\WinEDR\stim\';
 
      { Name of last used data file returned in fH.FileName }
 
@@ -897,9 +901,9 @@ begin
      { Get the name of a data file from user }
      OpenDialog.options := [ofPathMustExist] ;
      OpenDialog.DefaultExt := DataFileExtension ;
-     if Settings.DataDirectory <> '' then begin
-        OpenDialog.InitialDir := Settings.DataDirectory ;
-        SetCurrentDir(Settings.DataDirectory) ;
+     if Main.DataDirectory <> '' then begin
+        OpenDialog.InitialDir := Main.DataDirectory ;
+        SetCurrentDir(Main.DataDirectory) ;
         end ;
      OpenDialog.Filter := format( ' EDR Files (*%s)|*%s',
                                   [DataFileExtension,DataFileExtension]) ;
@@ -910,7 +914,7 @@ begin
         LoadDataFiles( CdrFH.FileName ) ;
 
         { Save data directory }
-        Settings.DataDirectory := ExtractFilePath( CdrFH.FileName ) ;
+        Main.DataDirectory := ExtractFilePath( CdrFH.FileName ) ;
 
         // Update list of recently used files
         UpdateRecentFilesList ;
@@ -1255,16 +1259,16 @@ begin
                                   [DataFileExtension,DataFileExtension]) ;
      SaveDialog.Title := 'New Data File' ;
 
-     if Settings.DataDirectory <> '' then begin
-        SaveDialog.InitialDir := Settings.DataDirectory ;
-        SetCurrentDir(Settings.DataDirectory) ;
+     if Main.DataDirectory <> '' then begin
+        SaveDialog.InitialDir := Main.DataDirectory ;
+        SetCurrentDir(Main.DataDirectory) ;
         end ;
 
      { Create new data file }
      if SaveDialog.execute then begin
 
         { Save data directory }
-        Settings.DataDirectory := ExtractFilePath( SaveDialog.FileName ) ;
+        Main.DataDirectory := ExtractFilePath( SaveDialog.FileName ) ;
         CdrFH.FileName := SaveDialog.FileName ;
         CdrFH.FileName := ChangeFileExt( CdrFH.FileName, DataFileExtension ) ;
         OK := CreateNewDataFile( CdrFH ) ;
@@ -1556,9 +1560,9 @@ begin
      { Get the name of a data file from user }
      OpenDialog.options := [ofPathMustExist] ;
      OpenDialog.DefaultExt := DataFileExtension ;
-     if Settings.DataDirectory <> '' then begin
-        OpenDialog.InitialDir := Settings.DataDirectory ;
-        SetCurrentDir(Settings.DataDirectory) ;
+     if Main.DataDirectory <> '' then begin
+        OpenDialog.InitialDir := Main.DataDirectory ;
+        SetCurrentDir(Main.DataDirectory) ;
         end ;
      OpenDialog.Filter := format( ' EDR Files (*%s)|*%s',
                                   [DataFileExtension,DataFileExtension]) ;
@@ -2112,14 +2116,14 @@ begin
      OpenDialog.DefaultExt := 'DAT' ;
 
      OpenDialog.Title := 'Import File ' ;
-     if Settings.DataDirectory <> '' then begin
-        OpenDialog.InitialDir := Settings.DataDirectory ;
-        SetCurrentDir(Settings.DataDirectory) ;
+     if Main.DataDirectory <> '' then begin
+        OpenDialog.InitialDir := Main.DataDirectory ;
+        SetCurrentDir(Main.DataDirectory) ;
         end ;
 
      if not OpenDialog.execute then Exit ;
 
-     Settings.DataDirectory := ExtractFilePath( OpenDialog.FileName ) ;
+     Main.DataDirectory := ExtractFilePath( OpenDialog.FileName ) ;
      FileType := Filters[OpenDialog.FilterIndex].FType ;
      FileName := OpenDialog.FileName ;
 

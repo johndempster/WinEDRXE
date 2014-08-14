@@ -51,6 +51,7 @@ unit Fileio;
   30.04.13 .. SIMEPC settings added to INI file
   14.05.13 .. SIMEPC.UnitsIndex added to INI file
   15.05.13 .. SIMEPC.ReleaseProbability etc added  to INI file
+  14.08.14 .. .log files now saved in C:\Users\Public\Documents\WinEDR instead of programs folder
   }
 
 
@@ -132,7 +133,7 @@ begin
 
           if Main.SaveDialog.execute then begin
              { Save data directory }
-             Settings.DataDirectory := ExtractFilePath( Main.SaveDialog.FileName ) ;
+             Main.DataDirectory := ExtractFilePath( Main.SaveDialog.FileName ) ;
              { Use new file name entered by user }
              FileName := Main.SaveDialog.FileName ;
              { User has clicked OK, tell calling routine to go ahead }
@@ -656,7 +657,7 @@ begin
      ReadInt( Header, 'PVLPP=',Settings.PageViewLinesPerPage ) ;
      ReadFloat( Header, 'PVLD=',Settings.PageViewLineDuration ) ;
 
-     ReadString( Header, 'DDIR=', Settings.DataDirectory ) ;
+     ReadString( Header, 'DDIR=', Main.DataDirectory ) ;
 
      { Laboratory interface }
      ReadInt( Header, 'LABINT=',Settings.LaboratoryInterface ) ;
@@ -873,7 +874,7 @@ begin
      AppendInt( Header, 'PVLPP=',Settings.PageViewLinesPerPage ) ;
      AppendFloat( Header, 'PVLD=',Settings.PageViewLineDuration ) ;
 
-     AppendString( Header, 'DDIR=', Settings.DataDirectory ) ;
+     AppendString( Header, 'DDIR=', Main.DataDirectory ) ;
 
      AppendInt( Header, 'LABINT=',Settings.LaboratoryInterface ) ;
      AppendInt( Header, 'LABDEV=',Settings.DeviceNumber ) ;
@@ -972,7 +973,7 @@ procedure OpenLogFile ;
 begin
      { Create a log file using current date }
      FormatSettings.DateSeparator := '-' ;
-     LogFileName := Settings.ProgDirectory + DateToStr(Date)+'.log' ;
+     LogFileName := Main.SettingsDirectory + DateToStr(Date)+'.log' ;
      LogFileAvailable := True ;
      AssignFile( LogFile, LogFileName ) ;
      try

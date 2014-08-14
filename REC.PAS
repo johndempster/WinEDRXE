@@ -1976,7 +1976,7 @@ begin
        Stimulator.Prot.NextProtocolFileName := '' ;
 
        // Save file to stim folder
-       ActiveStimFileName := Settings.VProtDirectory + ResistanceStimFileName ;
+       ActiveStimFileName := Main.VProtDirectory + ResistanceStimFileName ;
        if FileExists(ActiveStimFileName) then DeleteFile(PChar(ActiveStimFileName)) ;
        Stimulator.SaveProtocolToXMLFile(Stimulator.Prot, ActiveStimFileName);
 
@@ -2839,7 +2839,7 @@ procedure TRecordFrm.cbStimProgramChange(Sender: TObject);
 begin
      if cbStimProgram.ItemIndex > 0 then begin
         bStartStimulus.Enabled := True ;
-        Settings.VProgramFileName := Settings.VProtDirectory + cbStimProgram.Text + '.xml' ;
+        Settings.VProgramFileName := Main.VProtDirectory + cbStimProgram.Text + '.xml' ;
         end
      else bStartStimulus.Enabled := False ;
 
@@ -2884,7 +2884,7 @@ begin
     idx := cbStimProgram.Items.IndexOf(Value) ;
     if (idx > 0) and (idx < cbStimProgram.Items.Count) then begin
        cbStimProgram.ItemIndex := idx ;
-       Settings.VProgramFileName := Settings.VProtDirectory + cbStimProgram.Text + '.xml' ;
+       Settings.VProgramFileName := Main.VProtDirectory + cbStimProgram.Text + '.xml' ;
        end
     else begin
        cbStimProgram.ItemIndex := 0 ;

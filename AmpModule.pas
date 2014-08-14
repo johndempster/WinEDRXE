@@ -92,12 +92,14 @@ unit AmpModule;
 // 10.07.12 Multiclamp 700A&B units now selected correctly
 // 18.09.12 EPC-800 command voltage scaling factor now 0.1 (rather than 0.02)
 // 02.04.13 Invalid amplifier types now set to None when loaded from XML file and also when GetModelName called.
+// 25.07.14 Amplifier settings now saved in Settings directory (C:\Users\Public\Documents\WinEDR)
+// 14.08.14 Amplifier settings now reloaded correctly after restart
 
 interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, Math, strutils,
-  xmldoc, xmlintf,ActiveX ;
+  xmldoc, xmlintf,ActiveX,shlobj  ;
 
 const
      MaxAmplifiers = 4 ;
@@ -991,7 +993,7 @@ TAXC_GetHeadstageType = function(
     procedure SaveToXMLFile1( FileName : String ;
                              AppendData : Boolean ) ;
 
-
+    function GetSpecialFolder(const ASpecialFolderID: Integer): string;
 
   public
     { Public declarations }
@@ -1127,6 +1129,7 @@ procedure TAmplifier.AmplifierCreate(Sender: TObject);
 // ---------------------------------------------
 var
     i : Integer ;
+    SettingsDirectory : String ;
 begin
 
      // Default settings
@@ -1187,7 +1190,10 @@ begin
      Axoclamp900AHnd := -1 ;
 
      // Load settings
-     SettingsFileName := ExtractFilePath(ParamStr(0)) + 'amplifier settings.xml' ;
+
+     SettingsDirectory := GetSpecialFolder(CSIDL_COMMON_DOCUMENTS) + '\WinEDR\';
+     if not SysUtils.DirectoryExists(SettingsDirectory) then SysUtils.ForceDirectories(SettingsDirectory) ;
+     SettingsFileName := SettingsDirectory + 'amplifier settings.xml' ;
      if FileExists( SettingsFileName ) then LoadFromXMLFile( SettingsFileName ) ;
 
      end;
@@ -6554,6 +6560,19 @@ begin
 
     end ;
 
+function TAmplifier.GetSpecialFolder(const ASpecialFolderID: Integer): string;
+// --------------------------
+// Get Windows special folder
+// --------------------------
+var
+  //vSFolder :  pItemIDList;
+  vSpecialPath : array[0..MAX_PATH] of Char;
+begin
+
+  SHGetFolderPath( 0, ASpecialFolderID, 0,0,vSpecialPath) ;
+  Result := StrPas(vSpecialPath);
+
+  end;
 
 
 

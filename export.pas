@@ -414,8 +414,8 @@ begin
 
      SaveDialog.FileName := ExportFileName ;
      SaveDialog.Title := 'Export File ' ;
-     if Settings.DataDirectory <> '' then
-        SaveDialog.InitialDir := Settings.DataDirectory ;
+     if Main.DataDirectory <> '' then
+        SaveDialog.InitialDir := Main.DataDirectory ;
 
      if SaveDialog.Execute then ExportFileName := SaveDialog.FileName ;
      edFileName.text := ExportFileName ;

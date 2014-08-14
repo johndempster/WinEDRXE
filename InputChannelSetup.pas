@@ -32,7 +32,8 @@ unit InputChannelSetup;
            no longer changes channel scale factors when Amplifier type is amNone
 // 19.11.13 SetCurrentDir() now ensure file dialog box opens in correct directory
    20.11.13 Displayed amplifier and channel settings now updated before being written to user-defined settings file
-            Settings files now have file ending set to .xml 
+            Settings files now have file ending set to .xml
+// 14.08.14 Load/Save Settings now open in settings directory
                   }
 interface
 
@@ -651,8 +652,8 @@ var
 begin
 
      SaveDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofPathMustExist] ;
-     SaveDialog.InitialDir := Settings.ProgDirectory ;
-     SetCurrentDir(Settings.ProgDirectory) ;
+     SaveDialog.InitialDir :=  Main.SettingsDirectory ;
+     SetCurrentDir(Main.SettingsDirectory) ;
      SaveDialog.Title := 'Save Amplifier/Input Channel Settings' ;
      SaveDialog.FileName := '*.xml' ;
 
@@ -685,8 +686,8 @@ procedure TInputChannelSetupFrm.bLoadSettingsClick(Sender: TObject);
 begin
      OpenDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofPathMustExist] ;
      OpenDialog.FileName := '*.xml' ;
-     OpenDialog.InitialDir := Settings.ProgDirectory ;
-     SetCurrentDir(Settings.ProgDirectory) ;
+     OpenDialog.InitialDir := Main.SettingsDirectory ;
+     SetCurrentDir(Main.SettingsDirectory) ;
      OpenDialog.Title := 'Load Amplifier/Input Channel Settings' ;
      if OpenDialog.execute then begin
         Amplifier.LoadFromXMLFile(OpenDialog.FileName) ;

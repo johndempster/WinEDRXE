@@ -21,6 +21,8 @@ unit TritonPanelUnit;
 // 02.04.12 Use of CslowA-D can be enabled/disabled in auto compensation
 // 17.04.12 Auto compensation Vtest, Vhold, Thold, Tstep can now be set by user
 //          Use CslowsA-D compensation now only visible if CslowA-D supported
+// 25.07.14 'tecella settings.xml' now saved in settings directory (C:\Users\Public\Documents\WinEDR)
+//          instead of program folder
 interface
 
 uses
@@ -1814,7 +1816,7 @@ begin
      CompensationTStep := 0.02 ;
 
      // Load settings from XML file
-     SettingsFileName := ExtractFilePath(ParamStr(0)) + 'tecella settings.xml' ;
+     SettingsFileName := Main.SettingsDirectory + 'tecella settings.xml' ;
      if FileExists( SettingsFileName ) then LoadFromXMLFile( SettingsFileName ) ;
 
      end;

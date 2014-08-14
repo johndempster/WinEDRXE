@@ -1267,7 +1267,7 @@ begin
      repeat
         { Find file }
         if First then
-           FileFound := FindFirst( Settings.VProtDirectory + '*.xml',
+           FileFound := FindFirst( Main.VProtDirectory + '*.xml',
                                    faAnyFile,
                                    SearchRec )
         else
@@ -1308,7 +1308,7 @@ begin
      repeat
         { Find file }
         if First then
-           FileFound := FindFirst( Settings.VProtDirectory + '*.sti',
+           FileFound := FindFirst( Main.VProtDirectory + '*.sti',
                                    faAnyFile,
                                    SearchRec )
         else FileFound := FindNext( SearchRec ) ;
@@ -1320,7 +1320,7 @@ begin
         if FileFound = 0 then begin
 
            // Load STI Protocol
-           STIFileName := Settings.VProtDirectory + SearchRec.Name ;
+           STIFileName := Main.VProtDirectory + SearchRec.Name ;
 
            if LoadSTIProgram(STIProg,STIFileName,ExtVBuf) then begin
               // Clear XML protocol
@@ -1972,7 +1972,7 @@ begin
            // Get file name of .dat file
            WaveFileName := ExtractFileName(Prot.Stimulus[iElement].Parameters[spFileName].Text) ;
            WaveFileName := ChangeFileExt( WaveFileName, '.dat' ) ;
-           WaveFileName := Settings.VProtDirectory + WaveFileName ;
+           WaveFileName := Main.VProtDirectory + WaveFileName ;
 
            OK := True ;
            // Check for blank file name
@@ -2025,7 +2025,7 @@ begin
      if not FileExists(FileName) then Exit ;
 
      // Create binary output file
-     BinFileName := Settings.VProtDirectory +
+     BinFileName := Main.VProtDirectory +
                     ChangeFileExt(ExtractFileName(FileName),'.DAT') ;
 
      // Open text input file
@@ -2106,7 +2106,7 @@ begin
         end ;
 
      // Exit if unable to find file
-     FileName := Settings.VProtDirectory + ChangeFileExt( ExtractFileName(FileName), '.dat' ) ;
+     FileName := Main.VProtDirectory + ChangeFileExt( ExtractFileName(FileName), '.dat' ) ;
      if not FileExists(FileName) then begin
         ShowMessage('Stimulus Protocol: Unable to load ' + FileName ) ;
         Prot.Stimulus[iStimElement].NumPointsInBuf := 0 ;
@@ -2161,7 +2161,7 @@ begin
      if Prot.Stimulus[iStimElement].Buf = Nil then Exit ;
 
      // Create DAT file
-     FileName := Settings.VProtDirectory + ChangeFileExt(ExtractFileName(
+     FileName := Main.VProtDirectory + ChangeFileExt(ExtractFileName(
                  Prot.Stimulus[iStimElement].Parameters[spFileName].Text),'.DAT') ;
      FileHandle := FileCreate( FileName ) ;
      if FileHandle < 0 then begin

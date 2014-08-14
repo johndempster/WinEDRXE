@@ -2021,7 +2021,7 @@ begin
      Prot.RepeatedProtocol := rbRepeatedProtocol.Checked ;
      // Linked protocol
      if cbNextProtocol.ItemIndex > 0 then begin
-        Prot.NextProtocolFileName := Settings.VProtDirectory + cbNextProtocol.Text + '.xml' ;
+        Prot.NextProtocolFileName := Main.VProtDirectory + cbNextProtocol.Text + '.xml' ;
         end
      else Prot.NextProtocolFileName := '' ;
 
@@ -2179,8 +2179,8 @@ procedure TEditProtocolFrm.SaveProtocol ;
 begin
 
      SaveDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofPathMustExist] ;
-     SaveDialog.InitialDir := Settings.VProtDirectory ;
-     SetCurrentDir(Settings.VProtDirectory) ;
+     SaveDialog.InitialDir := Main.VProtDirectory ;
+     SetCurrentDir(Main.VProtDirectory) ;
      SaveDialog.Title := 'Save Stimulus Protocol' ;
      SaveDialog.FileName := '*.xml' ;
 
@@ -2206,8 +2206,8 @@ begin
 
      OpenDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofPathMustExist] ;
      OpenDialog.FileName := '*.xml' ;//ExtractFileName( SaveDialog.FileName ) ;
-     OpenDialog.InitialDir := Settings.VProtDirectory ;
-     SetCurrentDir(Settings.VProtDirectory) ;
+     OpenDialog.InitialDir := Main.VProtDirectory ;
+     SetCurrentDir(Main.VProtDirectory) ;
      OpenDialog.Title := 'Load Stimulus Protocol' ;
      if OpenDialog.execute then begin
         FileName := OpenDialog.FileName ;
@@ -2260,7 +2260,7 @@ procedure TEditProtocolFrm.bSetStimFolderClick(Sender: TObject);
 //  Set voltage protocol file folder
 // -----------------------------
 begin
-    DirectorySelectFrm.Directory := Settings.VProtDirectory ;
+    DirectorySelectFrm.Directory := Main.VProtDirectory ;
     DirectorySelectFrm.Left := Main.Left +
                                EditProtocolFrm.Left +
                                bSetStimFolder.Left +
@@ -2272,7 +2272,7 @@ begin
 
     DirectorySelectFrm.ShowModal ;
     if DirectorySelectFrm.ModalResult = mrOK then begin
-       Settings.VProtDirectory := DirectorySelectFrm.Directory ;
+       Main.VProtDirectory := DirectorySelectFrm.Directory ;
         // Populate Next Protocol list
         Stimulator.CreateProtocolList( cbNextProtocol ) ;
        end ;
@@ -2288,8 +2288,8 @@ begin
 
      OpenWaveDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofPathMustExist] ;
      OpenWaveDialog.FileName := '*.txt' ;//ExtractFileName( SaveDialog.FileName ) ;
-     OpenWaveDialog.InitialDir := Settings.VProtDirectory ;
-     SetCurrentDir(Settings.VProtDirectory) ;
+     OpenWaveDialog.InitialDir := Main.VProtDirectory ;
+     SetCurrentDir(Main.VProtDirectory) ;
      OpenWaveDialog.Title := 'Load user-defined waveform' ;
 
      if OpenWaveDialog.execute then begin

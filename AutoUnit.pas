@@ -79,7 +79,7 @@ begin
        { Re-open data file }
        Main.LoadDataFiles( CdrFH.FileName ) ;
 
-       Settings.DataDirectory := ExtractFilePath( CdrFH.FileName ) ;
+       Main.DataDirectory := ExtractFilePath( CdrFH.FileName ) ;
 
        end ;
 
@@ -100,7 +100,7 @@ begin
         Main.LoadDataFiles( CdrFH.FileName ) ;
 
         { Save data directory }
-        Settings.DataDirectory := ExtractFilePath( CdrFH.FileName ) ;
+        Main.DataDirectory := ExtractFilePath( CdrFH.FileName ) ;
 
         end ;
 
@@ -211,7 +211,7 @@ procedure TAUTO.Set_StimulusProtocol(Value: OleVariant);
 // Set stimulus protocol
 // ---------------------
 begin
-     Settings.VProgramFileName := Settings.VProtDirectory + Value + '.xml' ;
+     Settings.VProgramFileName := Main.VProtDirectory + Value + '.xml' ;
      if Main.FormExists('RecordFrm') then RecordFrm.StimulusProtocol := Value ;
      end;
 
