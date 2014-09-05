@@ -301,7 +301,8 @@ unit Mdiform;
 // V3.4.5 16.07.14 SaveEventList() now executed from .timer() every time Insert/Delete events pressed
 //                 to avoid events insertions/deletions being lost when NewFile() function called
 // V3.4.6 25.07.14 AmpModule.pas & TritonPanelUnit.pas settings now saved in Settings directory (C:\Users\Public\Documents\WinEDR)
-//
+// V3.4.7 14.08.14 Support for USB-6000-6005 added.
+//                 Amplifier settings now stored correctly in C:\Users\Public\Documents\WinEDR
   =======================================================================}
 
 interface
@@ -528,7 +529,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.4.6' ;
+     Version := 'V3.4.7' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
