@@ -28,7 +28,7 @@ object EventDetFrm: TEventDetFrm
     Top = 0
     Width = 839
     Height = 657
-    ActivePage = EditEventsPage
+    ActivePage = DetectEventsPage
     TabOrder = 0
     OnChange = PageChange
     object DetectEventsPage: TTabSheet
@@ -255,25 +255,9 @@ object EventDetFrm: TEventDetFrm
           Height = 337
           Caption = ' Detector '
           TabOrder = 3
-          object Label11: TLabel
-            Left = 24
-            Top = 46
-            Width = 37
-            Height = 19
-            Alignment = taRightJustify
-            AutoSize = False
-            Caption = 'Time'
-            Font.Charset = DEFAULT_CHARSET
-            Font.Color = clBlack
-            Font.Height = -12
-            Font.Name = 'Arial'
-            Font.Style = []
-            ParentFont = False
-            WordWrap = True
-          end
           object GroupBox1: TGroupBox
             Left = 8
-            Top = 12
+            Top = 16
             Width = 177
             Height = 65
             Caption = ' Mode '

@@ -183,7 +183,6 @@ type
     bSetThresholdTo4SD: TButton;
     ModePage: TNotebook;
     rbThreshold: TRadioButton;
-    Label11: TLabel;
     GroupBox7: TGroupBox;
     edRunningMeanDuration: TValidatedEdit;
     GroupBox9: TGroupBox;
