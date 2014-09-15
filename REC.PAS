@@ -72,6 +72,7 @@ unit Rec;
                Changes to data file name when parameters changed now .xx rather that ++++
   30.06.14 ... StimulusAvailable now set from SESLabIO.DACAvailableWhileADCActive
                Recording progress displayed in window caption
+  15.09.14 ... EPC9 panel now opened when form opened (if Heka EPC9/10)
   ==============================================================================}
 interface
 
@@ -499,11 +500,20 @@ begin
         end ;
 
      // Display Triton control panel if it is not open
-     if (Main.SESLabIO.LabInterfaceType = Triton)
-        and (not Main.FormExists( 'TritonPanelFrm' )) then begin
-        Main.mnTriton.Enabled := True ;
-        Main.mnTriton.Click ;
-        end ;
+     case Main.SESLabIO.LabInterfaceType of
+          Triton : begin
+             if not Main.FormExists( 'TritonPanelFrm' ) then begin
+                Main.mnTriton.Enabled := True ;
+                Main.mnTriton.Click ;
+                end ;
+             end ;
+          HekaEPC9,HekaEPC10,HekaEPC10Plus,HekaEPC10USB : begin
+             if not Main.FormExists( 'EPC9PanelFrm' ) then begin
+                Main.mnEPC9Panel.Enabled := True ;
+                Main.mnEPC9Panel.Click ;
+                end ;
+             end ;
+          end;
 
      { Get locations of A/D, D/A and digital I/O buffers from lab. interface }
      Main.SESLabIO.GetADCBuffer( ADC ) ;

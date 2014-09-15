@@ -303,6 +303,9 @@ unit Mdiform;
 // V3.4.6 25.07.14 AmpModule.pas & TritonPanelUnit.pas settings now saved in Settings directory (C:\Users\Public\Documents\WinEDR)
 // V3.4.7 14.08.14 Support for USB-6000-6005 added.
 //                 Amplifier settings now stored correctly in C:\Users\Public\Documents\WinEDR
+// V3.4.8 15.08.14 ABF V2 files can now be imported
+                   Now works with 18 bit NI interfaces (PCI-6281)
+                   Heka EPC-9/10 and NPI ELC03X amplifier support added.
   =======================================================================}
 
 interface
@@ -313,7 +316,7 @@ uses
   PrintRec, Rec, SealTest, ViewSig,
   About, Log, defset, ced1902u, simmepc, SingleChanAnal,
   simnoise, simchan, NoiseAnal, digfilt, SESLabIO, ComCtrls,
-  ADCDataFile, math, strutils, recplotunit, UITYpes, Vcl.HtmlHelpViewer, shlobj  ;
+  ADCDataFile, math, strutils, recplotunit, UITYpes, Vcl.HtmlHelpViewer, shlobj, epc9panelunit  ;
 
 const
     AllForms = True ;
@@ -408,6 +411,7 @@ type
     mnLaboratoryInterface: TMenuItem;
     mnInputChannelsAndAmplifiers: TMenuItem;
     SESLabIO: TSESLabIO;
+    mnEPC9Panel: TMenuItem;
     procedure mnOpenClick(Sender: TObject);
     procedure mnZoomInClick(Sender: TObject);
     procedure Exit1Click(Sender: TObject);
@@ -464,6 +468,7 @@ type
     procedure mnTritonClick(Sender: TObject);
     procedure mnLaboratoryInterfaceClick(Sender: TObject);
     procedure mnInputChannelsAndAmplifiersClick(Sender: TObject);
+    procedure mnEPC9Click(Sender: TObject);
   private
     { Private declarations }
 
@@ -517,7 +522,7 @@ implementation
 uses export, AmpModule, Invert, EventDetector, PageView, EditMarkers,
   Import, ImportASCIIUnit, maths , ECG, ImportRawUnit, VP500Panel,
   FilePropsUnit, DBSPanelUnit, TritonPanelUnit, LabInterfaceSetup,
-  InputChannelSetup, EditProtocolUnit;
+  InputChannelSetup, EditProtocolUnit ;
 
 {$R *.DFM}
 
@@ -529,7 +534,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.4.7' ;
+     Version := 'V3.4.8' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
@@ -2488,6 +2493,26 @@ begin
         end ;
      end ;
 
+
+procedure TMain.mnEPC9Click(Sender: TObject);
+// -------------------------------
+//  Display EPC9/10 control window
+// ------------------------------- }
+begin
+
+     if FormExists( 'EPC9PanelFrm' ) then begin
+        // Make form visible, active and on top
+        if EPC9PanelFrm.WindowState = wsMinimized then EPC9PanelFrm.WindowState := wsNormal ;
+        EPC9PanelFrm.BringToFront ;
+        EPC9PanelFrm.SetFocus ;
+        end
+     else begin
+        EPC9PanelFrm := TEPC9PanelFrm.Create(Self) ;
+        EPC9PanelFrm.Top := 10 ;
+        EPC9PanelFrm.Left := Width - EPC9PanelFrm.Width - 50 ;
+        end ;
+
+     end;
 
 procedure TMain.mnZoomInCh0Click(Sender: TObject);
 // --------------------------------------

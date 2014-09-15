@@ -77,6 +77,7 @@ unit Sealtest;
   17.04.12 .. No. of input channels displayed can now be selected from menu.
   15.02.13 .. Page showing Rm,Ra,Cm now displayed as alternative to Gm,Ga,Cm
               Resistance/cell membrane parameters smoothing factor can now be set by user
+  15.09.14 ... EPC9 panel now opened when form opened (if Heka EPC9/10)
   ==================================================}
 
 interface
@@ -315,11 +316,20 @@ begin
         end ;
 
      // Display Triton control panel if it is not open
-     if (Main.SESLabIO.LabInterfaceType = Triton)
-        and (not Main.FormExists( 'TritonPanelFrm' )) then begin
-        Main.mnTriton.Enabled := True ;
-        Main.mnTriton.Click ;
-        end ;
+     case Main.SESLabIO.LabInterfaceType of
+          Triton : begin
+             if not Main.FormExists( 'TritonPanelFrm' ) then begin
+                Main.mnTriton.Enabled := True ;
+                Main.mnTriton.Click ;
+                end ;
+             end ;
+          HekaEPC9,HekaEPC10,HekaEPC10Plus,HekaEPC10USB : begin
+             if not Main.FormExists( 'EPC9PanelFrm' ) then begin
+                Main.mnEPC9Panel.Enabled := True ;
+                Main.mnEPC9Panel.Click ;
+                end ;
+             end ;
+          end;
 
      Timer.Enabled := False ;
      ClientWidth := CellGrp.Left + CellGrp.Width + 5 ;
