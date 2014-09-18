@@ -306,6 +306,10 @@ unit Mdiform;
 // V3.4.8 15.08.14 ABF V2 files can now be imported
                    Now works with 18 bit NI interfaces (PCI-6281)
                    Heka EPC-9/10 and NPI ELC03X amplifier support added.
+   V4.8.4 18.09.14 Current scaling factor for Axoclamp 2 current command channel now recognised currently
+                   Current and Voltage command channels can now be updated by user.
+                   Amplifier settings no longer loaded from edr.ini file to avoid interference with
+                   amplifier settings.xml
   =======================================================================}
 
 interface
@@ -534,7 +538,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.4.8' ;
+     Version := 'V3.4.9' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }

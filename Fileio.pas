@@ -52,6 +52,8 @@ unit Fileio;
   14.05.13 .. SIMEPC.UnitsIndex added to INI file
   15.05.13 .. SIMEPC.ReleaseProbability etc added  to INI file
   14.08.14 .. .log files now saved in C:\Users\Public\Documents\WinEDR instead of programs folder
+  18.09.14 .. Amplifier settings no longer loaded from edr.ini file to avoid interference with
+              amplifier settings.xml
   }
 
 
@@ -535,14 +537,14 @@ begin
      ReadInt( Header, 'CEDPO=', Amplifier.CED1902.ComPort ) ;
 
      // Patch clamp amplifier data (old keys)
-     ReadInt( Header, 'AMP=',iValue ) ;
-     Amplifier.AmplifierType[1] := iValue ;
+   {  ReadInt( Header, 'AMP=',iValue ) ;
+     Amplifier.AmplifierType[0] := iValue ;
      ReadInt( Header, 'AMPCH=',iValue ) ;
-     Amplifier.GainTelegraphChannel[1] := iValue ;
+     Amplifier.GainTelegraphChannel[0] := iValue ;
      ReadInt( Header, 'AMPGAINCH=',iValue ) ;
-     Amplifier.GainTelegraphChannel[1] := iValue ;
+     Amplifier.GainTelegraphChannel[0] := iValue ;
      ReadInt( Header, 'AMPMODECH=',iValue ) ;
-     Amplifier.ModeTelegraphChannel[1] := iValue ;
+     Amplifier.ModeTelegraphChannel[0] := iValue ;
 
      // Patch clamp amplifier data
      for ch := 1 to 2 do begin
@@ -552,7 +554,7 @@ begin
          Amplifier.GainTelegraphChannel[ch] := iValue ;
          ReadInt( Header, format('AMPMODECH%d=',[ch]), iValue ) ;
          Amplifier.ModeTelegraphChannel[ch] := iValue ;
-         end ;
+         end ;}
 
      ReadInt( Header, 'VARRS=', Settings.Variance.RecordSize ) ;
      ReadInt( Header, 'VAROV=', Settings.Variance.RecordOverlap ) ;

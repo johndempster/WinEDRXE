@@ -95,6 +95,11 @@ unit AmpModule;
 // 25.07.14 Amplifier settings now saved in Settings directory (C:\Users\Public\Documents\WinEDR)
 // 14.08.14 Amplifier settings now reloaded correctly after restart
 // 19.08.14 Support for Heka EPC9/10 and NPI ELC03X amplifier added
+// 18.09.14 Amplifier.VoltageCommandChannel and Amplifier.CurrentCommandChannel properties can now updated
+//          and Amplifier.VoltageCommandScaleFactor and Amplifier.CurrentCommandScaleFactor now indexed by
+//          Amplifier.VoltageCommandChannel and Amplifier.CurrentCommandChannel (rather than AmpNumber)
+//          Now permits correct Axoclamp 2 current channel scaling factor to be recognised.
+
 
 interface
 
@@ -918,14 +923,15 @@ TAXC_GetHeadstageType = function(
 
     function AppHookFunc(var Message : TMessage) : Boolean;
 
+    function GetCurrentCommandScaleFactor(  AOChan : Integer ) : Single ;
+    procedure SetCurrentCommandScaleFactor(  AOChan : Integer ; Value : Single ) ;
+    function GetCurrentCommandChannel(  AOChan : Integer ) : Integer ;
+    procedure SetCurrentCommandChannel(  AOChan : Integer ; Value : Integer ) ;
 
-    function GetCurrentCommandScaleFactor(  AmpNumber : Integer ) : Single ;
-    procedure SetCurrentCommandScaleFactor(  AmpNumber : Integer ; Value : Single ) ;
-    function GetCurrentCommandChannel(  AmpNumber : Integer ) : Integer ;
-
-    function GetVoltageCommandScaleFactor(  AmpNumber : Integer ) : Single ;
-    procedure SetVoltageCommandScaleFactor(  AmpNumber : Integer ; Value : Single ) ;
-    function GetVoltageCommandChannel(  AmpNumber : Integer ) : Integer ;
+    function GetVoltageCommandScaleFactor(  AOChan : Integer ) : Single ;
+    procedure SetVoltageCommandScaleFactor(  AOChan : Integer ; Value : Single ) ;
+    function GetVoltageCommandChannel(  AOChan : Integer ) : Integer ;
+    procedure SetVoltageCommandChannel(  AOChan : Integer ; Value : Integer ) ;
     function GetCommandScaleFactor(  AmpNumber : Integer ) : Single ;
 
     function GetNeedsGainTelegraphChannel(  AmpNumber : Integer ) : Boolean ;
@@ -1087,11 +1093,16 @@ TAXC_GetHeadstageType = function(
 
     Property VoltageCommandScaleFactor[AmpNumber : Integer] : Single read GetVoltageCommandScaleFactor
                                                                      write SetVoltageCommandScaleFactor ;
-    Property VoltageCommandChannel[AmpNumber : Integer] : Integer read GetVoltageCommandChannel ;
+    Property VoltageCommandChannel[AmpNumber : Integer] : Integer read GetVoltageCommandChannel
+                                                                  write SetVoltageCommandChannel ;
+
     Property CurrentCommandScaleFactor[AmpNumber : Integer] : Single read GetCurrentCommandScaleFactor
                                                                      write SetCurrentCommandScaleFactor ;
-    Property CurrentCommandChannel[AmpNumber : Integer] : Integer read GetCurrentCommandChannel ;
+    Property CurrentCommandChannel[AmpNumber : Integer] : Integer read GetCurrentCommandChannel
+                                                                  write SetCurrentCommandChannel ;
+
     Property CommandScaleFactor[AmpNumber : Integer] : Single read GetCommandScaleFactor ;
+
     Property GainTelegraphAvailable[AmpNumber : Integer] : Boolean read GetGainTelegraphAvailable ;
     Property ModeTelegraphAvailable[AmpNumber : Integer] : Boolean read GetModeTelegraphAvailable ;
     Property ClampMode[AmpNumber : Integer] : Integer read GetClampMode write SetClampMode ;
@@ -2054,14 +2065,17 @@ begin
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
 
-            FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
-            case FAmpType[AmpNumber] of
-               amAxoclamp2HS01  :FCurrentCommandScaleFactor[AmpNumber] := 1E-9 ;
-               amAxoclamp2HS1 : FCurrentCommandScaleFactor[AmpNumber] := 1E-8 ;
-               amAxoclamp2HS10 : FCurrentCommandScaleFactor[AmpNumber] := 1E-7 ;
-               end ;
+            FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
+
+            // Note Axoclamp 2 uses a separate current command input
             FCurrentCommandChannel[AmpNumber] := Min(AmpNumber+1,MaxAmplifiers-1) ;
+            case FAmpType[AmpNumber] of
+               amAxoclamp2HS01  :FCurrentCommandScaleFactor[FCurrentCommandChannel[AmpNumber]] := 1E-9 ;
+               amAxoclamp2HS1 : FCurrentCommandScaleFactor[FCurrentCommandChannel[AmpNumber]] := 1E-8 ;
+               amAxoclamp2HS10 : FCurrentCommandScaleFactor[FCurrentCommandChannel[AmpNumber]] := 1E-7 ;
+               end ;
+
             FGainTelegraphAvailable[AmpNumber] := False ;
             FModeTelegraphAvailable[AmpNumber] := False ;
             FNeedsGainTelegraphChannel[AmpNumber] := False ;
@@ -2397,90 +2411,6 @@ begin
         end ;
 
      Result := FNeedsModeTelegraphChannel[AmpNumber] ;
-     end ;
-
-
-function TAmplifier.GetVoltageCommandScaleFactor(
-         AmpNumber : Integer
-         ) : Single ;
-// ------------------------------------------------------------------
-// Returns patch clamp command voltage divide factor for amplifier
-// ------------------------------------------------------------------
-begin
-
-     if (AmpNumber < 0) or (AmpNumber >= MaxAmplifiers) then begin
-        Result := 1.0 ;
-        Exit ;
-        end ;
-
-     Result := FVoltageCommandScaleFactor[AmpNumber] ;
-     if Result = 0.0 then Result := 1.0 ;
-     end ;
-
-
-procedure TAmplifier.SetVoltageCommandScaleFactor(
-         AmpNumber : Integer ;
-         Value : Single
-         ) ;
-// ------------------------------------------------------------------
-// Set patch clamp command voltage scale factor for amplifier
-// ------------------------------------------------------------------
-begin
-     if (AmpNumber < 0) or (AmpNumber >= MaxAmplifiers) then Exit ;
-
-     FVoltageCommandScaleFactor[AmpNumber] := Value ;
-     end ;
-
-function TAmplifier.GetCurrentCommandScaleFactor(
-         AmpNumber : Integer
-         ) : Single ;
-// ------------------------------------------------------------------
-// Returns patch clamp command current divide factor for amplifier
-// ------------------------------------------------------------------
-begin
-
-     if (AmpNumber < 0) or (AmpNumber >= MaxAmplifiers) then begin
-        Result := 1.0 ;
-        Exit ;
-        end ;
-
-     Result := FCurrentCommandScaleFactor[AmpNumber] ;
-     if Result = 0.0 then Result := 1.0 ;
-     end ;
-
-
-procedure TAmplifier.SetCurrentCommandScaleFactor(
-         AmpNumber : Integer ;
-         Value : Single
-         ) ;
-// ------------------------------------------------------------------
-// Set patch clamp command current scale factor for amplifier
-// ------------------------------------------------------------------
-begin
-     if (AmpNumber < 0) or (AmpNumber >= MaxAmplifiers) then Exit ;
-     FCurrentCommandScaleFactor[AmpNumber] := Value ;
-     end ;
-
-
-function TAmplifier.GetCommandScaleFactor(
-         AmpNumber : Integer
-         ) : Single ;
-// ------------------------------------------------------------------
-// Returns patch clamp divide factor for current amplifier mode
-// ------------------------------------------------------------------
-begin
-
-     if (AmpNumber < 0) or (AmpNumber >= MaxAmplifiers) then begin
-        Result := 1.0 ;
-        Exit ;
-        end ;
-
-     if GetClampMode(AmpNumber) = amVoltageClamp then begin
-        Result := GetVoltageCommandScaleFactor(AmpNumber) ;
-        end
-        else begin
-        Result := GetCurrentCommandScaleFactor(AmpNumber) ;
-        end ;
      end ;
 
 
@@ -6309,10 +6239,12 @@ begin
            GetElementText( iNode, 'SECONDARYCHANNELUNITS', FSecondaryChannelUnits[i] ) ;
            GetElementText( iNode, 'SECONDARYCHANNELUNITSCC', FSecondaryChannelUnitsCC[i] ) ;
 
-           GetElementFloat( iNode, 'VOLTAGECOMMANDSCALEFACTOR', FVoltageCommandScaleFactor[i] ) ;
            GetElementInt( iNode, 'VOLTAGECOMMANDCHANNEL', FVoltageCommandChannel[i] ) ;
-           GetElementFloat( iNode, 'CURRENTCOMMANDSCALEFACTOR', FCurrentCommandScaleFactor[i] ) ;
+           GetElementFloat( iNode, 'VOLTAGECOMMANDSCALEFACTOR', FVoltageCommandScaleFactor[i] ) ;
+
            GetElementInt( iNode, 'CURRENTCOMMANDCHANNEL', FCurrentCommandChannel[i] ) ;
+           GetElementFloat( iNode, 'CURRENTCOMMANDSCALEFACTOR', FCurrentCommandScaleFactor[i] ) ;
+
            end ;
         Inc(NodeIndex) ;
         end ;
@@ -6680,29 +6612,140 @@ begin
      end ;
 
 
+function TAmplifier.GetVoltageCommandScaleFactor(
+         AOChan : Integer
+         ) : Single ;
+// ------------------------------------------------------------------
+// Returns patch clamp command voltage divide factor for amplifier
+// ------------------------------------------------------------------
+begin
+
+     if (AOChan < 0) or (AOChan >= MaxAmplifiers) then begin
+        Result := 1.0 ;
+        Exit ;
+        end ;
+
+     Result := FVoltageCommandScaleFactor[AOChan] ;
+     if Result = 0.0 then Result := 1.0 ;
+     end ;
+
+procedure TAmplifier.SetVoltageCommandChannel(
+         AOChan : Integer ;
+         Value : Integer
+         ) ;
+// ------------------------------------------------------
+// Set patch clamp command voltage analog output channel
+// ------------------------------------------------------
+begin
+     if (AOChan < 0) or (AOChan >= MaxAmplifiers) then Exit ;
+
+     FVoltageCommandChannel[AOChan] := Value ;
+     end ;
+
+
+procedure TAmplifier.SetVoltageCommandScaleFactor(
+         AOChan : Integer ;
+         Value : Single
+         ) ;
+// ------------------------------------------------------------------
+// Set patch clamp command voltage scale factor for amplifier
+// ------------------------------------------------------------------
+begin
+     if (AOChan < 0) or (AOChan >= MaxAmplifiers) then Exit ;
+
+     FVoltageCommandScaleFactor[AOChan] := Value ;
+     end ;
+
+procedure TAmplifier.SetCurrentCommandChannel(
+         AOChan : Integer ;
+         Value : Integer
+         ) ;
+// ------------------------------------------------------
+// Set patch clamp command current analog output channel
+// ------------------------------------------------------
+begin
+     if (AOChan < 0) or (AOChan >= MaxAmplifiers) then Exit ;
+
+     FCurrentCommandChannel[AOChan] := Value ;
+     end ;
+
+
+function TAmplifier.GetCurrentCommandScaleFactor(
+         AOChan : Integer
+         ) : Single ;
+// ------------------------------------------------------------------
+// Returns patch clamp command current divide factor for amplifier
+// ------------------------------------------------------------------
+begin
+
+     if (AOChan < 0) or (AOChan >= MaxAmplifiers) then begin
+        Result := 1.0 ;
+        Exit ;
+        end ;
+
+     Result := FCurrentCommandScaleFactor[AOChan] ;
+     if Result = 0.0 then Result := 1.0 ;
+     end ;
+
+
+procedure TAmplifier.SetCurrentCommandScaleFactor(
+         AOChan : Integer ;
+         Value : Single
+         ) ;
+// ------------------------------------------------------------------
+// Set patch clamp command current scale factor for amplifier
+// ------------------------------------------------------------------
+begin
+     if (AOChan < 0) or (AOChan >= MaxAmplifiers) then Exit ;
+     FCurrentCommandScaleFactor[AOChan] := Value ;
+     end ;
+
+
+function TAmplifier.GetCommandScaleFactor(
+         AmpNumber : Integer
+         ) : Single ;
+// ------------------------------------------------------------------
+// Returns patch clamp divide factor for current amplifier mode
+// ------------------------------------------------------------------
+begin
+
+     if (AmpNumber < 0) or (AmpNumber >= MaxAmplifiers) then begin
+        Result := 1.0 ;
+        Exit ;
+        end ;
+
+     if GetClampMode(AmpNumber) = amVoltageClamp then begin
+        Result := GetVoltageCommandScaleFactor(FVoltageCommandChannel[AmpNumber]) ;
+        end
+        else begin
+        Result := GetCurrentCommandScaleFactor(FCurrentCommandChannel[AmpNumber]) ;
+        end ;
+     end ;
+
+
 function  TAmplifier.GetVoltageCommandChannel(
-          AmpNumber : Integer )
+          AOChan : Integer )
            : Integer  ;
 // ----------------------------------------
 // Get voltage command output channel
 // ----------------------------------------
 begin
-     if (AmpNumber >= 0) and (AmpNumber <= MaxAmplifiers) then  begin
-        Result := FVoltageCommandChannel[AmpNumber] ;
+     if (AOChan >= 0) and (AOChan <= MaxAmplifiers) then  begin
+        Result := FVoltageCommandChannel[AOChan] ;
         end
      else Result := 0 ;
      end ;
 
 
 function  TAmplifier.GetCurrentCommandChannel(
-          AmpNumber : Integer )
+          AOChan : Integer )
            : Integer  ;
 // ----------------------------------------
 // Get voltage command output channel
 // ----------------------------------------
 begin
-     if (AmpNumber >= 0) and (AmpNumber <= MaxAmplifiers) then  begin
-        Result := FCurrentCommandChannel[AmpNumber] ;
+     if (AOChan >= 0) and (AOChan <= MaxAmplifiers) then  begin
+        Result := FCurrentCommandChannel[AOChan] ;
         end
      else Result := 0 ;
      end ;
