@@ -350,11 +350,10 @@ begin
 
      try
 
-
         { Open new pClamp file }
         FileHandle := FileCreate( FileName ) ;
         if FileHandle < 0 then begin
-           MessageDlg('Cannot create file ' + FileName, mtError,[mbOK],0) ;
+           ShowMessage('Cannot create file ' + FileName) ;
            OK := False ;
            end ;
 
@@ -611,7 +610,7 @@ begin
           FileSeek( FileHandle, 0, 0 ) ;
           if FileWrite(FileHandle,pc6Header^,Sizeof(pc6Header^))
              <> Sizeof(pc6Header^) then
-             MessageDlg( 'Error writing to ' + FileName,mtWarning, [mbOK], 0 ) ;
+             sHowMessage( 'Error writing to ' + FileName) ;
 
           { Copy signal records from WinEDR to Axon data file }
 
@@ -677,7 +676,7 @@ begin
           FileSeek( FileHandle, 0, 0 ) ;
           if FileWrite(FileHandle,pc6Header^,Sizeof(pc6Header^))
              <> Sizeof(pc6Header^) then
-             MessageDlg( 'Error writing to file.',mtWarning, [mbOK], 0 ) ;
+             ShowMessage( 'Error writing to file.') ;
 
           WriteToLogFile( 'File : ' + CdrFH.FileName ) ;
           WriteToLogFile( 'converted to Axon (ABF) file : ' + FileName ) ;
@@ -789,7 +788,7 @@ begin
            FileHandle := FileOpen( FileName, fmOpenRead ) ;
            if FileHandle < 0 then begin
               OK := False ;
-              MessageDlg( 'Unable to open ' + FileName ,mtWarning, [mbOK], 0) ;
+              ShowMessage( 'Unable to open ' + FileName) ;
               end ;
            end ;
 
@@ -798,7 +797,7 @@ begin
            FileSeek( FileHandle, 0, 0 ) ;
            if FileRead(FileHandle,CFSFileHeader,Sizeof(CFSFileHeader))
               <> Sizeof(CFSFileHeader) then begin
-              MessageDlg( FileName + ' - CFS Header unreadable',mtWarning, [mbOK], 0) ;
+              ShowMessage( FileName + ' - CFS Header unreadable') ;
               OK := False ;
               end ;
            end ;
@@ -809,7 +808,7 @@ begin
            for i := 1 to High(CFSFileHeader.Marker) do
                s := s + CFSFileHeader.Marker[i] ;
            if Pos('CEDFILE',s) = 0 then begin
-              MessageDlg( FileName + ' : Not a CFS data file',mtWarning,[mbOK],0) ;
+              ShowMessage( FileName + ' : Not a CFS data file') ;
               OK := False ;
               end ;
            end ;
@@ -818,9 +817,8 @@ begin
         if OK then begin
             { No. of analog input channels held in file }
             if CFSFileHeader.DataChans > (ChannelLimit+1) then
-               MessageDlg( format('Input channels 7-%d ignored',
-                                         [CFSFileHeader.DataChans-1]),
-                                         mtWarning, [mbOK], 0 ) ;
+               ShowMessage( format('Input channels 7-%d ignored',
+                                         [CFSFileHeader.DataChans-1]) ) ;
             { Number of analog input channels }
             CdrFH.NumChannels := IntLimitTo( CFSFileHeader.DataChans,
                                              1, ChannelLimit+1 ) ;
@@ -860,9 +858,8 @@ begin
 
                    SampleSpacing[Ch] := ChannelDef.dSpacing ;
                    end
-                else MessageDlg(
-                     format( 'Ch.%d definition record unreadable',[Ch]),
-                    mtWarning, [mbOK], 0 ) ;
+                else ShowMessage(
+                     format( 'Ch.%d definition record unreadable',[Ch]));
                 end ;
             end ;
 
@@ -1150,7 +1147,7 @@ Const
      NumBytesPerRecord = NumSamplesPerRecord*2 ;
 
 var
-   StartAt,i,j,ch,NumBufsDone,NumBufsToCopy : Integer ;
+   StartAt,i,j,NumBufsDone,NumBufsToCopy : Integer ;
    FileHandle : Integer ;
    OK,Done : Boolean ;
    Buf : ^TSmallIntArray ;
@@ -1166,7 +1163,7 @@ begin
         { Open new LDT file }
         FileHandle := FileCreate( FileName ) ;
         if FileHandle < 0 then begin
-           MessageDlg('Cannot create file ' + FileName, mtError,[mbOK],0) ;
+           ShowMessage('Cannot create file ' + FileName) ;
            OK := False ;
            end ;
 
@@ -1185,7 +1182,7 @@ begin
            { Write file header block }
            if FileWrite(FileHandle,LDTFileHeader,SizeOf(LDTFileHeader))
               <> SizeOf(LDTFileHeader) then begin
-              MessageDlg('Unable to write LDT file header ', mtError,[mbOK],0) ;
+              ShowMessage('Unable to write LDT file header ') ;
               OK := False ;
               end ;
            end ;

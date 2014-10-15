@@ -444,7 +444,7 @@ begin
         { Open import file }
         FileHandle := FileOpen( FileName, fmOpenRead ) ;
         if FileHandle < 0 then begin
-           MessageDlg(' Unable to open' + FileName, mtWarning, [mbOK], 0 ) ;
+           ShowMessage(' Unable to open' + FileName ) ;
            OK := False ;
            end ;
 
