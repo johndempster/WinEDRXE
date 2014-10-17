@@ -311,6 +311,8 @@ unit Mdiform;
                    Amplifier settings no longer loaded from edr.ini file to avoid interference with
                    amplifier settings.xml
    V3.5.0 15.10.14 Heka ITC-18 supported updated
+   V3.5.1 17.10.14 Settings.ADCVoltageRangeIndex no longer used to store selected A/D voltage range
+                   A/D voltage range no longer reset to 10V when Record to Disk opened
   =======================================================================}
 
 interface
@@ -539,7 +541,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.5.0' ;
+     Version := 'V3.5.1' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
@@ -597,7 +599,7 @@ begin
      Settings.LaboratoryInterface := NoInterface12 ;
      Settings.DeviceNumber := 1 ;
      Settings.ADCSamplingInterval := 0.001 ;
-     Settings.ADCVoltageRangeIndex := 0 ;
+     //Settings.ADCVoltageRangeIndex := 0 ;
      Settings.NumChannels := 1 ;
 
      Settings.TriggerMode := 'F' ;

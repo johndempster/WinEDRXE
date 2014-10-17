@@ -54,6 +54,7 @@ unit Fileio;
   14.08.14 .. .log files now saved in C:\Users\Public\Documents\WinEDR instead of programs folder
   18.09.14 .. Amplifier settings no longer loaded from edr.ini file to avoid interference with
               amplifier settings.xml
+  17.10.14 ... Settings.ADCVoltageRangeIndex no longer used to store selected A/D voltage range
   }
 
 
@@ -504,7 +505,7 @@ procedure LoadInitializationFile( const IniFileName : string ) ;
 var
    Header : array[1..IniFileHeaderSize] of ANSIchar ;
    IniFileHandle : Integer ;
-   i,ch,iValue : Integer ;
+   i : Integer ;
 begin
 
      if not FileExists( IniFileName ) then Exit ;
@@ -629,8 +630,8 @@ begin
      ReadInt( Header, 'STUSE=', Settings.SealTest.Use ) ;
      ReadLogical( Header, 'STASC=', Settings.SealTest.AutoScale ) ;
 
-     Settings.ADCVoltageRangeIndex := 0 ;
-     ReadInt( Header, 'ADVRI=', Settings.ADCVoltageRangeIndex ) ;
+     //Settings.ADCVoltageRangeIndex := 0 ;
+     //ReadInt( Header, 'ADVRI=', Settings.ADCVoltageRangeIndex ) ;
 
      ReadFloat( Header, 'DT=', Settings.ADCSamplingInterval );
 
@@ -846,7 +847,7 @@ begin
      AppendLogical( Header, 'STASC=', Settings.SealTest.AutoScale ) ;
 
      AppendInt( Header, 'NC=', Settings.NumChannels ) ;
-     AppendInt( Header, 'ADVRI=', Settings.ADCVoltageRangeIndex ) ;
+     //AppendInt( Header, 'ADVRI=', Settings.ADCVoltageRangeIndex ) ;
      AppendFloat( Header, 'DT=', Settings.ADCSamplingInterval ) ;
 
      { Width/height of clipboard bitmaps }

@@ -78,6 +78,7 @@ unit Sealtest;
   15.02.13 .. Page showing Rm,Ra,Cm now displayed as alternative to Gm,Ga,Cm
               Resistance/cell membrane parameters smoothing factor can now be set by user
   15.09.14 ... EPC9 panel now opened when form opened (if Heka EPC9/10)
+  17.10.14 ... Settings.ADCVoltageRangeIndex no longer used to store selected A/D voltage range
   ==================================================}
 
 interface

@@ -73,6 +73,7 @@ unit Rec;
   30.06.14 ... StimulusAvailable now set from SESLabIO.DACAvailableWhileADCActive
                Recording progress displayed in window caption
   15.09.14 ... EPC9 panel now opened when form opened (if Heka EPC9/10)
+  17.10.14 ... Settings.ADCVoltageRangeIndex no longer used to store selected A/D voltage range
   ==============================================================================}
 interface
 
@@ -550,7 +551,7 @@ begin
      Main.SESLabIO.ADCExternalTriggerActiveHigh := Settings.ExternalTriggerActiveHigh ;
      rbExtTriggerHigh.Checked := Main.SESLabIO.ADCExternalTriggerActiveHigh ;
      // Set voltage range
-     Main.SESLabIO.ADCVoltageRangeIndex := Settings.ADCVoltageRangeIndex ;
+     //Main.SESLabIO.ADCVoltageRangeIndex := Settings.ADCVoltageRangeIndex ;
 
      { If a CED 1902 is in use, update its settings }
      for i := 1 to 2 do begin
@@ -1217,7 +1218,7 @@ begin
      Main.SESLabIO.ADCStop ;
      Main.SESLabIO.ADCNumChannels := Settings.NumChannels ;
      Main.SESLabIO.ADCSamplingInterval := Settings.ADCSamplingInterval ;
-     Main.SESLabIO.ADCVoltageRangeIndex := Settings.ADCVoltageRangeIndex ;
+     //Main.SESLabIO.ADCVoltageRangeIndex := Settings.ADCVoltageRangeIndex ;
 
      // Ensure timer interval is long enough to capture some samples
      Timer.Interval := Max(Round(Main.SESLabIO.ADCNumChannels*Main.SESLabIO.ADCSamplingInterval*4000.0),55) ;
@@ -1284,7 +1285,7 @@ begin
      Main.SESLabIO.ADCNumChannels := Settings.NumChannels ;
      Main.SESLabIO.ADCNumSamples := WriteBufs.NumScans ;
      Main.SESLabIO.ADCSamplingInterval := Settings.ADCSamplingInterval ;
-     Main.SESLabIO.ADCVoltageRangeIndex := Settings.ADCVoltageRangeIndex ;
+     //Main.SESLabIO.ADCVoltageRangeIndex := Settings.ADCVoltageRangeIndex ;
 
      // Set A/D sweep triggering
      if not ExtTrigger then Main.SESLabIO.ADCTriggerMode := tmFreeRun
