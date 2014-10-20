@@ -313,6 +313,7 @@ unit Mdiform;
    V3.5.0 15.10.14 Heka ITC-18 supported updated
    V3.5.1 17.10.14 Settings.ADCVoltageRangeIndex no longer used to store selected A/D voltage range
                    A/D voltage range no longer reset to 10V when Record to Disk opened
+   V3.5.2          SESLabIO.pas Digidata 1320 D/A update timing error fixed???
   =======================================================================}
 
 interface
@@ -541,7 +542,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.5.1' ;
+     Version := 'V3.5.2' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
