@@ -314,6 +314,7 @@ unit Mdiform;
    V3.5.1 17.10.14 Settings.ADCVoltageRangeIndex no longer used to store selected A/D voltage range
                    A/D voltage range no longer reset to 10V when Record to Disk opened
    V3.5.2          SESLabIO.pas Digidata 1320 D/A update timing error fixed???
+   V3.5.3 03.12.14 ImportFromDataFile() now allocates a single large buffer to import file record
   =======================================================================}
 
 interface
@@ -542,7 +543,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.5.2' ;
+     Version := 'V3.5.3' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
@@ -2077,12 +2078,9 @@ var
    FileName : String ;
    FileType : TADCDataFileType ;
    i : Integer ;
-   Buf : Array[0..NumScansPerBuf*(EDRChannelLimit+1)-1] of SmallInt ;
-   NumScans : Integer ;
+   Buf : PSmallIntArray ;
    NumScansTotal : Integer ;
-   NumScansToRead : Integer ;
    NumRead : Integer ;
-   NumWrite : Integer ;
    iRec,ch : Integer ;
 begin
 
@@ -2182,7 +2180,6 @@ begin
      if not CreateNewDataFile( CdrFH ) then Exit ;
 
      CdrFH.NumChannels := Main.ImportFile.NumChannelsPerScan ;
-     //NumSamplesPerBuf := NumScansPerBuf*Main.ImportFile.NumChannelsPerScan ;
 
      // Reset display magnification
      for ch := 0 to EDRChannelLimit do begin
@@ -2192,6 +2189,9 @@ begin
          end ;
 
      CdrFH.IdentLine := Main.ImportFile.IdentLine ;
+
+     // Allocate buffer
+     GetMem( Buf, Main.ImportFile.NumScansPerRecord*Main.ImportFile.NumChannelsPerScan*2 ) ;
 
      { Copy records }
      NumScansTotal := 0 ;
@@ -2212,41 +2212,32 @@ begin
          CdrFH.dt := Main.ImportFile.ScanInterval ;
          CdrFH.ADCVoltageRange := Main.ImportFile.ChannelADCVoltageRange[0] ;
 
-         NumScans := 0 ;
-         NumScansToRead := Main.ImportFile.NumScansPerRecord ;
-         while NumScansToRead > 0 do begin
+         NumRead := Main.ImportFile.LoadADCBuffer( 0, Main.ImportFile.NumScansPerRecord, Buf^ ) ;
+         if NumRead <= 0 then Break ;
 
-             // Read A/D sample from source file
-             for i := 0 to High(Buf) do Buf[i] := 0 ;
-             NumRead := Main.ImportFile.LoadADCBuffer( NumScans, NumScansPerBuf, Buf ) ;
-             if NumRead <= 0 then Break ;
-
-             // Correct calibration factor for any differences between
-             for ch := 0 to Main.ImportFile.NumChannelsPerScan-1 do begin
-                 Channel[ch].ADCCalibrationFactor := Main.ImportFile.ChannelCalibrationFactor[ch]*
-                                                     (Main.ImportFile.ChannelADCVoltageRange[0]/
-                                                      Main.ImportFile.ChannelADCVoltageRange[ch])  ;
-                 end ;
-
-             { Write A/D samples to EDR file }
-             NumWrite := Min(NumRead,NumScansToRead) ;
-             WriteCDRBuffer( CdrFH,NumScansTotal,Buf,NumWrite ) ;
-
-             NumScans := NumScans + NumRead ;
-             NumScansToRead := NumScansToRead - NumRead ;
-             NumScansTotal := NumScansTotal + NumWrite ;
-
-             // Report progress
-             Main.StatusBar.SimpleText := format(
-             ' IMPORT: Importing %d/%d (%d channel) scans from record %d/%d from %s ',
-             [NumScans,
-              Main.ImportFile.NumScansPerRecord,
-              Main.ImportFile.NumChannelsPerScan,
-              iRec,Main.ImportFile.NumRecords,FileName]) ;
-
+         // Correct calibration factor for any differences between
+         for ch := 0 to Main.ImportFile.NumChannelsPerScan-1 do begin
+             Channel[ch].ADCCalibrationFactor := Main.ImportFile.ChannelCalibrationFactor[ch]*
+                                                 (Main.ImportFile.ChannelADCVoltageRange[0]/
+                                                  Main.ImportFile.ChannelADCVoltageRange[ch])  ;
              end ;
 
+         { Write A/D samples to EDR file }
+         WriteCDRBuffer( CdrFH,NumScansTotal,Buf^,NumRead ) ;
+
+         NumScansTotal := NumScansTotal + NumRead ;
+
+         // Report progress
+         Main.StatusBar.SimpleText := format(
+         ' IMPORT: Importing %d/%d (%d channel) scans from record %d/%d from %s ',
+         [NumRead,
+          Main.ImportFile.NumScansPerRecord,
+          Main.ImportFile.NumChannelsPerScan,
+          iRec,Main.ImportFile.NumRecords,FileName]) ;
+
          end ;
+
+     FreeMem(Buf) ;
 
      CDRfH.NumSamplesInFile := NumScansTotal*CdrFH.NumChannels ;
      for ch := 0 to CdrFH.NumChannels-1 do
