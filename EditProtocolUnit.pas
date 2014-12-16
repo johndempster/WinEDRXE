@@ -13,7 +13,8 @@ unit EditProtocolUnit;
 // 11.06.12 Recording parameters table now filled correctly when no default protocol exists
 //          Opened and Saved protocols now selected as default protocol if none already defined
 // 06.07.12 Modified from EditProtocolUnit from WinWCP
-// 19.11.13 SetCurrentDir() now ensure file dialog box opens in correct directory 
+// 19.11.13 SetCurrentDir() now ensure file dialog box opens in correct directory
+// 12.12.14 Changes to element parameters no longer lost when a new element dropped on waveform palette
 
 interface
 
@@ -1200,6 +1201,9 @@ procedure TEditProtocolFrm.AO00DragDrop(Sender, Source: TObject; X,
   Accept analogue waveform tool dropped on to waveform icon
   ------------------------------------------------------------}
 begin
+     // Ensure currently changed element is updated.
+     UpdateStimulusElement( SelectedStimulusElement ) ;
+
      if  TImage(Source).Picture.Height = TImage(Sender).Picture.Height then begin
         TIMage(Sender).Picture := TImage(Source).Picture ;
         Prot.Stimulus[TImage(Sender).Tag].WaveShape := TImage(Source).Tag ;

@@ -99,7 +99,7 @@ unit AmpModule;
 //          and Amplifier.VoltageCommandScaleFactor and Amplifier.CurrentCommandScaleFactor now indexed by
 //          Amplifier.VoltageCommandChannel and Amplifier.CurrentCommandChannel (rather than AmpNumber)
 //          Now permits correct Axoclamp 2 current channel scaling factor to be recognised.
-
+// 16.12.14 .ResetMultiClamp700 added (closes link forcing it to be reestablished)
 
 interface
 
@@ -695,6 +695,7 @@ TAXC_GetHeadstageType = function(
           ) ;
 
     procedure OpenMultiClamp ;
+
     function GetMultiClampGain(
          AmpNumber : Integer ) : single ;
     function GetMultiClampMode(
@@ -1076,7 +1077,7 @@ TAXC_GetHeadstageType = function(
     function AmpNumberOfChannel( iChan : Integer ) : Integer ;
     function IsPrimaryChannel(iChan : Integer ) : Boolean ;
     function IsSecondaryChannel(iChan : Integer ) : Boolean ;
-
+    procedure ResetMultiClamp700 ;
     procedure LoadFromXMLFile( FileName : String ) ;
     procedure SaveToXMLFile( FileName : String ;
                              AppendData : Boolean ) ;
@@ -3718,6 +3719,26 @@ begin
 
     MCConnectionOpen := True ;
 
+    end ;
+
+
+procedure TAmplifier.ResetMultiClamp700 ;
+// ---------------------------------------------------------------------------------
+// Close Multiclamp 700A/B which forces the communications link to be resestablished
+// ---------------------------------------------------------------------------------
+var
+    i : Cardinal ;
+begin
+    // Close an open Multiclamp 700 telegraph connection
+    if MCConnectionOpen then begin
+       if MCNumChannels > 0 then begin
+       for i := 0 to MCNumChannels-1 do begin
+           if not PostMessage( HWND_BROADCAST, MCCloseMessageID, Application.Handle, MCChannels[i] )
+           then ShowMessage( 'Multi-Clamp Commander(Failed to close channel)' ) ;
+           end ;
+       end ;
+       MCConnectionOpen := False ;
+       end ;
     end ;
 
 

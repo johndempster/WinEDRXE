@@ -43,6 +43,8 @@ unit SingleChanAnal;
                Max. no. of bins in histogram increased to 4000.
                Initial guesses for gaussian fits improved
                Stability plots now only plot complete averaging blocks.
+  16.12.14 ... Event + Amps added to Export Events options. Export event amplitude and standard deviation
+               Avg vs Closed times and Avg vs dwell times plots added Summary/Stability plot pages
               }
 
 interface
@@ -52,7 +54,7 @@ uses
   Forms, Dialogs, ExtCtrls, StdCtrls, Spin, TabNotBk, printers, ClipBrd,
   global, shared, maths, fileio, Grids, setfitpa, strutils,
   RangeEdit, ValEdit, ScopeDisplay, XYPlotDisplay, ValidatedEdit, Log, Math,
-  ComCtrls, HTMLLabel, Menus ;
+  ComCtrls, HTMLLabel, Menus, UITypes ;
 
 type
 
@@ -90,6 +92,8 @@ type
                       stOpenTimes,
                       stChannelCurrents,
                       stAvgVsOpenTimes,
+                      stAvgVsClosedTimes,
+                      stAvgVsDwellTimes,
                       stSummary,
                       stCursorAverage,
                       stCursorDuration,
@@ -276,6 +280,7 @@ type
     Label25: TLabel;
     PopupMenu1: TPopupMenu;
     ckEnableCursorMeasurement: TCheckBox;
+    rbEventAmplitudes: TRadioButton;
     procedure FormShow(Sender: TObject);
     procedure sbDetDisplayChange(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -417,10 +422,11 @@ type
               RegionSize : Integer ;
               DivideFactor : single
               ) ;
-   procedure StateAverageVsOpenTime(
-             StartAt : Integer ;
-             EndAt : Integer
-             ) ;
+   procedure StateAverageVsDwellTime(
+           StartAt : Integer ;        // Event No. to start at [In]
+           EndAt : Integer ;          // Event No. to end at [In]
+           PlotType : TStabPlotType   // Avg. vs. Plot type Open/Closed/Dwell time
+           ) ;
 
    procedure SummaryTable(
              StartAt : Integer ;
@@ -1881,6 +1887,7 @@ begin
     Settings.DwellTimes.TCritical := edTCritical.Value ;
     NumOpeningsPerBurst := 0 ;
     EventNum := DwellTHist.StartAt ;
+    LastOpenTime := 0.0 ;
     Done := False ;
 
     while not Done do begin
@@ -1922,7 +1929,7 @@ begin
      { Get the name of a data file from user }
      OpenDialog.options := [ofPathMustExist] ;
      OpenDialog.DefaultExt := '.txt' ;
-     OpenDialog.Filter := ' Text Files (*%.txt)|*.txt' ;
+     OpenDialog.Filter := ' Text Files (*.txt)|*.txt' ;
      OpenDialog.Title := 'Open dwell times file' ;
 
      if OpenDialog.execute then begin
@@ -1953,7 +1960,7 @@ begin
      { Get the name of a data file from user }
      OpenDialog.options := [ofPathMustExist] ;
      OpenDialog.DefaultExt := '.txt' ;
-     OpenDialog.Filter := ' Text Files (*%.txt)|*.txt' ;
+     OpenDialog.Filter := ' Text Files (*.txt)|*.txt' ;
      OpenDialog.Title := 'Open dwell time histogram file' ;
 
      if OpenDialog.execute then begin
@@ -3031,7 +3038,9 @@ begin
           stOpenProb :    MeanCurrentStabPlot( StartAt, EndAt, BlockSize,
                                                Settings.DwellTimes.UnitCurrent*
                                                edStabPlotNumChannels.Value ) ;
-          stAvgVsOpenTimes : StateAverageVsOpenTime( StartAt, EndAt ) ;
+          stAvgVsOpenTimes : StateAverageVsDwellTime( StartAt, EndAt, stAvgVsOpenTimes) ;
+          stAvgVsClosedTimes : StateAverageVsDwellTime( StartAt, EndAt, stAvgVsClosedTimes) ;
+          stAvgVsDwellTimes : StateAverageVsDwellTime( StartAt, EndAt, stAvgVsDwellTimes) ;
           stSummary : SummaryTable( StartAt, EndAt ) ;
           stCursorAverage,
           stCursorDuration,
@@ -3439,9 +3448,10 @@ begin
     end ;
 
 
-procedure TSingleChanAnalFrm.StateAverageVsOpenTime(
-           StartAt : Integer ;       { Event No. to start at [In] }
-           EndAt : Integer           { Event No. to end at [In] }
+procedure TSingleChanAnalFrm.StateAverageVsDwellTime(
+           StartAt : Integer ;        // Event No. to start at [In]
+           EndAt : Integer ;          // Event No. to end at [In]
+           PlotType : TStabPlotType   // Avg. vs. Plot type Open/Closed/Dwell time
            ) ;
 
 { ------------------------------------------
@@ -3453,6 +3463,7 @@ var
    AverageAmplitude, StDev : Single ;
    xCurs,yCurs : Single ;
    NumPoints : Integer ;
+   UseEvent : Boolean ;
 begin
 
      Settings.DwellTimes.EventRangeLo := Round(edStabPlotRange.LoValue) ;
@@ -3477,8 +3488,16 @@ begin
          ReadEventFromFile( EventFile, EventNum, Event ) ;
          if (not Event.Available) or (not bAbortStabPlot.Enabled) then Break ;
 
-         { Extract samples associated with event and add to histogram }
-         if (not Event.Ignore) and (Event.ChannelState = 1) then begin
+         // Select event
+         UseEvent := False ;
+         case PlotType of
+             stAvgVsOpenTimes : if (not Event.Ignore) and (Event.ChannelState = 1) then UseEvent := True ;
+             stAvgVsClosedTimes : if (not Event.Ignore) and (Event.ChannelState = 0) then UseEvent := True ;
+             stAvgVsDwellTimes : if not Event.Ignore then UseEvent := True ;
+             end;
+
+         // Extract samples associated with event and add to histogram
+         if UseEvent then begin
             // Calculate average and add to plot
             if AverageEventAmplitude( Event, AverageAmplitude, StDev ) then begin
                plStabPlot.AddPoint( 0, Event.Duration*1000.0, AverageAmplitude ) ;
@@ -3488,7 +3507,7 @@ begin
 
          { Report progress }
          Main.StatusBar.SimpleText := format(
-         ' Single-channel Analysis : Average open time plot Event %d/%d',
+         ' Single-channel Analysis : Average open/closed/dwell time plot Event %d/%d',
          [EventNum,EndAt] ) ;
 
          { Allow other events to be serviced }
@@ -3760,6 +3779,8 @@ begin
         cbStabPlotType.Items.AddObject( 'Open times', TObject(stOpenTimes) ) ;
         cbStabPlotType.Items.AddObject( 'Single-channel currents', TObject(stChannelCurrents) ) ;
         cbStabPlotType.Items.AddObject( 'Current vs Open times', TObject(stAvgVsOpenTimes) ) ;
+        cbStabPlotType.Items.AddObject( 'Current vs Closed times', TObject(stAvgVsClosedTimes) ) ;
+        cbStabPlotType.Items.AddObject( 'Current vs Dwell times', TObject(stAvgVsDwellTimes) ) ;
         cbStabPlotType.Items.AddObject( 'Summary table', TObject(stSummary) ) ;
         end ;
 
@@ -3794,7 +3815,7 @@ begin
              bUseCursorsForStabPlotRange.Enabled := False ;
              end ;
 
-          stAvgVsOpenTimes : begin
+          stAvgVsOpenTimes,stAvgVsClosedTimes,stAvgVsDwellTimes : begin
              StabPlotBlockSizePanel.Visible := False ;
              StabPlotTCriticalPanel.Visible := False ;
              StabPlotNumChannelsPanel.Visible := False ;
@@ -4961,9 +4982,9 @@ begin
         if AmpFunc.Equation = None then OK := False ;
 
         { Copy data into fitting array }
+        nFit := 0 ;
         if OK then begin
 
-           nFit := 0 ;
            { Lower and upper x data limit set by display cursors }
            iStart := plAmpHist.FindNearestIndex( 0, AmpCurs.C0 ) ;
            iEnd :=   plAmpHist.FindNearestIndex( 0, AmpCurs.C1 ) ;
@@ -5135,7 +5156,7 @@ begin
      { Get the name of a data file from user }
      OpenDialog.options := [ofPathMustExist] ;
      OpenDialog.DefaultExt := '.txt' ;
-     OpenDialog.Filter := ' Text Files (*%.txt)|*.txt' ;
+     OpenDialog.Filter := ' Text Files (*.txt)|*.txt' ;
      OpenDialog.Title := 'Open amplitudes file';
 
      if not OpenDialog.execute then Exit ;
@@ -5340,13 +5361,14 @@ begin
      // Get the name of a data file to hold ezported data
      SaveDialog.options := [ofPathMustExist] ;
      SaveDialog.DefaultExt := '.txt' ;
-     SaveDialog.Filter := ' Text Files (*%.txt)|*.txt' ;
+     SaveDialog.Filter := ' Text Files (*.txt)|*.txt' ;
      SaveDialog.Title := 'Save data file';
 
      // Default file name
      SaveDialog.FileName := ChangeFileExt( CDRFH.FileName, '.txt' ) ;
      if rbClosedTimes.Checked then FileNameEnding := ' (closed times).txt'
      else if rbOpenTimes.Checked then  FileNameEnding := ' (open times).txt'
+     else if rbEventAmplitudes.Checked then  FileNameEnding := ' (event list + amps).txt'
      else FileNameEnding := ' (event list).txt' ;
      SaveDialog.FileName := ANSIReplaceStr( SaveDialog.FileName,
                                             '.txt',
@@ -5368,7 +5390,11 @@ begin
                   WriteLn(OutFile, format( '%.6g', [Event.Duration] ))
                else if rbEventList.Checked then
                   WriteLn(OutFile, format( '%.6g%s%d',
-                           [Event.Duration,chr(9),Event.ChannelState] )) ;
+                           [Event.Duration,#9,Event.ChannelState] ))
+               else if rbEventAmplitudes.Checked then
+                  WriteLn(OutFile, format( '%.6g%s%d%s%.6g%s%.6g',
+                           [Event.Duration,#9,Event.ChannelState,#9,
+                            Event.Average,#9,sqrt(Event.Variance)] )) ;
                end ;
             end ;
         CloseFile( OutFile ) ;
@@ -5410,7 +5436,7 @@ begin
      // Get the name of a data file to hold ezported data
      SaveDialog.options := [ofPathMustExist] ;
      SaveDialog.DefaultExt := '.txt' ;
-     SaveDialog.Filter := ' Text Files (*%.txt)|*.txt' ;
+     SaveDialog.Filter := ' Text Files (*.txt)|*.txt' ;
      SaveDialog.Title := 'Save histogram data';
 
      SaveDialog.FileName := ChangeFileExt( CDRFH.FileName, '.txt' ) ;
@@ -5822,7 +5848,7 @@ begin
      // Get the name of a data file to hold ezported data
      SaveDialog.options := [ofPathMustExist] ;
      SaveDialog.DefaultExt := '.txt' ;
-     SaveDialog.Filter := ' Text Files (*%.txt)|*.txt' ;
+     SaveDialog.Filter := ' Text Files (*.txt)|*.txt' ;
      SaveDialog.Title := 'Cursor measurements file';
 
      SaveDialog.FileName := ChangeFileExt( CDRFH.FileName, '.txt' ) ;
@@ -5861,7 +5887,7 @@ begin
      // Get the name of a data file to hold ezported data
      OpenDialog.options := [ofPathMustExist] ;
      OpenDialog.DefaultExt := '.txt' ;
-     OpenDialog.Filter := ' Text Files (*%.txt)|*.txt' ;
+     OpenDialog.Filter := ' Text Files (*.txt)|*.txt' ;
      OpenDialog.Title := 'Cursor measurements file';
      OpenDialog.FileName := '' ;
 

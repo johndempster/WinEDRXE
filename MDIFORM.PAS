@@ -315,6 +315,11 @@ unit Mdiform;
                    A/D voltage range no longer reset to 10V when Record to Disk opened
    V3.5.2          SESLabIO.pas Digidata 1320 D/A update timing error fixed???
    V3.5.3 03.12.14 ImportFromDataFile() now allocates a single large buffer to import file record
+   V3.5.4 08.12.14 Current output scaling to AO1 now correct when using Axoclamp 2.
+                   Rec.pas UpdateAOHold added. AO Hold scaling and units can now handle separate voltage
+                   and current stimulation channels (e.g. Axoclamp 2)
+          12.12.14 Changes to stimulus protocol element parameters no longer lost
+                   when a new element dropped on waveform palette
   =======================================================================}
 
 interface
@@ -421,6 +426,7 @@ type
     mnInputChannelsAndAmplifiers: TMenuItem;
     SESLabIO: TSESLabIO;
     mnEPC9Panel: TMenuItem;
+    mnResetMulticlamp: TMenuItem;
     procedure mnOpenClick(Sender: TObject);
     procedure mnZoomInClick(Sender: TObject);
     procedure Exit1Click(Sender: TObject);
@@ -478,6 +484,7 @@ type
     procedure mnLaboratoryInterfaceClick(Sender: TObject);
     procedure mnInputChannelsAndAmplifiersClick(Sender: TObject);
     procedure mnEPC9Click(Sender: TObject);
+    procedure mnResetMulticlampClick(Sender: TObject);
   private
     { Private declarations }
 
@@ -543,7 +550,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.5.3' ;
+     Version := 'V3.5.4' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
@@ -1737,6 +1744,15 @@ begin
      end;
 
 
+procedure TMain.mnResetMulticlampClick(Sender: TObject);
+// -------------------------------------------
+// Reset communications with Multiclamp 700A/B
+// -------------------------------------------
+begin
+    Amplifier.ResetMultiClamp700 ;
+    end;
+
+
 procedure TMain.mnRestoreOriginalClick(Sender: TObject);
 { - Menu Item --------------------------
   Restore orginal data from back up file
@@ -2615,16 +2631,24 @@ begin
 
 procedure TMain.SetupClick(Sender: TObject);
 var
-    Amp : Integer ;
+    i : Integer ;
 begin
 
      mnVP500.Enabled := False ;
-     for Amp := 0 to 3 do
-       if Amplifier.AmplifierType[Amp] = amVP500 then mnVP500.Enabled := True ;
+     for i := 0 to 3 do
+       if Amplifier.AmplifierType[i] = amVP500 then mnVP500.Enabled := True ;
 
      mnCED1902.Enabled := False ;
-     for Amp := 0 to 3 do
-       if Amplifier.AmplifierType[Amp] = amCED1902 then mnCED1902.Enabled := True ;
+     for i := 0 to 3 do
+       if Amplifier.AmplifierType[i] = amCED1902 then mnCED1902.Enabled := True ;
+
+     // Enable/disable Multiclamp reset item
+     mnResetMulticlamp.Enabled := False ;
+     for i := 0 to 3 do begin
+         if (Amplifier.AmplifierType[i] = amMulticlamp700A) or
+            (Amplifier.AmplifierType[i] = amMulticlamp700B) then mnResetMulticlamp.Enabled := True ;
+         end;
+
      end;
 
 procedure TMain.mnDBSPanelClick(Sender: TObject);

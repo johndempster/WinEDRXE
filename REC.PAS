@@ -74,6 +74,8 @@ unit Rec;
                Recording progress displayed in window caption
   15.09.14 ... EPC9 panel now opened when form opened (if Heka EPC9/10)
   17.10.14 ... Settings.ADCVoltageRangeIndex no longer used to store selected A/D voltage range
+  11.12.14 ... UpdateAOHold added. AO Hold scaling and units can now handle separate voltage
+               and current stimulation channels (e.g. Axoclamp 2)
   ==============================================================================}
 interface
 
@@ -382,10 +384,6 @@ type
 
     ii : Integer ;
     function CheckNewDataFileNeeded : Boolean ;
-    procedure ChangeUnits(
-          var EditBox : TValidatedEdit ;
-          NewUnits : String ;
-          NewScale : Single ) ;
     procedure ShowAmplifierGains ;
     procedure StartADC ;
     procedure StartStimulator ;
@@ -424,6 +422,11 @@ type
               AONum : Integer ;
               AOTab : TTabSheet ;
               edAOHold : TValidatedEdit ) ;
+    procedure UpdateAOHold(
+              Amp : Integer ;
+              rbVClamp : TRadioButton ;
+              rbIClamp : TRadioButton  ) ;
+
 
   public
     { Public declarations }
@@ -615,21 +618,6 @@ begin
      end ;
 
 
-procedure TRecordFrm.ChangeUnits(
-          var EditBox : TValidatedEdit ;
-          NewUnits : String ;
-          NewScale : Single ) ;
-var
-    Temp : Single ;
-begin
-    Temp := EditBox.Value ;
-    EditBox.Units := NewUnits ;
-    EditBox.Scale := NewScale ;
-    EditBox.Value := Temp ;
-    end ;
-
-
-
 procedure TRecordFrm.ShowAmplifierGains ;
 // --------------------------------------
 // Show gain values for amplifiers in use
@@ -792,63 +780,78 @@ procedure TRecordFrm.DisplayClampMode ;
 // ----------------------------------
 begin
 
-   If (Amplifier.ClampMode[0] = amCurrentClamp) and
-      (Amplifier.AmplifierType[0] <> amNone) then begin
-        rbVClamp0.Checked := False ;
-        rbIClamp0.Checked := True ;
-       edAO0Hold.Units := CurrentClampUnits ;
-       edAO0Hold.Scale := CurrentClampScale*Amplifier.CommandScaleFactor[0] ;
-       end
-    else begin
-       rbVClamp0.Checked := True ;
-       rbIClamp0.Checked := False ;
-       edAO0Hold.Units := VoltageClampUnits ;
-       edAO0Hold.Scale := VoltageClampScale*Amplifier.CommandScaleFactor[0] ;
-       end ;
+   edAO0Hold.Units := 'mV' ;
+   edAO0Hold.Scale := 1000.0 ;
+   edAO1Hold.Units := 'mV' ;
+   edAO1Hold.Scale := 1000.0 ;
+   edAO2Hold.Units := 'mV' ;
+   edAO2Hold.Scale := 1000.0 ;
+   edAO3Hold.Units := 'mV' ;
+   edAO3Hold.Scale := 1000.0 ;
 
-   if (Amplifier.ClampMode[1] = amCurrentClamp) and
-      (Amplifier.AmplifierType[1] <> amNone) then begin
-        rbVClamp1.Checked := False ;
-        rbIClamp1.Checked := True ;
-        edAO1Hold.Units := CurrentClampUnits ;
-        edAO1Hold.Scale := CurrentClampScale*Amplifier.CommandScaleFactor[1] ;
-        end
-    else begin
-       rbVClamp1.Checked := True ;
-       rbIClamp1.Checked := False ;
-       edAO1Hold.Units := VoltageClampUnits ;
-        edAO1Hold.Scale := VoltageClampScale*Amplifier.CommandScaleFactor[1] ;
-        end ;
-
-   if (Amplifier.ClampMode[2] = amCurrentClamp) and
-      (Amplifier.AmplifierType[2] <> amNone) then begin
-        rbVClamp2.Checked := False ;
-        rbIClamp2.Checked := True ;
-        edAO2Hold.Units := CurrentClampUnits ;
-        edAO2Hold.Scale := CurrentClampScale*Amplifier.CommandScaleFactor[2] ;
-        end
-    else begin
-        rbVClamp2.Checked := True ;
-        rbIClamp2.Checked := False ;
-        edAO2Hold.Units := VoltageClampUnits ;
-        edAO2Hold.Scale := VoltageClampScale*Amplifier.CommandScaleFactor[2] ;
-        end ;
-
-   if (Amplifier.ClampMode[3] = amCurrentClamp) and
-      (Amplifier.AmplifierType[3] <> amNone) then begin
-        rbVClamp3.Checked := False ;
-        rbIClamp3.Checked := True ;
-        edAO3Hold.Units := CurrentClampUnits ;
-        edAO3Hold.Scale := CurrentClampScale*Amplifier.CommandScaleFactor[3] ;
-        end
-    else begin
-        rbVClamp3.Checked := True ;
-        rbIClamp3.Checked := False ;
-        edAO3Hold.Units := VoltageClampUnits ;
-        edAO3Hold.Scale := VoltageClampScale*Amplifier.CommandScaleFactor[3] ;
-        end ;
+   UpdateAOHold( 0, rbVClamp0, rbIClamp0) ;
+   UpdateAOHold( 1, rbVClamp1, rbIClamp1) ;
+   UpdateAOHold( 2, rbVClamp2, rbIClamp2) ;
+   UpdateAOHold( 3, rbVClamp3, rbIClamp3) ;
 
      end ;
+
+
+procedure TRecordFrm.UpdateAOHold(
+          Amp : Integer ;
+          rbVClamp : TRadioButton ;
+          rbIClamp : TRadioButton
+          ) ;
+// -------------------------
+// Update AO hold entry box
+// -------------------------
+var
+    Units : string ;
+    Scale : single ;
+    AOChan : Integer ;
+begin
+
+    if Amplifier.AmplifierType[Amp] = amNone then exit ;
+
+    // Units & scale
+    if Amplifier.ClampMode[Amp] = amCurrentClamp then begin
+      Units := CurrentClampUnits ;
+      AOChan := Amplifier.CurrentCommandChannel[Amp] ;
+      Scale := CurrentClampScale*Amplifier.CurrentCommandScaleFactor[AOChan] ;
+      rbVClamp.checked := False ;
+      rbIClamp.checked := True ;
+      end
+    else begin
+      Units := VoltageClampUnits ;
+      Scale := VoltageClampScale ;
+      AOChan := Amplifier.VoltageCommandChannel[Amp] ;
+      Scale := VoltageClampScale*Amplifier.VoltageCommandScaleFactor[AOChan] ;
+      rbVClamp.checked := True ;
+      rbIClamp.checked := False ;
+      end ;
+
+    // Output channel
+    case AOChan of
+        0 : begin
+          edAO0Hold.Units := Units ;
+          edAO0Hold.Scale := Scale ;
+          end ;
+        1 : begin
+          edAO1Hold.Units := Units ;
+          edAO1Hold.Scale := Scale ;
+          end ;
+        2 : begin
+          edAO2Hold.Units := Units ;
+          edAO2Hold.Scale := Scale ;
+          end ;
+        3 : begin
+          edAO3Hold.Units := Units ;
+          edAO3Hold.Scale := Scale ;
+          end ;
+
+        end;
+    end;
+
 
 
 procedure TRecordFrm.UpdateAmplifierGain ;

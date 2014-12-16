@@ -60,7 +60,7 @@ unit Fileio;
 
 interface
 
-uses shared,global,sysUtils,dialogs,math;
+uses shared,global,sysUtils,dialogs,math, windows;
 
 procedure SaveCDRHeader( var fHDR : TCDRFileHeader ) ;
 procedure GetCDRHeader( var fHDR : TCDRFileHeader ) ;

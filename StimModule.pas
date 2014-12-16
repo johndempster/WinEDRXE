@@ -52,6 +52,8 @@ unit StimModule;
   10.07.12  .RepeatedProtocol added
   12.07.12 Modified from WinWCP StimModule.pas. Now uses XML protocols
   12.02.13 Train waveshape now generate correct number of repetitions (previous n+1)
+  08.12.14 DACScaleFactor() now determines current/voltage scaling on analog channel #
+           rather than amplifier number
   =============================================}
 
 interface
@@ -1045,23 +1047,17 @@ function TStimulator.DACScaleFactor( Chan : Integer ) : Single ;
 // -----------------------------------
 var
      AmplifierDivideFactor : Single ;
-     Amp : Integer ;
 begin
 
-     AmplifierDivideFactor := 1.0 ;
-     for Amp := MaxAmplifiers-1 downto 0 do if Amplifier.AmplifierType[Amp] <> amNone then begin
-         // Get amplifier stimulus scaling factor
-         if ANSIContainsText(Prot.AOChannelUnits[Chan],'V') then begin
-            // Voltage stimulus
-            if Amplifier.VoltageCommandChannel[Amp] = Chan then
-               AmplifierDivideFactor := Amplifier.VoltageCommandScaleFactor[Amp] ;
-            end
-          else begin
-            // Current stimulus
-            if Amplifier.CurrentCommandChannel[Amp] = Chan then
-               AmplifierDivideFactor := Amplifier.CurrentCommandScaleFactor[Amp] ;
-            end ;
-          end ;
+     // Get amplifier stimulus scaling factor
+     if ANSIContainsText(Prot.AOChannelUnits[Chan],'V') then begin
+        // Voltage stimulus
+        AmplifierDivideFactor := Amplifier.VoltageCommandScaleFactor[Chan] ;
+        end
+     else begin
+        // Current stimulus
+        AmplifierDivideFactor := Amplifier.CurrentCommandScaleFactor[Chan] ;
+        end ;
 
      // Set DAC scaling factor
      Result := Main.SESLabIO.DACMaxValue/
