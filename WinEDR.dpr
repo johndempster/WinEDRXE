@@ -57,7 +57,8 @@ uses
   EditProtocolUnit in 'EditProtocolUnit.pas' {EditProtocolFrm},
   HTMLHelpViewer in '..\Components\HTMLHelpViewer.pas',
   DirectorySelectUnit in 'DirectorySelectUnit.pas' {DirectorySelectFrm},
-  EPC9PanelUnit in 'EPC9PanelUnit.pas' {EPC9PanelFrm};
+  EPC9PanelUnit in 'EPC9PanelUnit.pas' {EPC9PanelFrm},
+  MATFileWriterUnit in 'MATFileWriterUnit.pas';
 
 {$R *.TLB}
 

@@ -18,7 +18,7 @@ const
      FileVersion = 7.1 ;
      EventFileExtension = '.EDE' ;
      DataFileExtension = '.EDR' ;
-     MaxChannels = 16 ;
+     MaxChannels = 128 ;
      EDRChannelLimit = MaxChannels-1 ;
      MinDT = 1.5E-5 ;
      NumDACChannels = 2 ;
@@ -475,8 +475,8 @@ TxyBuf = class(TObject)
 TViewBuf = record
          nPoints : Integer ;
          x : array[0..1000] of Single ;
-         YMin : array[0..EDRChannelLimit,0..1000] of Integer ;
-         YMax : array[0..EDRChannelLimit,0..1000] of Integer ;
+         YMin : array[0..MaxChannels,0..1000] of Integer ;
+         YMax : array[0..MaxChannels,0..1000] of Integer ;
          tDisplay : single ;
          xMin : single ;
          xMax : single ;

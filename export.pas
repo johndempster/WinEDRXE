@@ -15,12 +15,14 @@ unit export;
   14/12/12 ... Zero level now subtracted from data when exported to ASCII text files.
   21/12/12 ... Individual channels can now be selected for export.
                Channels and record duration now added to export file name
+  10/02/15 ... No. of selectable channels increased to 32
+  12/02/15 ... Matlab export added
   }
 interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, RangeEdit, global, convert, ADCDataFile, maths, strutils, math ;
+  StdCtrls, RangeEdit, global, convert, ADCDataFile, maths, strutils, math, MatFileWriterUnit, SESLabIO, UITYpes ;
 
 type
   TExportFrm = class(TForm)
@@ -52,6 +54,31 @@ type
     rbCHT: TRadioButton;
     rbWAV: TRadioButton;
     rbIBW: TRadioButton;
+    ckCh8: TCheckBox;
+    ckCh9: TCheckBox;
+    ckCh10: TCheckBox;
+    ckCh11: TCheckBox;
+    ckCh12: TCheckBox;
+    ckCh13: TCheckBox;
+    ckCh14: TCheckBox;
+    ckCh15: TCheckBox;
+    ckCh16: TCheckBox;
+    ckCh17: TCheckBox;
+    ckCh18: TCheckBox;
+    ckCh19: TCheckBox;
+    ckCh20: TCheckBox;
+    ckCh21: TCheckBox;
+    ckCh22: TCheckBox;
+    ckCh23: TCheckBox;
+    ckCh24: TCheckBox;
+    ckCh25: TCheckBox;
+    ckCh26: TCheckBox;
+    ckCh27: TCheckBox;
+    ckCh28: TCheckBox;
+    ckCh29: TCheckBox;
+    ckCh30: TCheckBox;
+    ckCh31: TCheckBox;
+    rbMAT: TRadioButton;
     procedure FormShow(Sender: TObject);
     procedure bOKClick(Sender: TObject);
     procedure bChangeNameClick(Sender: TObject);
@@ -64,9 +91,15 @@ type
     { Private declarations }
     ExportFileName : string ;
     procedure SetChannel( CheckBox : TCheckBox ; ch : Integer ) ;
+    function GetChannelsInUse( var UseChannel : Array of Boolean ): Integer ;
     procedure UpdateSettings ;
     procedure ExportToFile ;
     procedure ExportToIGORFile ;
+    procedure ExportToMATFile ;
+    function CreateExportFileName(
+             FileName : string
+             ) : String ;
+
   public
     { Public declarations }
   end;
@@ -125,7 +158,8 @@ procedure TExportFrm.bOKClick(Sender: TObject);
 begin
 
     if rbIBW.Checked then ExportToIGORFile
-                     else ExportToFile ;
+    else if rbMAT.Checked then ExportToMATFile
+    else ExportToFile ;
 
     end ;
 
@@ -137,7 +171,7 @@ procedure TExportFrm.ExportToFile ;
 // Copy selected section of data file to export file
 // -------------------------------------------------
 const
-   NumScansPerBuf = 256 ;
+   NumScansPerBuf = 512 ;
 var
    StartAt,EndAt,ch,i,j,n : Integer ;
    UseChannel : Array[0..EDRChannelLimit] of Boolean ;
@@ -153,16 +187,6 @@ var
    ExportType : TADCDataFileType ;
    s : string ;
 begin
-
-     // Channels to be exported
-     UseChannel[0] :=  ckCh0.Checked ;
-     UseChannel[1] :=  ckCh1.Checked ;
-     UseChannel[2] :=  ckCh2.Checked ;
-     UseChannel[3] :=  ckCh3.Checked ;
-     UseChannel[4] :=  ckCh4.Checked ;
-     UseChannel[5] :=  ckCh5.Checked ;
-     UseChannel[6] :=  ckCh6.Checked ;
-     UseChannel[7] :=  ckCh7.Checked ;
 
      s := '[' ;
      n := 0 ;
@@ -192,6 +216,9 @@ begin
         if MessageDlg( ExportFileName + ' exists! Overwrite?!',
            mtConfirmation, [mbYes, mbNo], 0) <> mrYes then Exit ;
          end ;
+
+     // Get channels to be exported
+     GetChannelsInUse( UseChannel ) ;
 
      // Export file type
      if rbABF.Checked then ExportType := ftAxonABF
@@ -278,6 +305,56 @@ begin
 
      end;
 
+function TExportFrm.GetChannelsInUse(
+         var UseChannel : Array of Boolean ) : Integer ;
+// -------------------------------
+// Return channels to be exported
+// -------------------------------
+var
+    i,n : Integer ;
+begin
+
+     // Channels to be exported
+     for i := 0 to High(UseChannel) do UseChannel[i] := True ;
+     UseChannel[0] :=  ckCh0.Checked ;
+     UseChannel[1] :=  ckCh1.Checked ;
+     UseChannel[2] :=  ckCh2.Checked ;
+     UseChannel[3] :=  ckCh3.Checked ;
+     UseChannel[4] :=  ckCh4.Checked ;
+     UseChannel[5] :=  ckCh5.Checked ;
+     UseChannel[6] :=  ckCh6.Checked ;
+     UseChannel[7] :=  ckCh7.Checked ;
+     UseChannel[8] :=  ckCh8.Checked ;
+     UseChannel[9] :=  ckCh9.Checked ;
+     UseChannel[10] := ckCh10.Checked ;
+     UseChannel[11] := ckCh11.Checked ;
+     UseChannel[12] := ckCh12.Checked ;
+     UseChannel[13] := ckCh13.Checked ;
+     UseChannel[14] := ckCh14.Checked ;
+     UseChannel[15] := ckCh15.Checked ;
+     UseChannel[16] :=  ckCh16.Checked ;
+     UseChannel[17] :=  ckCh17.Checked ;
+     UseChannel[18] :=  ckCh18.Checked ;
+     UseChannel[19] :=  ckCh19.Checked ;
+     UseChannel[20] :=  ckCh20.Checked ;
+     UseChannel[21] :=  ckCh21.Checked ;
+     UseChannel[22] :=  ckCh22.Checked ;
+     UseChannel[23] :=  ckCh23.Checked ;
+     UseChannel[24] :=  ckCh24.Checked ;
+     UseChannel[25] :=  ckCh25.Checked ;
+     UseChannel[26] := ckCh26.Checked ;
+     UseChannel[27] := ckCh27.Checked ;
+     UseChannel[28] := ckCh28.Checked ;
+     UseChannel[29] := ckCh29.Checked ;
+     UseChannel[30] := ckCh30.Checked ;
+     UseChannel[31] := ckCh31.Checked ;
+
+     n := 0 ;
+     for i := 0 to CDRFH.NumChannels-1 do if UseChannel[i] then Inc(n) ;
+     Result := n ;
+
+     end ;
+
 
 procedure TExportFrm.ExportToIGORFile ;
 // -------------------------------------------------
@@ -299,6 +376,7 @@ var
    FileName : String ;
 begin
 
+     // Get time range to export
      if rbAllRecords.Checked then begin
         StartAt := 0 ;
         EndAt := CdrFH.NumSamplesInFile div CdrFH.NumChannels ;
@@ -314,15 +392,8 @@ begin
            mtConfirmation, [mbYes, mbNo], 0) <> mrYes then Exit ;
          end ;
 
-     // Channels to be exported
-     UseChannel[0] :=  ckCh0.Checked ;
-     UseChannel[1] :=  ckCh1.Checked ;
-     UseChannel[2] :=  ckCh2.Checked ;
-     UseChannel[3] :=  ckCh3.Checked ;
-     UseChannel[4] :=  ckCh4.Checked ;
-     UseChannel[5] :=  ckCh5.Checked ;
-     UseChannel[6] :=  ckCh6.Checked ;
-     UseChannel[7] :=  ckCh7.Checked ;
+     // Get channels to be exported
+     GetChannelsInUse( UseChannel ) ;
 
      for ch := 0 to CdrFH.NumChannels-1 do if UseChannel[ch] then begin
 
@@ -360,7 +431,7 @@ begin
          While not Done do begin
 
             // Read from buffer
-            NumScansToRead := MinInt( [NumScansToCopy,NumScansPerBuf] ) ;
+            NumScansToRead := Min(NumScansToCopy,NumScansPerBuf) ;
             NumScansRead := ReadCDRBuffer( CDRFH, InScan, InBuf, NumScansToRead ) ;
             if NumScansRead <= 0 then Done := True ;
 
@@ -398,6 +469,111 @@ begin
          end ;
 
 
+
+     end;
+
+
+procedure TExportFrm.ExportToMATFile ;
+// -------------------------------------------------
+// Copy selected records to MATLab .MAT file
+// -------------------------------------------------
+const
+    NumScansPerBuf = 100000 ;
+var
+   ch,i,j : Integer ;
+   InBuf : PSmallIntArray ;       // Source data buffer
+   YBuf : PDoubleArray ;      // Output data buffer
+   TBuf : PDoubleArray ;      // Output data buffer
+   StartAt,EndAt : Integer ;                 // Record counter
+   UseChannel : Array[0..EDRChannelLimit] of Boolean ;
+   NumChannelsExported : Integer ;
+   Writer : TMATFileWriter ;
+   NumScans,NumScansRead,NumScansToRead,NumScansToExport : Integer ;
+   FileName : String ;
+begin
+
+     // Get time range to export
+     if rbAllRecords.Checked then begin
+        StartAt := 0 ;
+        EndAt := (CdrFH.NumSamplesInFile div CdrFH.NumChannels) - 1 ;
+        end
+     else begin
+        StartAt := Round(edRange.LoValue/CdrFH.dt) ;
+        EndAt := Round(edRange.HiValue/CdrFH.dt) ;
+        end ;
+
+     // If destination file already exists, allow user to abort
+     if FileExists( ExportFileName ) then begin
+        if MessageDlg( ExportFileName + ' exists! Overwrite?!',
+           mtConfirmation, [mbYes, mbNo], 0) <> mrYes then Exit ;
+         end ;
+
+     // Get channels to be exported
+     GetChannelsInUse( UseChannel ) ;
+
+     // Add record range to file name
+     FileName := CreateExportFileName(ExportFileName) ;
+
+     // Create buffers
+     NumScansToExport := EndAt - StartAt + 1 ;
+     GetMem( InBuf, NumScansPerBuf*CDRFH.NumChannels*2 ) ;
+     GetMem( YBuf, NumScansToExport*CDRFH.NumChannels*8 ) ;
+     GetMem( TBuf, NumScansToExport*8 ) ;
+
+     // Open MAT file
+     Writer := TMATFileWriter.Create();
+     Writer.OpenMATFile( FileName ) ;
+     Writer.WriteFileHeader;
+
+     Try
+
+     // Write time vector
+     for i := 0 to NumScansToExport-1 do begin
+         TBuf^[i] := i*CDRFH.dt ;
+         end ;
+
+     // Extract channels to copy to to YBuf
+     NumScansToRead := NumScansToExport ;
+     NumChannelsExported := 0 ;
+     NumScansRead := 0 ;
+     while NumScansToRead > 0 do begin
+           NumScans := ReadCDRBuffer( CDRFH, StartAt, InBuf^,Min(NumScansToRead,NumScansPerBuf) ) ;
+           NumChannelsExported := 0 ;
+           for ch := 0 to CDRFH.NumChannels-1 do if UseChannel[ch] then begin
+               j := NumChannelsExported*NumScansToExport + NumScansRead ;
+               for i := 0 to NumScans-1 do begin
+                   YBuf^[j] := (InBuf^[(i*CDRFH.NumChannels)+Channel[ch].ChannelOffset]
+                                            - Channel[ch].ADCZero)*Channel[ch].ADCSCale ;
+                   Inc(j) ;
+                   end ;
+               Inc(NumChannelsExported) ;
+               end ;
+           NumScansToRead := NumScansToRead - NumScans ;
+           NumScansRead := NumScansRead + NumScans ;
+           if NumScansRead = 0 then NumScansToRead := 0 ;
+           StartAt := StartAt + NumScans ;
+           end ;
+
+     // Write to MAT file
+     Writer.WriteDoubleMatrixHeader('T',NumScansRead,1);
+     Writer.WriteDoubleMatrixValues( TBuf^,NumScansRead,1) ;
+     Writer.WriteDoubleMatrixHeader('Y',NumScansRead,NumChannelsExported);
+     Writer.WriteDoubleMatrixValues( YBuf^, NumScansRead,NumChannelsExported) ;
+
+     // Final Report
+     Main.StatusBar.SimpleText := format(
+     ' EXPORT: %.5g - %.5g exported to %s ',
+     [StartAt*CDRFH.dt,EndAt*CDRFH.dt,FileName]) ;
+     WriteToLogFile( Main.StatusBar.SimpleText ) ;
+
+     Finally
+        // Free allocated buffers
+        FreeMem( InBuf ) ;
+        FreeMem( YBuf ) ;
+        FreeMem( TBuf ) ;
+        // Close export data file
+        Writer.CloseMATFile;
+        end ;
 
      end;
 
@@ -466,12 +642,38 @@ begin
      SetChannel( ckCh5, 5 ) ;
      SetChannel( ckCh6, 6 ) ;
      SetChannel( ckCh7, 7 ) ;
+     SetChannel( ckCh8, 8 ) ;
+     SetChannel( ckCh9, 9 ) ;
+     SetChannel( ckCh10, 10 ) ;
+     SetChannel( ckCh11, 11 ) ;
+     SetChannel( ckCh12, 12 ) ;
+     SetChannel( ckCh13, 13 ) ;
+     SetChannel( ckCh14, 14 ) ;
+     SetChannel( ckCh15, 15 ) ;
+     SetChannel( ckCh16, 16 ) ;
+     SetChannel( ckCh17, 17 ) ;
+     SetChannel( ckCh18, 18 ) ;
+     SetChannel( ckCh19, 19 ) ;
+     SetChannel( ckCh20, 20 ) ;
+     SetChannel( ckCh21, 21 ) ;
+     SetChannel( ckCh22, 22 ) ;
+     SetChannel( ckCh23, 23) ;
+     SetChannel( ckCh24, 24 ) ;
+     SetChannel( ckCh25, 25 ) ;
+     SetChannel( ckCh26, 26 ) ;
+     SetChannel( ckCh27, 27 ) ;
+     SetChannel( ckCh28, 28 ) ;
+     SetChannel( ckCh29, 29 ) ;
+     SetChannel( ckCh30, 30 ) ;
+     SetChannel( ckCh31, 31 ) ;
+
      if rbABF.Checked then ExportFileName := ChangeFileExt( ExportFileName, '.abf' ) ;
      if rbCFS.Checked then ExportFileName := ChangeFileExt( ExportFileName, '.cfs' ) ;
      if rbASCII.Checked then ExportFileName := ChangeFileExt( ExportFileName, '.txt' ) ;
      if rbCHT.Checked then ExportFileName := ChangeFileExt( ExportFileName, '.cht' ) ;
      if rbWAV.Checked then ExportFileName := ChangeFileExt( ExportFileName, '.wav' ) ;
      if rbIBW.Checked then ExportFileName := ChangeFileExt( ExportFileName, '.ibw' ) ;
+     if rbMAT.Checked then ExportFileName := ChangeFileExt( ExportFileName, '.mat' ) ;
      if rbEDR.Checked then begin
         ExportFileName := ChangeFileExt( ExportFileName, '.edr' ) ;
         if LowerCase(ExportFileName) = LowerCase(CdrFH.FileName) then begin
@@ -503,5 +705,83 @@ begin
      UpdateSettings ;
      ChannelsGrp.Enabled := True ;
      end;
+
+
+function TExportFrm.CreateExportFileName(
+         FileName : string
+         ) : String ;
+// ---------------------------------------------------
+// Update control settings when export format changed
+// ---------------------------------------------------
+var
+    StartAt,EndAt : single ;
+begin
+
+     SetChannel( ckCh0, 0 ) ;
+     SetChannel( ckCh1, 1 ) ;
+     SetChannel( ckCh2, 2 ) ;
+     SetChannel( ckCh3, 3 ) ;
+     SetChannel( ckCh4, 4 ) ;
+     SetChannel( ckCh5, 5 ) ;
+     SetChannel( ckCh6, 6 ) ;
+     SetChannel( ckCh7, 7 ) ;
+     SetChannel( ckCh8, 8 ) ;
+     SetChannel( ckCh9, 9 ) ;
+     SetChannel( ckCh10, 10 ) ;
+     SetChannel( ckCh11, 11 ) ;
+     SetChannel( ckCh12, 12 ) ;
+     SetChannel( ckCh13, 13 ) ;
+     SetChannel( ckCh14, 14 ) ;
+     SetChannel( ckCh15, 15 ) ;
+     SetChannel( ckCh16, 16 ) ;
+     SetChannel( ckCh17, 17 ) ;
+     SetChannel( ckCh18, 18 ) ;
+     SetChannel( ckCh19, 19 ) ;
+     SetChannel( ckCh20, 20 ) ;
+     SetChannel( ckCh21, 21 ) ;
+     SetChannel( ckCh22, 22 ) ;
+     SetChannel( ckCh23, 23 ) ;
+     SetChannel( ckCh24, 24 ) ;
+     SetChannel( ckCh25, 25 ) ;
+     SetChannel( ckCh26, 26 ) ;
+     SetChannel( ckCh27, 27 ) ;
+     SetChannel( ckCh28, 28 ) ;
+     SetChannel( ckCh29, 29 ) ;
+     SetChannel( ckCh30, 30 ) ;
+     SetChannel( ckCh31, 31 ) ;
+
+     ChangeFileExt( FileName, '.tmp' ) ;
+
+     // Add record range to file name
+     if rbAllRecords.Checked then begin
+        StartAt := 0 ;
+        EndAt := (CdrFH.NumSamplesInFile div CdrFH.NumChannels)*CDRFH.dt ;
+        end
+     else begin
+        StartAt := Round(edRange.LoValue) ;
+        EndAt := Round(edRange.HiValue) ;
+        end ;
+
+     // Set file extension to .tmp to locate end of file later
+     FileName := ChangeFileExt( FileName, '.tmp' ) ;
+
+     // Add record range
+     FileName := ANSIReplaceText( FileName,
+                                  '.tmp',
+                                  format('[%.6g-%.6gs].tmp',[StartAt,EndAt]) ) ;
+
+     if rbABF.Checked then FileName := ChangeFileExt( FileName, '.abf' ) ;
+     if rbCFS.Checked then FileName := ChangeFileExt( FileName, '.cfs' ) ;
+     if rbASCII.Checked then FileName := ChangeFileExt( FileName, '.txt' ) ;
+     if rbEDR.Checked then FileName := ChangeFileExt( FileName, '.edr' ) ;
+     if rbIBW.Checked then FileName := ChangeFileExt( FileName, '.ibw' ) ;
+     if rbMAT.Checked then FileName := ChangeFileExt( FileName, '.mat' ) ;
+
+     Result := FileName ;
+     edFileName.Text := FileName ;
+
+     end ;
+
+
 
 end.

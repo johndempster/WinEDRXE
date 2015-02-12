@@ -320,6 +320,9 @@ unit Mdiform;
                    and current stimulation channels (e.g. Axoclamp 2)
           12.12.14 Changes to stimulus protocol element parameters no longer lost
                    when a new element dropped on waveform palette
+   V3.5.5 10.02.15 No. of available channels increased to 128.
+                   Buffer size of Tecella amplifiers increased to 8 Mbyte
+                   Matlab .MAT files added to list of export formats
   =======================================================================}
 
 interface
@@ -550,7 +553,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.5.4' ;
+     Version := 'V3.5.5' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
@@ -961,7 +964,7 @@ begin
      if OK then begin
         if (FileGetAttr(FileName) AND faReadOnly) <> 0 then begin
            OK := False ;
-           MessageDlg( FileName + ' is READ-ONLY. Unable to open!',mtWarning, [mbOK], 0 ) ;
+           ShowMessage( FileName + ' is READ-ONLY. Unable to open!' ) ;
            end ;
         end ;
 
@@ -980,8 +983,7 @@ begin
             UpdateMDIWindows ;
             end
         else begin
-             MessageDlg( format(' File Error =%d',[CdrFH.Filehandle]),
-                         mtWarning, [mbOK], 0 ) ;
+             ShowMessage( format(' File Error =%d',[CdrFH.Filehandle]) ) ;
              OK := False ;
              end ;
         end ;
@@ -2309,20 +2311,17 @@ begin
      if not Main.ImportFile.OpenDataFile( FileName, ftEDR ) then Exit ;
 
      if (CdrFH.NumChannels <> Main.ImportFile.NumChannelsPerScan) then begin
-        MessageDlg( 'APPEND: Unable to append files with different numbers of channels!',
-                    mtWarning, [mbOK], 0 ) ;
+        ShowMessage( 'APPEND: Unable to append files with different numbers of channels!');
         Exit ;
         end ;
 
      if Channel[0].ADCMaxValue <> Main.ImportFile.MaxADCValue then begin
-        MessageDlg( 'APPEND: Unable to append files with different A/D resolutions!',
-                    mtWarning, [mbOK], 0 ) ;
+        ShowMessage( 'APPEND: Unable to append files with different A/D resolutions!');
         Exit ;
         end ;
 
      if CDRFH.dt <> Main.ImportFile.ScanInterval then begin
-        MessageDlg( 'APPEND: Unable to append files with different sampling intervals!',
-                    mtWarning, [mbOK], 0 ) ;
+        ShowMessage( 'APPEND: Unable to append files with different sampling intervals!');
         Exit ;
         end ;
 

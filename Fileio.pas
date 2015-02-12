@@ -55,12 +55,13 @@ unit Fileio;
   18.09.14 .. Amplifier settings no longer loaded from edr.ini file to avoid interference with
               amplifier settings.xml
   17.10.14 ... Settings.ADCVoltageRangeIndex no longer used to store selected A/D voltage range
+  12.02.15 ... GetCDRHeader() now checks that NP= in header matches actual number of samples in file and allows correction.
   }
 
 
 interface
 
-uses shared,global,sysUtils,dialogs,math, windows;
+uses messages,shared,global,sysUtils,dialogs,math, windows, UITYpes  ;
 
 procedure SaveCDRHeader( var fHDR : TCDRFileHeader ) ;
 procedure GetCDRHeader( var fHDR : TCDRFileHeader ) ;
@@ -234,7 +235,7 @@ begin
      AppendInt( Header, 'DWTEVRLO=', Settings.DwellTimes.EventRangeLo ) ;
      AppendInt( Header, 'DWTEVRHI=', Settings.DwellTimes.EventRangeHi ) ;
      AppendInt( Header, 'DWTEVBLK=', Settings.DwellTimes.EventBlockSize ) ;
-     AppendInt( Header, 'DWTNCPP=', Settings.DwellTimes.NumChannelsPerPatch ) ;     
+     AppendInt( Header, 'DWTNCPP=', Settings.DwellTimes.NumChannelsPerPatch ) ;
 
      for ch := 0 to fHDR.NumChannels-1 do begin
          AppendInt( Header, format('YO%d=',[ch]), Channel[ch].ChannelOffset) ;
@@ -306,14 +307,17 @@ procedure GetCDRHeader( var fHDR : TCDRFileHeader ) ;
 var
    Header : array[1..HeaderSize] of ANSIchar ;
    i,ch,OldValue : Integer ;
-   NumMarkers : Integer ;
+   NumMarkers,NumSamplesInFile : Integer ;
    MarkerTime : Single ;
    MarkerText : String ;
+   SaveHeader : Boolean ;
 begin
 
      fHDR.FilePointer := FileSeek( fHDR.FileHandle, 0, 0 ) ;
      if FileRead( fHDR.FileHandle, Header, Sizeof(Header) )
         = Sizeof(Header) then begin
+
+          SaveHeader := False ;
 
           { Get default size of file header }
           fHDR.NumBytesInHeader := HeaderSize ;
@@ -344,14 +348,17 @@ begin
           ReadInt( Header, 'NC=', fHDR.NumChannels ) ;
 
           ReadInt( Header, 'NP=', fHDR.NumSamplesInFile ) ;
-          if fHDR.NumSamplesInFile < 0 then begin
-             fHdr.NumSamplesInFile := FileSeek( fHDR.FileHandle, 0, 2 ) ;
-             fHdr.NumSamplesInFile := (fHdr.NumSamplesInFile + 1
-                                   - fHDR.NumBytesInHeader) div 2 ;
+
+          NumSamplesInFile := (FileSeek( fHDR.FileHandle, 0, 2 ) + 1 - fHDR.NumBytesInHeader) div 2 ;
+
+          if fHDR.NumSamplesInFile <> NumSamplesInFile then begin
+             if Dialogs.MessageDlg( format(
+                'No. samples (%d) listed file header does not match actual number in file (%d)! Correct file header?',
+                [fHdr.NumSamplesInFile,NumSamplesInFile]),
+                mtConfirmation,[mbYes,mbNo], 0 ) = mrYes then fHdr.NumSamplesInFile := NumSamplesInFile ;
+                SaveHeader := True ;
              end ;
 
-          fHDR.RecordDuration := (fHDR.NumSamplesInFile*fHDR.dt) /
-                                 fHDR.NumChannels ;
           fHDR.NumSamplesPerBlock := fHDR.NumChannels*NumSamplesPerSector ;
           fHDR.NumBytesPerBlock := fHDR.NumSamplesPerBlock*2 ;
           fHDR.NumBlocksInFile := fHDR.NumSamplesInFile div fHDR.NumSamplesPerBlock ;
@@ -365,8 +372,7 @@ begin
              end ;
 
           { Time duration of recorded data }
-          fHDR.RecordDuration := (fHDR.NumSamplesInFile*fHDR.dt) /
-                                 fHDR.NumChannels ;
+          fHDR.RecordDuration := (fHDR.NumSamplesInFile*fHDR.dt) / fHDR.NumChannels ;
 
           { Event detector parameters }
           ReadInt( Header, 'DETCH=', Settings.EventDetector.Channel ) ;
@@ -384,7 +390,7 @@ begin
           ReadInt( Header, 'DETBASGAP=', Settings.EventDetector.NumBaselineGap ) ;
           ReadFloat( Header, 'DETTDECP=', Settings.EventDetector.TDecayPercent ) ;
           ReadInt( Header, 'DETDECFR=', Settings.EventDetector.TDecayFrom ) ;
-          ReadInt( Header, 'DETREW=', Settings.EventDetector.RisingEdgeWindow ) ;          
+          ReadInt( Header, 'DETREW=', Settings.EventDetector.RisingEdgeWindow ) ;
 
           ReadInt( Header, 'VARRS=', Settings.Variance.RecordSize ) ;
           ReadInt( Header, 'VAROV=', Settings.Variance.RecordOverlap ) ;
@@ -437,7 +443,6 @@ begin
               MarkerList.AddObject( MarkerText, TObject(MarkerTime) ) ;
               end ;
 
-
            { Add names of channels to list }
           ChannelNames.Clear ;
           for ch := 0 to fHDR.NumChannels-1 do
@@ -450,9 +455,11 @@ begin
           { Save the original file backed up flag }
           ReadLogical( Header, 'BAK=', fHDR.BackedUp ) ;
 
+          // Save file header to file if changes have been made
+          if SaveHeader then SaveCDRHeader( fHDR ) ;
+
           end
-     else
-          ShowMessage( ' File Header Read - Failed ' ) ;
+     else ShowMessage( ' File Header Read - Failed ' ) ;
 
      end ;
 

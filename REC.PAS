@@ -76,6 +76,7 @@ unit Rec;
   17.10.14 ... Settings.ADCVoltageRangeIndex no longer used to store selected A/D voltage range
   11.12.14 ... UpdateAOHold added. AO Hold scaling and units can now handle separate voltage
                and current stimulation channels (e.g. Axoclamp 2)
+  12.02.15 ... Now escape sample counting loop if a complete half buffer is acquired
   ==============================================================================}
 interface
 
@@ -381,7 +382,7 @@ type
     RAnalysis : TRAnalysis ; // Cell resistance analysis
 
     TLastReadout : Integer ;
-
+    nTicks : Cardinal ;
     ii : Integer ;
     function CheckNewDataFileNeeded : Boolean ;
     procedure ShowAmplifierGains ;
@@ -492,7 +493,7 @@ begin
 
      ii := 0 ;
      Initialised := False ;
-
+//     Settings.NumChannels := 4 ;
      Resize ;
 
      // Exit if no interface selected
@@ -892,18 +893,19 @@ procedure TRecordFrm.TimerTimer(Sender: TObject);
   Timed Event scheduler
   ---------------------}
 var
-   i,iEnd,NumNewScans,NewScan : Integer ;
-   iTicks : Integer ;
+   i,iEnd,NumNewScans,NewScan,np,npHalfBuf,iTicks : Integer ;
+
    FilePointer : Integer ;
    //ProcessingTime : Single ;
    StimulusTime : Single ;
 begin
 
      // Abort execution if last call still running
+
+//     outputDebugString( PChar(format('%d',[TimeGetTime-nTicks]))) ;
+     nTicks := TimeGetTime ;
      if TimerBusy then Exit ;
      TimerBusy := True ;
-
-     iTicks := TimeGetTime ;
 
      //if CDRFH.NumSamplesInFile > 0 then bUpdateGain.Enabled := False
      //                              else bUpdateGain.Enabled := True ;
@@ -911,11 +913,12 @@ begin
      if not Main.SESLabIO.ADCActive then begin
         { Start continuous A/D conversion into cyclic buffer }
         StartADC ;
+        nTicks := TimeGetTime ;
         DisplayLive( True ) ;
         Settings.NewCalculation := True ;
 
         // If recording and a stimulus is protocol selected, request its start
-        if bStop.Enabled then bStartStimulus.Click ;
+        //if bStop.Enabled then bStartStimulus.Click ;
 
         End
      else begin
@@ -926,11 +929,16 @@ begin
         Main.SESLabIO.ADCBufferRefresh ;
 
         // Find latest A/D samples
+        np := 0 ;
+        npHalfBuf := (WriteBufs.NumSamples div 2) - 1 ;
         While ((ADC^[WriteBufs.EmptyPointer] <> EmptyFlag) or
-              (ADC^[WriteBufs.EmptyPointer+1] <> -EmptyFlag)) do begin
+              (ADC^[WriteBufs.EmptyPointer+1] <> -EmptyFlag)) and
+              (np < npHalfBuf) do begin
               WriteBufs.EmptyPointer := WriteBufs.EmptyPointer + Main.SESLabIO.ADCNumChannels*2 ;
               if WriteBufs.EmptyPointer >= WriteBufs.NumSamples then
                  WriteBufs.EmptyPointer := WriteBufs.EmptyPointer - WriteBufs.NumSamples ;
+              Inc(np) ;
+
               end ;
 
         WriteBufs.LatestScan := WriteBufs.EmptyPointer - Main.SESLabIO.ADCNumChannels*4 ;
@@ -945,7 +953,7 @@ begin
              Inc(NumNewScans) ;
              end ;
 
-     //outputdebugString(PChar(format('%d %d %d',[WriteBufs.NumSamples,WriteBufs.NumSamplesPerBuf,NumNewScans]))) ;
+//     outputdebugString(PChar(format('%d %d %d',[WriteBufs.NumSamples,WriteBufs.NumSamplesPerBuf,NumNewScans]))) ;
         // Calculate computed channels
         if NumNewScans >= 2 then begin
            CalcComputedChannels ;
@@ -2286,6 +2294,7 @@ procedure TRecordFrm.FormResize(Sender: TObject);
 begin
 
      ReadOutGrp.Height := Max( ClientHeight - ReadoutGrp.Top - 5, 2) ;
+     lbReadout.Height := Max( ReadOutGrp.ClientHeight - lbReadout.Top - 5, 2) ;
      ckFixedZeroLevels.Top := ReadOutGrp.ClientHeight - ckFixedZeroLevels.Height - 2 ;
 
      StatusGrp.Top := ClientHeight - StatusGrp.Height - 5 ;
@@ -2342,8 +2351,6 @@ begin
      StopADCandDAC ;
 
      Main.SetMenus ;
-
-
 
      Action := caFree ;
 
@@ -2409,7 +2416,8 @@ begin
         UpdateAmplifierGain ;
         end ;
 
-     if not bStopStimulus.Enabled then Settings.UpdateOutputs := True ;
+     if not bStopStimulus.Enabled and
+        Main.SESLabIO.DACAvailableWhileADCActive then Settings.UpdateOutputs := True ;
 
      ckFixedZeroLevels.Checked := Settings.FixedZeroLevels ;
 
@@ -2633,9 +2641,7 @@ begin
     Settings.UpdateOutputs := False ;
     //Settings.NewCalculation := True ;
 
-     //outputdebugString(PChar(format('Write DAC0 %.4g ',[VDACS[0]]))) ;
-
-     end ;
+    end ;
 
 
 procedure TRecordFrm.edIdentChange(Sender: TObject);
