@@ -323,6 +323,9 @@ unit Mdiform;
    V3.5.5 10.02.15 No. of available channels increased to 128.
                    Buffer size of Tecella amplifiers increased to 8 Mbyte
                    Matlab .MAT files added to list of export formats
+   V3.5.6 27.04.15 Dynamic clamp control panel added
+                   Tecella Manual corrections to patch clamp current gain factors can now be applied by placing list of factors in file
+                   C:\Users\Public\Documents\SESLABIO\tecella gain correction table.txt
   =======================================================================}
 
 interface
@@ -430,6 +433,7 @@ type
     SESLabIO: TSESLabIO;
     mnEPC9Panel: TMenuItem;
     mnResetMulticlamp: TMenuItem;
+    mnDClamp: TMenuItem;
     procedure mnOpenClick(Sender: TObject);
     procedure mnZoomInClick(Sender: TObject);
     procedure Exit1Click(Sender: TObject);
@@ -488,6 +492,7 @@ type
     procedure mnInputChannelsAndAmplifiersClick(Sender: TObject);
     procedure mnEPC9Click(Sender: TObject);
     procedure mnResetMulticlampClick(Sender: TObject);
+    procedure mnDClampClick(Sender: TObject);
   private
     { Private declarations }
 
@@ -541,7 +546,7 @@ implementation
 uses export, AmpModule, Invert, EventDetector, PageView, EditMarkers,
   Import, ImportASCIIUnit, maths , ECG, ImportRawUnit, VP500Panel,
   FilePropsUnit, DBSPanelUnit, TritonPanelUnit, LabInterfaceSetup,
-  InputChannelSetup, EditProtocolUnit ;
+  InputChannelSetup, EditProtocolUnit , DCLAMPUnit;
 
 {$R *.DFM}
 
@@ -553,7 +558,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.5.5' ;
+     Version := 'V3.5.6' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
@@ -2666,6 +2671,25 @@ begin
         DBSPanelFrm.Top := 10 ;
         end ;
      end ;
+
+procedure TMain.mnDClampClick(Sender: TObject);
+// --------------------------------------------
+// Display DCLAMP - Dynamic Clamp control panel
+// --------------------------------------------
+begin
+     if FormExists( 'DCLAMPFrm' ) then begin
+        // Make form visible, active and on top
+        if DefSetFrm.WindowState = wsMinimized then DefSetFrm.WindowState := wsNormal ;
+        DCLAMPFrm.BringToFront ;
+        DCLAMPFrm.SetFocus ;
+        end
+     else begin
+        DCLAMPFrm := TDCLAMPFrm.Create(Self) ;
+        DCLAMPFrm.Top := 10 ;
+        DCLAMPFrm.Left := 10 ;
+        end ;
+
+     end;
 
 procedure TMain.mnTritonClick(Sender: TObject);
 // -------------------------------
