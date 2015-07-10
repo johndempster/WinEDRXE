@@ -326,6 +326,9 @@ unit Mdiform;
    V3.5.6 27.04.15 Dynamic clamp control panel added
                    Tecella Manual corrections to patch clamp current gain factors can now be applied by placing list of factors in file
                    C:\Users\Public\Documents\SESLABIO\tecella gain correction table.txt
+   V3.5.7 09.06.15 Multiple files can be exported. Format now selected from drop-down liat.
+   V3.5.8 10.07.15 Support for Digidata 1550 and 1550A added.
+                   Protocol Editor: Open Protocol now always opens in ..\WinEDR\stim stimulus protocol folder
   =======================================================================}
 
 interface
@@ -527,6 +530,7 @@ type
     procedure CopyAndPrintMenus( CopyEnabled,PrintEnabled : Boolean ) ;
     procedure CloseFormsAndDataFile( CloseAllForms : Boolean ) ;
     procedure LoadDataFiles( FileName : string ) ;
+    procedure CloseDataFile ;
     function CreateNewDataFile( var FHeader : TCDRFileHeader ) : Boolean ;
     procedure SetRecentFileItem( MenuItem : TMenuItem ; FileName : string ) ;
     procedure UpdateViewSig ;
@@ -535,6 +539,7 @@ type
     procedure UpdateAllDisplays ;
     function FormExists( FormName : String ) : Boolean ;
     function GetSpecialFolder(const ASpecialFolderID: Integer): string;
+
     end;
 
 var
@@ -543,10 +548,10 @@ var
 
 implementation
 
-uses export, AmpModule, Invert, EventDetector, PageView, EditMarkers,
+uses AmpModule, Invert, EventDetector, PageView, EditMarkers,
   Import, ImportASCIIUnit, maths , ECG, ImportRawUnit, VP500Panel,
   FilePropsUnit, DBSPanelUnit, TritonPanelUnit, LabInterfaceSetup,
-  InputChannelSetup, EditProtocolUnit , DCLAMPUnit;
+  InputChannelSetup, EditProtocolUnit , DCLAMPUnit, exportUnit;
 
 {$R *.DFM}
 
@@ -558,7 +563,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.5.6' ;
+     Version := 'V3.5.8' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
@@ -933,7 +938,8 @@ begin
      OpenDialog.DefaultExt := DataFileExtension ;
      if Main.DataDirectory <> '' then begin
         OpenDialog.InitialDir := Main.DataDirectory ;
-        SetCurrentDir(Main.DataDirectory) ;
+        OpenDialog.FileName := Main.DataDirectory + '*.edr' ;
+//        SetCurrentDir(Main.DataDirectory) ;
         end ;
      OpenDialog.Filter := format( ' EDR Files (*%s)|*%s',
                                   [DataFileExtension,DataFileExtension]) ;
@@ -1173,13 +1179,7 @@ begin
          end ;
 
      { Close files }
-     if  CdrFH.FileHandle >= 0 then begin
-
-         FileClose(CdrFH.FileHandle) ;
-         CdrFH.FileHandle := -1 ;
-
-
-         end ;
+     CloseDataFile ;
 
      { Allow form close messages to be processed before continuing }
      Application.ProcessMessages ;
@@ -1189,6 +1189,18 @@ begin
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
      end ;
+
+
+procedure TMain.CloseDataFile ;
+// --------------------------------
+// Close data file (if one is open)
+// --------------------------------
+begin
+     if  CdrFH.FileHandle >= 0 then begin
+         FileClose(CdrFH.FileHandle) ;
+         CdrFH.FileHandle := -1 ;
+         end ;
+     end;
 
 
 procedure TMain.UpdateRecentFilesList ;

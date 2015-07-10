@@ -18,7 +18,6 @@ uses
   SETFITPA in 'SETFITPA.PAS' {SetFitParsFrm},
   SetComp in 'SetComp.pas' {SetCompFrm},
   Digfilt in 'Digfilt.pas' {DigFilterDlg},
-  export in 'export.pas' {ExportFrm},
   Invert in 'Invert.pas' {InvertDlg},
   ftest in 'ftest.pas' {FTestFrm},
   PrintPageView in 'PrintPageView.pas' {PrintPageViewFrm},
@@ -59,7 +58,8 @@ uses
   DirectorySelectUnit in 'DirectorySelectUnit.pas' {DirectorySelectFrm},
   EPC9PanelUnit in 'EPC9PanelUnit.pas' {EPC9PanelFrm},
   MATFileWriterUnit in 'MATFileWriterUnit.pas',
-  DCLAMPUnit in 'DCLAMPUnit.pas' {DCLAMPFrm};
+  DCLAMPUnit in 'DCLAMPUnit.pas' {DCLAMPFrm},
+  exportUnit in 'exportUnit.pas' {ExportFrm};
 
 {$R *.TLB}
 
@@ -81,7 +81,6 @@ begin
   Application.CreateForm(TSetIgnoreFrm, SetIgnoreFrm);
   Application.CreateForm(TSetFitParsFrm, SetFitParsFrm);
   Application.CreateForm(TDigFilterDlg, DigFilterDlg);
-  Application.CreateForm(TExportFrm, ExportFrm);
   Application.CreateForm(TInvertDlg, InvertDlg);
   Application.CreateForm(TFTestFrm, FTestFrm);
   Application.CreateForm(TPrintPageViewFrm, PrintPageViewFrm);
@@ -92,5 +91,6 @@ begin
   Application.CreateForm(TStimulator, Stimulator);
   Application.CreateForm(TAmplifier, Amplifier);
   Application.CreateForm(TDirectorySelectFrm, DirectorySelectFrm);
+  Application.CreateForm(TExportFrm, ExportFrm);
   Application.Run;
 end.

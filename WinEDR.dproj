@@ -79,8 +79,8 @@
         <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Win32)'!=''">
-        <VerInfo_Release>6</VerInfo_Release>
-        <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=3.5.6.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+        <VerInfo_Release>8</VerInfo_Release>
+        <VerInfo_Keys>CompanyName=;FileDescription=;FileVersion=3.5.8.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProductName=;ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <VerInfo_MinorVer>5</VerInfo_MinorVer>
         <VerInfo_Locale>1033</VerInfo_Locale>
     </PropertyGroup>
@@ -131,9 +131,6 @@
         </DCCReference>
         <DCCReference Include="Digfilt.pas">
             <Form>DigFilterDlg</Form>
-        </DCCReference>
-        <DCCReference Include="export.pas">
-            <Form>ExportFrm</Form>
         </DCCReference>
         <DCCReference Include="Invert.pas">
             <Form>InvertDlg</Form>
@@ -249,6 +246,9 @@
         <DCCReference Include="MATFileWriterUnit.pas"/>
         <DCCReference Include="DCLAMPUnit.pas">
             <Form>DCLAMPFrm</Form>
+        </DCCReference>
+        <DCCReference Include="exportUnit.pas">
+            <Form>ExportFrm</Form>
         </DCCReference>
         <RidlCompile Include="WinEDR.ridl"/>
         <BuildConfiguration Include="Debug">

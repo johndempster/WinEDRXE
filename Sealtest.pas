@@ -79,6 +79,7 @@ unit Sealtest;
               Resistance/cell membrane parameters smoothing factor can now be set by user
   15.09.14 ... EPC9 panel now opened when form opened (if Heka EPC9/10)
   17.10.14 ... Settings.ADCVoltageRangeIndex no longer used to store selected A/D voltage range
+  10.07.15 .. DACScale & DACHoldLevel arrays increased to cope with up to 128 analog output channels
   ==================================================}
 
 interface
@@ -220,7 +221,7 @@ type
   ResetReadout : Boolean ;
   NumTestChannels : Integer ;
   TestPulse : TTestPulse ;
-  DACScale : Array[0..MaxAmplifiers-1] of single ;
+  DACScale : Array[0..MaxDACChannels-1] of single ;
   DACdt : Single ;
   TestDAC : Integer ;                      // DAC channel with seal test
   TimerBusy : boolean ;
@@ -288,7 +289,6 @@ implementation
 uses Mdiform, mmsystem , Rec, TritonPanelUnit;
 
 const
-     NumDACChannels = 2 ;
      NumTestSamples = 512 ;
      MinDACInterval = 0.0002 ;
      MinPulseWidth = 0.0001 ;
@@ -770,7 +770,7 @@ procedure TSealTestFrm.CreateTestPulse ;
   ----------------------------}
 var
    i,j,ch,iStart,iEnd,iOffLevel,iOnLevel : Integer ;
-   HoldDACLevel : Array[0..MaxAmplifiers-1] of Integer ;
+   HoldDACLevel : Array[0..MaxDACChannels-1] of Integer ;
 begin
 
      // Select output channel

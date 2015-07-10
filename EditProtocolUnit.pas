@@ -15,6 +15,8 @@ unit EditProtocolUnit;
 // 06.07.12 Modified from EditProtocolUnit from WinWCP
 // 19.11.13 SetCurrentDir() now ensure file dialog box opens in correct directory
 // 12.12.14 Changes to element parameters no longer lost when a new element dropped on waveform palette
+// 10.07.15 Open/SaveDialog.FileName now set to Main.VProtDirectory\*.xml file path to ensure dialog
+//          opens in that folder.
 
 interface
 
@@ -2183,10 +2185,9 @@ procedure TEditProtocolFrm.SaveProtocol ;
 begin
 
      SaveDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofPathMustExist] ;
-     SaveDialog.InitialDir := Main.VProtDirectory ;
-     SetCurrentDir(Main.VProtDirectory) ;
      SaveDialog.Title := 'Save Stimulus Protocol' ;
-     SaveDialog.FileName := '*.xml' ;
+     SaveDialog.FileName := Main.VProtDirectory + '*.xml' ;
+     SaveDialog.InitialDir := Main.VProtDirectory ;
 
      if SaveDialog.execute then begin
         FileName := SaveProtocolToXMLFile(SaveDialog.FileName) ;
@@ -2209,9 +2210,8 @@ begin
         end ;
 
      OpenDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofPathMustExist] ;
-     OpenDialog.FileName := '*.xml' ;//ExtractFileName( SaveDialog.FileName ) ;
+     OpenDialog.FileName := Main.VProtDirectory + '*.xml' ;
      OpenDialog.InitialDir := Main.VProtDirectory ;
-     SetCurrentDir(Main.VProtDirectory) ;
      OpenDialog.Title := 'Load Stimulus Protocol' ;
      if OpenDialog.execute then begin
         FileName := OpenDialog.FileName ;
@@ -2291,9 +2291,9 @@ procedure TEditProtocolFrm.bLoadFileClick(Sender: TObject);
 begin
 
      OpenWaveDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofPathMustExist] ;
-     OpenWaveDialog.FileName := '*.txt' ;//ExtractFileName( SaveDialog.FileName ) ;
+     OpenWaveDialog.FileName := Main.VProtDirectory + '*.txt' ;
      OpenWaveDialog.InitialDir := Main.VProtDirectory ;
-     SetCurrentDir(Main.VProtDirectory) ;
+//     SetCurrentDir(Main.VProtDirectory) ;
      OpenWaveDialog.Title := 'Load user-defined waveform' ;
 
      if OpenWaveDialog.execute then begin
