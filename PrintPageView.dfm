@@ -55,7 +55,7 @@ object PrintPageViewFrm: TPrintPageViewFrm
         object Label2: TLabel
           Left = 8
           Top = 52
-          Width = 21
+          Width = 20
           Height = 14
           Caption = 'Top '
           Font.Charset = DEFAULT_CHARSET
@@ -99,11 +99,11 @@ object PrintPageViewFrm: TPrintPageViewFrm
           AutoSize = False
           Text = ' 0.1 cm'
           Value = 1.000000000000000000
-          LoLimit = 1.000000000000000000
-          HiLimit = 100.000000000000000000
           Scale = 0.100000001490116100
           Units = 'cm'
           NumberFormat = '%.1f'
+          LoLimit = 1.000000000000000000
+          HiLimit = 100.000000000000000000
         end
         object edTopMargin: TValidatedEdit
           Left = 8
@@ -113,11 +113,11 @@ object PrintPageViewFrm: TPrintPageViewFrm
           AutoSize = False
           Text = ' 0.1 cm'
           Value = 1.000000000000000000
-          LoLimit = 1.000000000000000000
-          HiLimit = 100.000000000000000000
           Scale = 0.100000001490116100
           Units = 'cm'
           NumberFormat = '%.1f'
+          LoLimit = 1.000000000000000000
+          HiLimit = 100.000000000000000000
         end
         object edRightMargin: TValidatedEdit
           Left = 82
@@ -127,11 +127,11 @@ object PrintPageViewFrm: TPrintPageViewFrm
           AutoSize = False
           Text = ' 0.1 cm'
           Value = 1.000000000000000000
-          LoLimit = 1.000000000000000000
-          HiLimit = 100.000000000000000000
           Scale = 0.100000001490116100
           Units = 'cm'
           NumberFormat = '%.1f'
+          LoLimit = 1.000000000000000000
+          HiLimit = 100.000000000000000000
         end
         object edBottomMargin: TValidatedEdit
           Left = 82
@@ -141,11 +141,11 @@ object PrintPageViewFrm: TPrintPageViewFrm
           AutoSize = False
           Text = ' 0.1 cm'
           Value = 1.000000000000000000
-          LoLimit = 1.000000000000000000
-          HiLimit = 100.000000000000000000
           Scale = 0.100000001490116100
           Units = 'cm'
           NumberFormat = '%.1f'
+          LoLimit = 1.000000000000000000
+          HiLimit = 100.000000000000000000
         end
       end
     end
@@ -167,7 +167,7 @@ object PrintPageViewFrm: TPrintPageViewFrm
         ParentFont = False
         TabOrder = 0
         object Label7: TLabel
-          Left = 16
+          Left = 8
           Top = 16
           Width = 27
           Height = 14
@@ -180,7 +180,7 @@ object PrintPageViewFrm: TPrintPageViewFrm
           ParentFont = False
         end
         object Label8: TLabel
-          Left = 18
+          Left = 8
           Top = 48
           Width = 30
           Height = 14
@@ -193,32 +193,32 @@ object PrintPageViewFrm: TPrintPageViewFrm
           ParentFont = False
         end
         object edWidth: TValidatedEdit
-          Left = 58
+          Left = 46
           Top = 16
-          Width = 79
+          Width = 98
           Height = 20
           AutoSize = False
-          Text = ' 500  pixels'
+          Text = ' 500.00  pixels'
           Value = 500.000000000000000000
-          LoLimit = 100.000000000000000000
-          HiLimit = 1000000.000000000000000000
           Scale = 1.000000000000000000
           Units = 'pixels'
           NumberFormat = '%.f '
-        end
-        object edHeight: TValidatedEdit
-          Left = 56
-          Top = 48
-          Width = 84
-          Height = 20
-          AutoSize = False
-          Text = ' 400 pixels'
-          Value = 400.000000000000000000
           LoLimit = 100.000000000000000000
           HiLimit = 1000000.000000000000000000
+        end
+        object edHeight: TValidatedEdit
+          Left = 46
+          Top = 48
+          Width = 98
+          Height = 20
+          AutoSize = False
+          Text = ' 400.00 pixels'
+          Value = 400.000000000000000000
           Scale = 1.000000000000000000
           Units = 'pixels'
           NumberFormat = '%.f'
+          LoLimit = 100.000000000000000000
+          HiLimit = 1000000.000000000000000000
         end
       end
     end
@@ -237,10 +237,11 @@ object PrintPageViewFrm: TPrintPageViewFrm
     ParentFont = False
     TabOrder = 1
     object Label9: TLabel
-      Left = 72
+      Left = 8
       Top = 45
-      Width = 21
+      Width = 58
       Height = 14
+      Alignment = taRightJustify
       Caption = 'Size'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clBlack
@@ -250,10 +251,11 @@ object PrintPageViewFrm: TPrintPageViewFrm
       ParentFont = False
     end
     object Label10: TLabel
-      Left = 40
+      Left = 8
       Top = 69
-      Width = 50
+      Width = 58
       Height = 14
+      Alignment = taRightJustify
       Caption = 'Line Width'
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clBlack
@@ -267,37 +269,36 @@ object PrintPageViewFrm: TPrintPageViewFrm
       Top = 16
       Width = 137
       Height = 23
-      ItemHeight = 15
       TabOrder = 0
       Text = 'cbFontName'
     end
     object edFontSize: TValidatedEdit
-      Left = 96
+      Left = 70
       Top = 45
-      Width = 49
+      Width = 76
       Height = 20
       AutoSize = False
-      Text = ' 1  pts'
+      Text = ' 1.00  pts'
       Value = 1.000000000000000000
-      LoLimit = 1.000000000000000000
-      HiLimit = 100.000000000000000000
       Scale = 1.000000000000000000
       Units = 'pts'
       NumberFormat = '%.f '
+      LoLimit = 1.000000000000000000
+      HiLimit = 100.000000000000000000
     end
     object edLineThickness: TValidatedEdit
-      Left = 96
+      Left = 70
       Top = 69
-      Width = 49
+      Width = 76
       Height = 20
       AutoSize = False
-      Text = ' 1  pts'
+      Text = ' 1.00  pts'
       Value = 1.000000000000000000
-      LoLimit = 1.000000000000000000
-      HiLimit = 100.000000000000000000
       Scale = 1.000000000000000000
       Units = 'pts'
       NumberFormat = '%.f '
+      LoLimit = 1.000000000000000000
+      HiLimit = 100.000000000000000000
     end
     object ckUseColor: TCheckBox
       Left = 72
@@ -437,7 +438,7 @@ object PrintPageViewFrm: TPrintPageViewFrm
     object Label6: TLabel
       Left = 8
       Top = 40
-      Width = 24
+      Width = 23
       Height = 14
       Caption = 'Vert.'
     end
@@ -447,17 +448,12 @@ object PrintPageViewFrm: TPrintPageViewFrm
       Width = 73
       Height = 20
       AutoSize = False
-      Font.Charset = ANSI_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'Arial'
-      Font.Style = []
       Text = ' 0 s'
-      LoLimit = -1.000000015047466E29
-      HiLimit = 1.000000015047466E29
       Scale = 1.000000000000000000
       Units = 's'
       NumberFormat = '%.3g'
+      LoLimit = -1.000000015047466E29
+      HiLimit = 1.000000015047466E29
     end
     object edVertCalBar: TValidatedEdit
       Left = 40
@@ -465,16 +461,11 @@ object PrintPageViewFrm: TPrintPageViewFrm
       Width = 73
       Height = 20
       AutoSize = False
-      Font.Charset = ANSI_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'Arial'
-      Font.Style = []
       Text = ' 0 '
-      LoLimit = -1.000000015047466E29
-      HiLimit = 1.000000015047466E29
       Scale = 1.000000000000000000
       NumberFormat = '%.3g'
+      LoLimit = -1.000000015047466E29
+      HiLimit = 1.000000015047466E29
     end
   end
   object bCancel: TButton

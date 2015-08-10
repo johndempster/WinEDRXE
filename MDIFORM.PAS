@@ -329,6 +329,15 @@ unit Mdiform;
    V3.5.7 09.06.15 Multiple files can be exported. Format now selected from drop-down liat.
    V3.5.8 10.07.15 Support for Digidata 1550 and 1550A added.
                    Protocol Editor: Open Protocol now always opens in ..\WinEDR\stim stimulus protocol folder
+   V3.5.9 13.07.15 Axdd1440.dll updated to V2.0.2.1 to work under 64 bit Windows.
+                      DD1550.DLL compiled with MT rather than MT DLL run-time library
+                      to allow it to load under 64 bit windows.
+   V3.6.0 13.07.15 Digidata 1550: 64/32 bit version of wdapi1140.dll created when O/S detected
+   V3.6.1 03.08.15 Plotting Records: Signal records now plotted on printers and copied to clipboard
+                   correctly (fixes. bug introduced in V3.5.8).
+   V3.6.2 10.08.15 Plotting Records: Compression of signal displays with large numbers of points
+                   into Ymin-YMax pairs now handled by scopedisplay component.
+                   Changes to rec.pas, viewsig.pas, pageview.pas
   =======================================================================}
 
 interface
@@ -563,7 +572,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.5.8' ;
+     Version := 'V3.6.2' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }

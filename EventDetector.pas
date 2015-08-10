@@ -1518,7 +1518,7 @@ procedure TEventDetFrm.bDetectClick(Sender: TObject);
 // Detect events
 // -------------
 var
-    iEnd,iSample,y,StartAtSample,EndAtSample,iEventSample : Integer ;
+    iEnd,iSample,y,StartAtSample,EndAtSample,iEventSample,iLine : Integer ;
     DeadSamples : Integer ;
     i,OverThresholdCount,TimeThreshold,ThresholdLevel, Polarity : Integer ;
     Done,NewBufferNeeded, UpdateStatusBar, InitialiseRunningMean : Boolean ;
@@ -1615,8 +1615,9 @@ begin
            scDetDisplay.Invalidate ;
 
            { Initialise detected event line }
-           scDetDisplay.CreateLine( 0, clRed, psSolid, 1 ) ;
-           scDetDisplay.AddPointToLine( 0, 0 ) ;
+           scDetDisplay.ClearLines ;
+           iLine := scDetDisplay.CreateLine( 0, clRed, psSolid, 1 ) ;
+           scDetDisplay.AddPointToLine( iLine, 0, 0 ) ;
 
            NewBufferNeeded := False ;
            i := 0 ;
@@ -1625,7 +1626,7 @@ begin
            Application.ProcessMessages ;
            end ;
 
-        scDetDisplay.AddPointToLine( i, 0 ) ;
+        scDetDisplay.AddPointToLine( iLine, i, 0 ) ;
         // Does detection criterion exceed threshold?
         if (Polarity*DetBuf^[i]) > (Polarity*ThresholdLevel) then begin
 
@@ -1644,8 +1645,8 @@ begin
                  end ;
 
               { Draw detected event marker }
-              scDetDisplay.AddPointToLine( i, y ) ;
-              scDetDisplay.AddPointToLine( i, 0 ) ;
+              scDetDisplay.AddPointToLine( iLine, i, y ) ;
+              scDetDisplay.AddPointToLine( iLine, i, 0 ) ;
               iSample := iSample + DeadSamples ;
               i := i + DeadSamples ;
               OverThresholdCount := 0 ;
@@ -1713,7 +1714,7 @@ procedure TEventDetFrm.DisplayEditRecord ;
   Display currently selected block of data file on edit display
   ------------------------------------------------------------- }
 var
-   i,iStart,iEnd,iEvent,Step : Integer ;
+   i,iStart,iEnd,iEvent,Step,iLine : Integer ;
 begin
 
    if EditBuf = Nil then Exit ;
@@ -1757,18 +1758,19 @@ begin
 
    { Initialise detected event line }
    scMarkDisplay.xOffset := 0 ;
-   scMarkDisplay.CreateLine( 0, clRed, psSolid, 1 ) ;
-   scMarkDisplay.AddPointToLine( 0, scMarkDisplay.MinADCValue ) ;
+   scMarkDisplay.ClearLines ;
+   iLine := scMarkDisplay.CreateLine( 0, clRed, psSolid, 1 ) ;
+   scMarkDisplay.AddPointToLine( iLine, 0, scMarkDisplay.MinADCValue ) ;
    for i := 0 to scMarkDisplay.MaxPoints-1 do begin
        if ((iStart+i) >= Events[iEvent]) and (iEvent < NumEvents) then begin
           Inc(iEvent) ;
-          scMarkDisplay.AddPointToLine( i, scMarkDisplay.MinADCValue ) ;
-          scMarkDisplay.AddPointToLine( i, scMarkDisplay.MaxADCValue ) ;
-          scMarkDisplay.AddPointToLine( i, scMarkDisplay.MinADCValue ) ;
+          scMarkDisplay.AddPointToLine( iLine, i, scMarkDisplay.MinADCValue ) ;
+          scMarkDisplay.AddPointToLine( iLine, i, scMarkDisplay.MaxADCValue ) ;
+          scMarkDisplay.AddPointToLine( iLine, i, scMarkDisplay.MinADCValue ) ;
           end ;
        end ;
 
-   scMarkDisplay.AddPointToLine( scMarkDisplay.MaxPoints-1, scMarkDisplay.MinADCValue ) ;
+   scMarkDisplay.AddPointToLine( iLine, scMarkDisplay.MaxPoints-1, scMarkDisplay.MinADCValue ) ;
 
    scEditDisplay.Invalidate ;
    scMarkDisplay.Invalidate ;
@@ -4789,7 +4791,7 @@ procedure TEventDetFrm.bAverageFitCurveClick(Sender: TObject);
   Fit exponential functions to event average
   ------------------------------------------}
 var
-     iStart,iEnd,TZero,YZero : Integer ;
+     iStart,iEnd,TZero,YZero,iLine : Integer ;
      i, j : Integer ;
      X, Y : Single ;
 begin
@@ -4835,10 +4837,11 @@ begin
     lbAvgFitResults.Caption := CVFit.FitResults ;
 
     // Draw best fit line
-    scAverageDisplay.CreateLine(cbChannel.ItemIndex,clred,psSolid, 1);
+    scAverageDisplay.ClearLines ;
+    iLine := scAverageDisplay.CreateLine(cbChannel.ItemIndex,clred,psSolid, 1);
     for i := TZero to iEnd do begin
         X := (i-TZero)*scAverageDisplay.TScale ;
-        scAverageDisplay.AddPointToLine(i, CVFit.EquationValue(X)/
+        scAverageDisplay.AddPointToLine(iLine, i, CVFit.EquationValue(X)/
                                            scAverageDisplay.ChanScale[cbChannel.ItemIndex]
                                            + YZero ) ;
         end ;

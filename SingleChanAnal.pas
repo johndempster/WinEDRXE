@@ -824,7 +824,7 @@ procedure TSingleChanAnalFrm.DisplayRecord ;
   Display currently selected block of data file
   ---------------------------------------------}
 var
-   i : Integer ;
+   i,iLine : Integer ;
    x,xStep : single ;
 begin
 
@@ -854,12 +854,13 @@ begin
    scDetDisplay.VerticalCursors[DetCurs.C1] := SelectionCursor1 - scDetDisplay.xOffset ;
 
    { Display trend line, if one is available }
-   scDetDisplay.CreateLine( ChanNum, clRed, psSolid, 1 ) ;
+   scDetDisplay.ClearLines ;
+   iLine := scDetDisplay.CreateLine( ChanNum, clRed, psSolid, 1 ) ;
    if TrendLine.Available then begin
       x := 0.0 ;
       xStep := scDetDisplay.NumPoints / 100.0 ;
       for i := 0 to 99 do begin
-          scDetDisplay.AddPointToLine( x, TrendLine.Func.Value(x+scDetDisplay.xOffset) ) ;
+          scDetDisplay.AddPointToLine( iLine, x, TrendLine.Func.Value(x+scDetDisplay.xOffset) ) ;
           x := x + xStep ;
           end ;
       end ;
@@ -1006,6 +1007,7 @@ var
    DeltaT : double ;
    ADCPointer : Integer ;
    Event : TEvent ;
+   iLine : Integer ;
 begin
 
      bAbortDetection.Enabled := True ;
@@ -1065,7 +1067,8 @@ begin
 
             ADCPointer := 0 ;
             { Initialise idealised trace line }
-            scDetDisplay.CreateLine( ChanNum, clRed, psSolid, 2 ) ;
+            scDetDisplay.ClearLines ;
+            iLine := scDetDisplay.CreateLine( ChanNum, clRed, psSolid, 2 ) ;
            { Application.ProcessMessages ;}
 
             if not bAbortDetection.Enabled then Done := True ;
@@ -1179,7 +1182,7 @@ begin
          Inc(Det.NumSamples) ;
 
          { Draw idealised channel time course }
-         scDetDisplay.AddPointToLine( ADCPointer,
+         scDetDisplay.AddPointToLine( iLine,ADCPointer,
                                       Det.ChannelState*Det.UnitLevel + Channel[ChanNum].ADCZero ) ;
 
          { Increment A/D sample buffer pointer }
@@ -1344,6 +1347,7 @@ var
    AverageAmplitude : Single ;
    StDevAmplitude : Single ;
    s : String ;
+   iLine : Integer ;
 begin
 
      if EventFile.NumEvents > 0 then begin
@@ -1404,25 +1408,26 @@ begin
 
         { Plot idealised channel time course }
         UnitLevel := Round( Settings.DwellTimes.UnitCurrent / Channel[ChanNum].ADCScale ) ;
-        scEditDisplay.CreateLine( ChanNum, clGreen, psSolid, 2 ) ;
+        scEditDisplay.ClearLines ;
+        iLine := scEditDisplay.CreateLine( ChanNum, clGreen, psSolid, 2 ) ;
         if PreviousEvent.Available then begin
            x := (Event.StartAt - iStart) - (scEditDisplay.MaxPoints*0.05) ;
            y := (PreviousEvent.ChannelState*UnitLevel) + Channel[ChanNum].ADCZero ;
-           scEditDisplay.AddPointToLine( x, y ) ;
+           scEditDisplay.AddPointToLine( iLine, x, y ) ;
            x := (Event.ExactStart) - iStart ;
-           scEditDisplay.AddPointToLine( x, y ) ;
+           scEditDisplay.AddPointToLine( iLine,x, y ) ;
            end ;
         x := (Event.ExactStart) - iStart ;
         y := (Event.ChannelState*UnitLevel) + Channel[ChanNum].ADCZero ;
-        scEditDisplay.AddPointToLine( x, y ) ;
+        scEditDisplay.AddPointToLine( iLine,x, y ) ;
         x := Event.ExactEnd - iStart ;
-        scEditDisplay.AddPointToLine( x, y ) ;
+        scEditDisplay.AddPointToLine( iLine,x, y ) ;
         if NextEvent.Available then begin
            y := (NextEvent.ChannelState*UnitLevel) + Channel[ChanNum].ADCZero ;
-           scEditDisplay.AddPointToLine( x, y ) ;
+           scEditDisplay.AddPointToLine( iLine,x, y ) ;
            x := (Event.ExactEnd - iStart)
                 + (scEditDisplay.MaxPoints*0.05) ;
-           scEditDisplay.AddPointToLine( x, y ) ;
+           scEditDisplay.AddPointToLine( iLine,x, y ) ;
            end ;
 
         { State to be ignored in analysis check box }

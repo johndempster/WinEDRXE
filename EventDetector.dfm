@@ -33,6 +33,10 @@ object EventDetFrm: TEventDetFrm
     OnChange = PageChange
     object DetectEventsPage: TTabSheet
       Caption = 'Detect Events'
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object scDisplay: TScopeDisplay
         Left = 224
         Top = 8
@@ -712,6 +716,10 @@ object EventDetFrm: TEventDetFrm
     object EditEventsPage: TTabSheet
       Caption = 'Review/Edit Events'
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object scMarkDisplay: TScopeDisplay
         Left = 224
         Top = 118
@@ -1582,6 +1590,10 @@ object EventDetFrm: TEventDetFrm
     object XYPlotPage: TTabSheet
       Caption = 'X-Y Plot'
       ImageIndex = 2
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object plPlot: TXYPlotDisplay
         Left = 224
         Top = 8
@@ -1887,6 +1899,10 @@ object EventDetFrm: TEventDetFrm
     object HistPage: TTabSheet
       Caption = 'Histogram'
       ImageIndex = 3
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object plHist: TXYPlotDisplay
         Left = 224
         Top = 16
@@ -2278,6 +2294,10 @@ object EventDetFrm: TEventDetFrm
     object AveragePage: TTabSheet
       Caption = 'Average'
       ImageIndex = 4
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object scAverageDisplay: TScopeDisplay
         Left = 224
         Top = 8

@@ -662,6 +662,7 @@ var
     QRSZero : Integer ;
     QRSTick : Integer ;
     Done : Boolean ;
+    iLine : Integer ;
 begin
 
    scECGDisplay.xOffset := sbECGDisplay.Position ;
@@ -710,22 +711,23 @@ begin
       QRSZero := Round(scECGDisplay.yMin[cbChannel.ItemIndex]) ;
       QRSTick := QRSZero + Round( (scECGDisplay.yMax[cbChannel.ItemIndex]
                                 - scECGDisplay.yMin[cbChannel.ItemIndex]) / 20.0) ;
-      scECGDisplay.CreateLine( 0, clRed, psSolid, 1 ) ;
-      scECGDisplay.AddPointToLine( 0, QRSZero ) ;
+      scECGDisplay.ClearLines ;
+      iLine := scECGDisplay.CreateLine( 0, clRed, psSolid, 1 ) ;
+      scECGDisplay.AddPointToLine( iLine, 0, QRSZero ) ;
       While not Done do begin
           iQRS := RWave.Times[iEvent] - scECGDisplay.XOffset ;
           if iQRS <= scECGDisplay.MaxPoints then begin
              if iQRS >= 0 then begin
-                scECGDisplay.AddPointToLine( iQRS, QRSZero ) ;
-                scECGDisplay.AddPointToLine( iQRS, QRSTick ) ;
-                scECGDisplay.AddPointToLine( iQRS, QRSZero ) ;
+                scECGDisplay.AddPointToLine( iLine,iQRS, QRSZero ) ;
+                scECGDisplay.AddPointToLine( iLine,iQRS, QRSTick ) ;
+                scECGDisplay.AddPointToLine( iLine,iQRS, QRSZero ) ;
                 end ;
              end
           else Done := True ;
           Inc(iEvent) ;
           if iEvent >= RWave.Num then Done := True ;
           end ;
-      scECGDisplay.AddPointToLine( scECGDisplay.MaxPoints-1, QRSZero ) ;
+      scECGDisplay.AddPointToLine( iLine,scECGDisplay.MaxPoints-1, QRSZero ) ;
 
       end
    else begin
@@ -1350,7 +1352,7 @@ const
    MaxPoints = 4096 ;
    MaxRWaveDuration = 0.05 ;
 var
-    i,j,k,iSample,StartPos,y : Integer ;
+    i,j,k,iSample,StartPos,y,iLine : Integer ;
     StartScan : Integer ;
     EndScan : Integer ;
     PreStartScan : Integer ;
@@ -1490,8 +1492,9 @@ begin
               end ;
 
            { Initialise detected event line }
-           scECGDisplay.CreateLine( 0, clRed, psSolid, 1 ) ;
-           scECGDisplay.AddPointToLine( 0, QRSZero ) ;
+           scECGDisplay.ClearLines ;
+           iLine := scECGDisplay.CreateLine( 0, clRed, psSolid, 1 ) ;
+           scECGDisplay.AddPointToLine( iLine, 0, QRSZero ) ;
 
            NewBufferNeeded := False ;
            iDif := 0 ;
@@ -1526,9 +1529,9 @@ begin
               end ;
 
            { Draw detected event marker }
-           scECGDisplay.AddPointToLine( iDif, QRSZero ) ;
-           scECGDisplay.AddPointToLine( iDif, QRSTick ) ;
-           scECGDisplay.AddPointToLine( iDif, QRSZero ) ;
+           scECGDisplay.AddPointToLine( iLine, iDif, QRSZero ) ;
+           scECGDisplay.AddPointToLine( iLine, iDif, QRSTick ) ;
+           scECGDisplay.AddPointToLine( iLine, iDif, QRSZero ) ;
            iScan := iScan + DeadScans ;
            iDif := iDif + DeadScans ;
            UpdateStatusBar := True ;

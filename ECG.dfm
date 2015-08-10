@@ -1,9 +1,9 @@
 object ECGFrm: TECGFrm
   Left = 914
   Top = 270
-  Width = 727
-  Height = 606
   Caption = 'ECG Analysis'
+  ClientHeight = 579
+  ClientWidth = 719
   Color = clBtnFace
   Font.Charset = ANSI_CHARSET
   Font.Color = clWindowText
@@ -29,6 +29,10 @@ object ECGFrm: TECGFrm
     OnChange = PageControlChange
     object ECGPage: TTabSheet
       Caption = 'ECG'
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object ECGControlGrp: TGroupBox
         Left = 8
         Top = 0
@@ -111,7 +115,6 @@ object ECGFrm: TECGFrm
             Width = 89
             Height = 23
             Hint = 'Channel containing events to be detected'
-            ItemHeight = 15
             ParentShowHint = False
             ShowHint = True
             TabOrder = 3
@@ -378,7 +381,6 @@ object ECGFrm: TECGFrm
             Top = 34
             Width = 99
             Height = 23
-            ItemHeight = 15
             TabOrder = 1
             Text = 'cbHPFilter'
           end
@@ -489,7 +491,7 @@ object ECGFrm: TECGFrm
           Hint = 'ECG beat # on display'
           OnKeyPress = edRWaveKeyPress
           AutoSize = False
-          Text = ' 1 / 1.00000001504746624E30 '
+          Text = ' 1 / 1.00000001504746622E30 '
           LoValue = 1.000000000000000000
           HiValue = 1.000000015047466E30
           LoLimit = 1.000000000000000000
@@ -609,7 +611,7 @@ object ECGFrm: TECGFrm
           Height = 20
           OnKeyPress = edAvgDisplayKeyPress
           AutoSize = False
-          Text = ' 1 / 1.00000001504746624E30 '
+          Text = ' 1 / 1.00000001504746622E30 '
           LoValue = 1.000000000000000000
           HiValue = 1.000000015047466E30
           LoLimit = 1.000000000000000000
@@ -637,6 +639,10 @@ object ECGFrm: TECGFrm
     object SpectrumPage: TTabSheet
       Caption = 'Power Spectra'
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object WindowGrp: TGroupBox
         Left = 8
         Top = 0
@@ -725,7 +731,7 @@ object ECGFrm: TECGFrm
             Height = 20
             OnKeyPress = edSpecDisplayKeyPress
             AutoSize = False
-            Text = ' 1 / 1.00000001504746624E30 '
+            Text = ' 1 / 1.00000001504746622E30 '
             LoValue = 1.000000000000000000
             HiValue = 1.000000015047466E30
             LoLimit = 1.000000000000000000
@@ -779,7 +785,7 @@ object ECGFrm: TECGFrm
             object Label8: TLabel
               Left = 8
               Top = 16
-              Width = 75
+              Width = 74
               Height = 15
               Caption = 'Max. Variance'
             end
@@ -855,10 +861,10 @@ object ECGFrm: TECGFrm
           PrinterFontName = 'Arial'
           PrinterLineWidth = 1
           PrinterMarkerSize = 5
-          PrinterLeftMargin = 17
-          PrinterRightMargin = 17
-          PrinterTopMargin = 11
-          PrinterBottomMargin = 11
+          PrinterLeftMargin = 16
+          PrinterRightMargin = 16
+          PrinterTopMargin = 10
+          PrinterBottomMargin = 10
           PrinterDisableColor = False
           MetafileWidth = 500
           MetafileHeight = 400
@@ -905,7 +911,7 @@ object ECGFrm: TECGFrm
           object Label10: TLabel
             Left = 8
             Top = 88
-            Width = 72
+            Width = 71
             Height = 15
             Caption = 'Y Axis Range'
           end
@@ -916,7 +922,7 @@ object ECGFrm: TECGFrm
             Height = 20
             OnKeyPress = edRWaveKeyPress
             AutoSize = False
-            Text = ' 1 / 1.00000001504746624E30 '
+            Text = ' 1 / 1.00000001504746622E30 '
             LoValue = 1.000000000000000000
             HiValue = 1.000000015047466E30
             LoLimit = 1.000000000000000000
@@ -978,6 +984,10 @@ object ECGFrm: TECGFrm
     object PlotPage: TTabSheet
       Caption = 'Graph Plots'
       ImageIndex = 2
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object PlotControlsGrp: TGroupBox
         Left = 8
         Top = 0
@@ -993,7 +1003,7 @@ object ECGFrm: TECGFrm
           object Label11: TLabel
             Left = 8
             Top = 16
-            Width = 69
+            Width = 68
             Height = 15
             Caption = 'Plot Variable'
           end
@@ -1002,7 +1012,6 @@ object ECGFrm: TECGFrm
             Top = 32
             Width = 137
             Height = 23
-            ItemHeight = 0
             TabOrder = 0
             Text = 'cbPlotVar'
           end
@@ -1184,10 +1193,10 @@ object ECGFrm: TECGFrm
           PrinterFontName = 'Arial'
           PrinterLineWidth = 1
           PrinterMarkerSize = 5
-          PrinterLeftMargin = 17
-          PrinterRightMargin = 17
-          PrinterTopMargin = 11
-          PrinterBottomMargin = 11
+          PrinterLeftMargin = 16
+          PrinterRightMargin = 16
+          PrinterTopMargin = 10
+          PrinterBottomMargin = 10
           PrinterDisableColor = False
           MetafileWidth = 500
           MetafileHeight = 400

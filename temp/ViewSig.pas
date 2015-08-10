@@ -20,8 +20,7 @@ unit ViewSig;
   27.08.10 ... Cursor readout now on display
   08.12.10 ... t=0 - t=? inter-cursor average display added
   28.08.12 ... Zero Level form updated.
-               Fixed Zero level tick box added, fixes zero levels in place
-  07.08.15 ... Min/Max compression of large array signal arrays now handled by ScopeDisplay.pas
+               Fixed Zero level tick box added, fixes zero levels in place 
   ========================================================}
 
 interface
@@ -92,13 +91,11 @@ type
     procedure rbTDisplayUnitsMSecsClick(Sender: TObject);
     procedure bCalcAverageClick(Sender: TObject);
     procedure ckFixedZeroLevelsClick(Sender: TObject);
-    procedure FormCreate(Sender: TObject);
 
   private
     { Private declarations }
     Cursors : TCursors ; // Display cursor record
     TZeroScan : Integer ;                // Scan # defined as zero time
-    DisplayBuf : PSmallIntArray ;         // Data display buffer pointer
 
   public
     { Public declarations }
@@ -126,6 +123,8 @@ const
      MaxDisplayScans = 2000 ;
 
 
+var
+   DisplayBuf : PSmallIntArray ; // Data display buffer pointer
 {$R *.DFM}
 
 
@@ -139,6 +138,9 @@ begin
      Left := 10 ;
 
      Main.mnViewSig.Enabled := False ;
+
+     // Allocate display buffer
+     GetMem( DisplayBuf, MaxDisplayScans*(EDRChannelLimit+1)*8 ) ;
 
      ClientHeight := TCursorGrp.Top + TCursorGrp.Height + 10 ;
      Resize ;
@@ -186,14 +188,6 @@ begin
      Action := caFree ;
      end;
 
-
-procedure TViewSigFrm.FormCreate(Sender: TObject);
-// ------------------------------------
-// Initialisations when form is created
-// ------------------------------------
-begin
-    DisplayBuf := Nil ;
-    end;
 
 procedure TViewSigFrm.FormResize(Sender: TObject);
 { --------------------------------------------
@@ -379,11 +373,24 @@ procedure TViewSigFrm.DisplayFromFile ;
 // ------------------------------------------
 var
 
-    NumScans,MaxScans : Integer ;
-    NumBytesInBuf : Integer ;
+    NumScans : Integer ;
+    NumScansPerBlock : Integer ;
+    NumSamplesPerBlock : Integer ;
+    NumPointsPerBlock : Integer ;
+    NumSamplesPerBuf : Integer ;
+    NumSamplesRead : Integer ;
     StartScan : Integer ;
+    BlockCount : Integer ;
+    NumPoints : Integer ;
     FilePointer : Integer ;
-    i : Integer ;
+    iDisp : Integer ;
+    Done : Boolean ;
+    yMin : Array[0..EDRChannelLimit] of Integer ;
+    yMax : Array[0..EDRChannelLimit] of Integer ;
+    yMinAt : Array[0..EDRChannelLimit] of Integer ;
+    yMaxAt : Array[0..EDRChannelLimit] of Integer ;
+    Buf : Array[0..(256*(EDRChannelLimit+1)-1)] of SmallInt ;
+    i,ch,y : Integer ;
     MarkerTime : Single ;
     MarkerAt : Integer ;
     TimeScale : Single ;
@@ -391,37 +398,114 @@ begin
 
      edIdent.Text := CDRFH.IdentLine ;
 
+     // No. of multi-channel scans to be displayed
+     NumScans := MaxInt( [Round(edTDisplay.Value/CDRFH.dt),1] ) ;
+
+     // Size of display compression block
+     NumScansPerBlock := MaxInt( [NumScans div MaxDisplayScans,1]) ;
+     NumSamplesPerBlock := NumScansPerBlock*CDRFH.NumChannels ;
+     // No. of display points per compression block
+     NumPointsPerBlock := MinInt([NumScansPerBlock,2]) ;
+     // Max. number of points in display
+     scDisplay.MaxPoints := (NumScans div NumScansPerBlock)*NumPointsPerBlock ;
+
+     // No. of samples in file I/O buffer
+     NumSamplesPerBuf := CDRFH.NumChannels*256 ;
+
      // Find starting scan number
      StartScan := Round(edStartTime.Value/CDRFH.dt) ;
-     scDisplay.XOffset := StartScan ;
+     scDisplay.XOffset := (StartScan*NumPointsPerBlock) div NumScansPerBlock ;
 
-     // No. of multi-channel scans to be displayed
-     MaxScans := CDRFH.NumSamplesInFile div CDRFH.NumChannels ;
-     edTDisplay.Value := Min( edTDisplay.Value, Max(1.0,MaxScans*CDRFH.dt*1.1));
-     scDisplay.MaxPoints := Round(edTDisplay.Value/CDRFH.dt) ;
-     NumScans := Max( Min(Round(edTDisplay.Value/CDRFH.dt),MaxScans-StartScan),1 ) ;
-     scDisplay.NumPoints := NumScans ;
-
-     // Allocate memory buffer
-     if DisplayBuf <> Nil then FreeMem(DisplayBuf) ;
-     NumBytesInBuf := scDisplay.MaxPoints*CDRFH.NumChannels*2 ;
-     DisplayBuf := GetMemory( NumBytesInBuf) ;
-
-     scDisplay.TScale := CDRFH.dt ;
+     scDisplay.TScale := (CDRFH.dt*NumScansPerBlock*Settings.TScale)/NumPointsPerBlock ;
      scDisplay.TUnits := Settings.TUnits ;
 
-     // Read data from file
+     // Move file pointer to start of data
      FilePointer := CDRFH.NumBytesInHeader + StartScan*CDRFH.NumChannels*2 ;
      FileSeek( CDRFH.FileHandle, FilePointer, 0 ) ;
-     FileRead(CDRFH.FileHandle,DisplayBuf^,NumBytesInBuf) ;
+
+     // Initialise counters
+     BlockCount := NumScansPerBlock ;
+     NumSamplesRead := NumSamplesPerBuf ;
+     i := NumSamplesRead ;
+     iDisp := 0 ;
+     NumPoints := 0 ;
+     Done := False ;
+
+     // Read samples from file
+     While not Done do begin
+
+        // Initialise block
+        if BlockCount >= NumScansPerBlock then begin
+           for ch := 0 to CDRFH.NumChannels-1 do begin
+               yMin[ch] := Channel[0].ADCMaxValue ;
+               yMax[ch] := -Channel[0].ADCMaxValue -1 ;
+               end ;
+           BlockCount := 0 ;
+           end ;
+
+        // Load new buffer
+        if i >= NumSamplesRead then begin
+           NumSamplesRead := FileRead(CDRFH.FileHandle,Buf,NumSamplesPerBuf*2) div 2 ;
+           i := 0 ;
+           if NumSamplesRead <= 0 then Break ;
+           end ;
+
+        // Determine min. / max. value & order of samples within compression block
+        for ch := 0 to CDRFH.NumChannels-1 do begin
+
+            // Get A/D sample
+            y := Buf[i] ;
+
+            if y < yMin[ch] then begin
+               yMin[ch] := y ;
+               yMinAt[ch] := BlockCount ;
+               end ;
+            if y > yMax[ch] then begin
+               yMax[ch] := y ;
+               yMaxAt[ch] := BlockCount ;
+               end ;
+            Inc(i) ;
+            end ;
+        Inc(BlockCount) ;
+
+        // When block complete ... write min./max. to display buffer
+        if BlockCount >= NumScansPerBlock then begin
+
+           // First point
+           for ch := 0 to CDRFH.NumChannels-1 do begin
+               if yMaxAt[ch] <= yMinAt[ch] then DisplayBuf^[iDisp] := yMax[ch]
+                                           else DisplayBuf^[iDisp] := yMin[ch] ;
+               Inc(iDisp) ;
+               end ;
+           Inc(NumPoints) ;
+
+           // Second point
+           if BlockCount > 1 then begin
+              for ch := 0 to CDRFH.NumChannels-1 do begin
+                  if yMaxAt[ch] >= yMinAt[ch] then DisplayBuf^[iDisp] := yMax[ch]
+                                              else DisplayBuf^[iDisp] := yMin[ch] ;
+                  Inc(iDisp) ;
+                  end ;
+              Inc(NumPoints) ;
+              end ;
+
+           end ;
+
+        if NumPoints >= scDisplay.MaxPoints then Done := True ;
+
+        end ;
+
+     scDisplay.NumPoints := NumPoints ;
 
      scDisplay.xMin := 0 ;
-     scDisplay.xMax := Max(scDisplay.MaxPoints-1,1) ;
-
+     scDisplay.xMax := MaxInt([scDisplay.MaxPoints-1,1]) ;
      // Enable/disable display calibration grid
+
      scDisplay.SetDataBuf( DisplayBuf ) ;
 
-     scDisplay.VerticalCursors[Cursors.C0] := TZeroScan - scDisplay.xOffset ;
+     scDisplay.VerticalCursors[Cursors.C0] := ((TZeroScan*NumPointsPerBlock) div NumScansPerBlock)
+                                              - scDisplay.xOffset ;
+
      scDisplay.VerticalCursors[Cursors.C1] := scDisplay.MaxPoints div 2 ;
 
      // Add markers (if any appear on display
@@ -436,9 +520,10 @@ begin
 
      scDisplay.Invalidate ;
 
-     sbStartTime.LargeChange := Max(NumScans div 20,1) ;
+     sbStartTime.LargeChange := Maxint( [NumScans div 4,1]) ;
 
      end ;
+
 
 
 procedure TViewSigFrm.edTDisplayKeyPress(Sender: TObject; var Key: Char);

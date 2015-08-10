@@ -105,19 +105,9 @@ type
         WriteBuf : Integer ;          // Index no. of next sub-buffer to be written
         BufStart : Array[0..NumWriteBufsMax-1] of Integer ; // Sub-buffer starting indexes (in ADC^)
         BufEnd : Array[0..NumWriteBufsMax-1] of Integer ;   // Sub-buffer end indexes (in ADC^)
-        NumScansPerBlock : Integer ;         // No. of scans in display compression block
-        NumPointsPerBlock : Integer ;        // No. display points per block
-        BlockCount : Integer ;               // Compression block scan counter
-        DispPointer : Integer ;              // Display buffer index
-        NumBlocksDisplayed : Integer ;       // No. of blocks displayed
-        MaxBlocksDisplayed : Integer ;       // Max. no. of blocks in display
         OldestScan : Integer ;               //
         LatestScan : Integer ;               // Index of latest available scan (ADC^)
         EmptyPointer : Integer ;             // Index of empty region (ADC^)
-        yMin : Array[0..EDRChannelLimit] of Integer ;
-        yMax : Array[0..EDRChannelLimit] of Integer ;
-        yMinAt : Array[0..EDRChannelLimit] of Integer ;
-        yMaxAt : Array[0..EDRChannelLimit] of Integer ;
         Recording : Boolean ;
         NumSamplesInFileRequired : Integer ;
         NumRecordsToAcquire : Integer ;
@@ -346,6 +336,8 @@ type
     procedure rbICLAMP3Click(Sender: TObject);
     procedure scDisplayMouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
+    procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
   private
     { Private declarations }
     NewAmplifierGain : Boolean ;
@@ -357,14 +349,15 @@ type
     ADC : PSmallIntArray ;         { A/D data buffer }
     DAC : PSmallIntArray ;         { D/A data buffer }
     DigBuf : PSmallIntArray ;      { Digital port output array }
-    DisplayBuf : TSmallIntArray ; { Scope display data buffer}
+    DisplayBuf : PSmallIntArray ; { Scope display data buffer}
+    DisplayBufSize : Integer ;     // Size of DisplayBuf (bytes)
 
     StimulatorAvailable : Boolean ;
     ActiveStimFileName : String ;
     StimulusStartTime : Integer ;
     StimulusNumber : Integer ;
     StimulusStatus : String ;      // Name of stimulus in use
-  SumProcTime : Integer ;
+//  SumProcTime : Integer ;
   nProcTime : Integer ;
 
     Initialised : Boolean ; { FormShow initialisations complete }
@@ -641,7 +634,7 @@ procedure TRecordFrm.NewFile ;
   Re-initialise display and A/D system when a new file is created
   --------------------------------------------------------------- }
 var
-   i,ch : Integer ;
+   ch : Integer ;
 begin
 
      // Stop A/D conversion to allow changes
@@ -689,7 +682,7 @@ begin
         end ;
      scDisplay.Invalidate ;
 
-     for i := 0 to High(TSmallIntArray) do DisplayBuf[i] := 0 ;
+//     for i := 0 to High(TSmallIntArray) do DisplayBuf[i] := 0 ;
 
      { Enable/disable real-time fluorescence ratio computation }
      if Settings.NumChannels < Settings.Fluorescence.MinChannels then begin
@@ -893,7 +886,7 @@ procedure TRecordFrm.TimerTimer(Sender: TObject);
   Timed Event scheduler
   ---------------------}
 var
-   i,iEnd,NumNewScans,NewScan,np,npHalfBuf,iTicks : Integer ;
+   i,iEnd,NumNewScans,NewScan,np,npHalfBuf : Integer ;
 
    FilePointer : Integer ;
    //ProcessingTime : Single ;
@@ -938,12 +931,10 @@ begin
               if WriteBufs.EmptyPointer >= WriteBufs.NumSamples then
                  WriteBufs.EmptyPointer := WriteBufs.EmptyPointer - WriteBufs.NumSamples ;
               Inc(np) ;
-
               end ;
 
         WriteBufs.LatestScan := WriteBufs.EmptyPointer - Main.SESLabIO.ADCNumChannels*4 ;
-        if WriteBufs.LatestScan < 0 then
-           WriteBufs.LatestScan := WriteBufs.LatestScan + WriteBufs.NumSamples ;
+        if WriteBufs.LatestScan < 0 then WriteBufs.LatestScan := WriteBufs.LatestScan + WriteBufs.NumSamples ;
 
         NumNewScans := 0 ;
         NewScan :=  WriteBufs.OldestScan ;
@@ -1014,10 +1005,9 @@ begin
 
         end ;
 
-           iTicks := TimeGetTime - iTicks ;
-           SumProcTime :=  SumProcTime + iTicks ;
-           Inc(nProcTime) ;
-
+//           iTicks := TimeGetTime - iTicks ;
+//           SumProcTime :=  SumProcTime + iTicks ;
+//           Inc(nProcTime) ;
 
      // Start stimulus (if one requested)
      // (Note. Wait till some A/D samples have been collected)
@@ -1060,56 +1050,49 @@ procedure TRecordFrm.DisplayLive(
 var
 
     NumScans : Integer ;           // No. of multi-channel scans in display window
-    //NumSamplesPerBlock : Integer ; // No. of A/D samples per compression block
+    OldDisplayBufSize : Integer ;  //
     Done : Boolean ;               // Loop done flag
-    ch,y : Integer ;             // Counters/index variables
+    i,j,ch : Integer ;             // Counters/index variables
     Value : Single ;
+    NewPoints : Integer ;
     s : string ;
 begin
 
      // Erase display and initialise live display counters
      // --------------------------------------------------
 
-     if Initialise or
-        (WriteBufs.NumBlocksDisplayed >= WriteBufs.MaxBlocksDisplayed) then begin
+     if Initialise or (scDisplay.Numpoints >= scDisplay.Maxpoints) then begin
 
        // No. of multi-channel scans to be displayed
        NumScans := Max( Round(edTDisplay.Value/Main.SESLabIO.ADCSamplingInterval),1 ) ;
 
-       // Size of display compression block
-       WriteBufs.NumScansPerBlock := (NumScans div MaxDisplayScans) + 1 ;
-       //NumSamplesPerBlock := WriteBufs.NumScansPerBlock*Main.SESLabIO.ADCNumChannels ;
-
-       // No. of displayed points per block
-       WriteBufs.NumPointsPerBlock := Min(WriteBufs.NumScansPerBlock,2) ;
-
        // Max. number of points in display
-       WriteBufs.MaxBlocksDisplayed := (NumScans div WriteBufs.NumScansPerBlock) ;
-       scDisplay.MaxPoints := WriteBufs.MaxBlocksDisplayed*WriteBufs.NumPointsPerBlock ;
+       scDisplay.MaxPoints := NumScans ;
 
-       scDisplay.TScale := (Main.SESLabIO.ADCSamplingInterval*WriteBufs.NumScansPerBlock*Settings.TScale)
-                           /WriteBufs.NumPointsPerBlock ;
+       scDisplay.TScale := Main.SESLabIO.ADCSamplingInterval*Settings.TScale ;
        scDisplay.TUnits := Settings.TUnits + ' ' ;
 
        scDisplay.xMin := 0 ;
        scDisplay.xMax := scDisplay.MaxPoints-1 ;
+
        // Enable/disable display calibration grid
        scDisplay.DisplayGrid := Settings.DisplayGrid ;
-       scDisplay.SetDataBuf( @DisplayBuf ) ;
 
-       scDisplay.XOffset := (CDRFH.NumSamplesInFile*WriteBufs.NumPointsPerBlock)
-                            div (WriteBufs.NumScansPerBlock*Main.SESLabIO.ADCNumChannels) ;
+       OldDisplayBufSize := DisplayBufSize ;
+       DisplayBufSize := scDisplay.MaxPoints*scDisplay.NumChannels*2 ;
+       if (DisplayBuf = Nil) or (DisplayBufSize <> OldDisplayBufSize) then begin
+          if DisplayBuf <> Nil then FreeMem(DisplayBuf) ;
+          DisplayBuf := GetMemory( DisplayBufSize ) ;
+          end;
+       scDisplay.SetDataBuf( DisplayBuf ) ;
 
+       scDisplay.XOffset := CDRFH.NumSamplesInFile div Main.SESLabIO.ADCNumChannels ;
        scDisplay.NumPoints := 0 ;
+
        scDisplay.Invalidate ;
 
        // Clear markers on display
        scDisplay.ClearMarkers ;
-
-       // Initialise counters
-       WriteBufs.BlockCount := WriteBufs.NumScansPerBlock ;
-       WriteBufs.DispPointer := 0 ;
-       WriteBufs.NumBlocksDisplayed := 0 ;
 
        end ;
 
@@ -1118,82 +1101,34 @@ begin
 
      if WriteBufs.OldestScan = WriteBufs.LatestScan then Done := True
                                                     else Done := False ;
+     NewPoints := scDisplay.NumPoints ;
      While not Done do begin
-
-        // Initialise block
-        if WriteBufs.BlockCount >= WriteBufs.NumScansPerBlock then begin
-           for ch := 0 to Main.SESLabIO.ADCNumChannels-1 do begin
-               WriteBufs.yMin[ch] := Main.SESLabIO.ADCMaxValue ;
-               WriteBufs.yMax[ch] := Main.SESLabIO.ADCMinValue ;
-               end ;
-           WriteBufs.BlockCount := 0 ;
-           end ;
-
-        // Determine min. / max. value & order of samples within compression block
-        for ch := 0 to Main.SESLabIO.ADCNumChannels-1 do begin
-
-            y := ADC^[WriteBufs.OldestScan+ch] ;
-
-            if y < WriteBufs.yMin[ch] then begin
-               WriteBufs.yMin[ch] := y ;
-               WriteBufs.yMinAt[ch] := WriteBufs.BlockCount ;
-               end ;
-            if y > WriteBufs.yMax[ch] then begin
-               WriteBufs.yMax[ch] := y ;
-               WriteBufs.yMaxAt[ch] := WriteBufs.BlockCount ;
-               end ;
-            end ;
-        Inc(WriteBufs.BlockCount) ;
-
-        // When block complete ... write min./max. to display buffer
-        if WriteBufs.BlockCount >= WriteBufs.NumScansPerBlock then begin
-
-           // First point
-           for ch := 0 to Main.SESLabIO.ADCNumChannels-1 do begin
-               if WriteBufs.yMaxAt[ch] <= WriteBufs.yMinAt[ch] then
-                  DisplayBuf[WriteBufs.DispPointer] := WriteBufs.yMax[ch]
-               else DisplayBuf[WriteBufs.DispPointer] := WriteBufs.yMin[ch] ;
-               WriteBufs.DispPointer := WriteBufs.DispPointer + 1 ;
-               end ;
-
-           // Second point
-           if WriteBufs.BlockCount > 1 then begin
-              for ch := 0 to Main.SESLabIO.ADCNumChannels-1 do begin
-                  if WriteBufs.yMaxAt[ch] >= WriteBufs.yMinAt[ch] then
-                     DisplayBuf[WriteBufs.DispPointer] := WriteBufs.yMax[ch]
-                  else DisplayBuf[WriteBufs.DispPointer] := WriteBufs.yMin[ch] ;
-                  WriteBufs.DispPointer := WriteBufs.DispPointer + 1 ;
-                  end ;
-              end ;
-
-           Inc(WriteBufs.NumBlocksDisplayed) ;
-           end ;
-
         // Increment pointer to next available scan
-        WriteBufs.OldestScan := WriteBufs.OldestScan + Main.SESLabIO.ADCNumChannels ;
+        j := NewPoints*scDisplay.NumChannels ;
+        for i := 0 to scDisplay.NumChannels-1 do begin
+            DisplayBuf^[j] := ADC^[WriteBufs.OldestScan] ;
+            Inc(j) ;
+            Inc(WriteBufs.OldestScan) ;
+            end;
+        Inc(NewPoints) ;
         if WriteBufs.OldestScan >= WriteBufs.NumSamples then
            WriteBufs.OldestScan := WriteBufs.OldestScan - WriteBufs.NumSamples ;
-        if (WriteBufs.OldestScan = WriteBufs.LatestScan) or
-           (WriteBufs.NumBlocksDisplayed >= scDisplay.MaxPoints) then Done := True ;
+        if (WriteBufs.OldestScan = WriteBufs.LatestScan) then Done := True ;
+        if NewPoints >= scDisplay.MaxPoints then Done := True ;
 
         end ;
 
      // Display latest points added to display buffer
-     scDisplay.DisplayNewPoints( WriteBufs.NumBlocksDisplayed*WriteBufs.NumPointsPerBlock );
-     //scDisplay.Invalidate ;
-
-     //Main.statusbar.simpletext := format('%d/%d',[WriteBufs.NumBlocksDisplayed,
-     //WriteBufs.MaxBlocksDisplayed]);
+     scDisplay.DisplayNewPoints( NewPoints );
 
      // Update cursor readout
-     if (WriteBufs.NumBlocksDisplayed > 0) and
-        (WriteBufs.NumBlocksDisplayed < WriteBufs.MaxBlocksDisplayed) and
+     if (WriteBufs.LatestScan > 0) and
+        (WriteBufs.LatestScan < WriteBufs.NumSamples) and
         (TimeGetTime > (TLastReadout+500)) then begin
         s := '' ;
         for ch := 0 to scDisplay.NumChannels-1 do begin
             Value := Main.SESLabIO.ADCChannelUnitsPerBit[ch] *
-                     ( DisplayBuf[(WriteBufs.NumPointsPerBlock*(WriteBufs.NumBlocksDisplayed-1)*Main.SESLabIO.ADCNumChannels)
-                        + scDisplay.ChanOffsets[ch]] - scDisplay.ChanZero[ch] ) ;
+                     ( ADC^[WriteBufs.OldestScan+ scDisplay.ChanOffsets[ch]] - scDisplay.ChanZero[ch] ) ;
             s := s + format( ' %s= %.4g %s<br>',
                                     [scDisplay.ChanName[ch],
                                      Value ,
@@ -1306,7 +1241,7 @@ begin
      Main.SESLabIO.ADCCircularBuffer := True ;
      Main.SESLabIO.ADCStart ;
 
-     SumProcTime := 0 ;
+//     SumProcTime := 0 ;
      nProcTime := 0 ;
      TLastReadout := TimeGetTime ;
 
@@ -1819,7 +1754,6 @@ begin
 
                end ;
 
-
             if GReal <> Gdc then Gs := GReal + ((GImag*GImag)/(GReal-Gdc))
                         else OK := False ;
 
@@ -1890,8 +1824,6 @@ begin
      sVHold[1] := Main.SESLabIO.DACHoldingVoltage[1] ;
 
      { D/A channel voltage -> bits scaling factors }
-
-
      x := 0.0 ;
      xStep := 2.0*Pi*Settings.Capacity.Frequency*DacDT ;
      for i := 0 to nDacValues-1 do begin
@@ -1911,7 +1843,6 @@ begin
      Main.SESLabIO.DACStart ;
 
      end ;
-
 
 
 procedure TRecordFrm.CalculateResistance ;
@@ -2361,6 +2292,12 @@ begin
      end;
 
 
+procedure TRecordFrm.FormCreate(Sender: TObject);
+begin
+    DisplayBuf := Nil ;
+    DisplayBufSize := 0 ;
+    end;
+
 procedure TRecordFrm.rbFreeRunClick(Sender: TObject);
 { ----------------------------
   Set trigger mode to free run
@@ -2391,6 +2328,11 @@ begin
      Main.SetMenus ;
      end;
 
+
+procedure TRecordFrm.FormDestroy(Sender: TObject);
+begin
+    if DisplayBuf = Nil then FreeMem(DisplayBuf) ;
+    end;
 
 procedure TRecordFrm.edIdentKeyPress(Sender: TObject; var Key: Char);
 { -------------------------------

@@ -1,9 +1,9 @@
 object PageViewFrm: TPageViewFrm
   Left = 882
   Top = 396
-  Width = 696
-  Height = 480
   Caption = 'Page View'
+  ClientHeight = 453
+  ClientWidth = 688
   Color = clBtnFace
   Font.Charset = ANSI_CHARSET
   Font.Color = clWindowText
@@ -16,6 +16,8 @@ object PageViewFrm: TPageViewFrm
   Visible = True
   OnActivate = FormActivate
   OnClose = FormClose
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
   OnResize = FormResize
   OnShow = FormShow
   PixelsPerInch = 96
@@ -97,7 +99,7 @@ object PageViewFrm: TPageViewFrm
       object Label2: TLabel
         Left = 24
         Top = 40
-        Width = 37
+        Width = 36
         Height = 14
         Caption = 'Start At'
       end
@@ -106,7 +108,6 @@ object PageViewFrm: TPageViewFrm
         Top = 16
         Width = 89
         Height = 22
-        ItemHeight = 14
         TabOrder = 0
         Text = 'cbChannel'
         OnChange = cbChannelChange
