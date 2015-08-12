@@ -338,6 +338,8 @@ unit Mdiform;
    V3.6.2 10.08.15 Plotting Records: Compression of signal displays with large numbers of points
                    into Ymin-YMax pairs now handled by scopedisplay component.
                    Changes to rec.pas, viewsig.pas, pageview.pas
+   V3.6.3 12.08.15 dd1440.pas: Now ensures 32/64 bit version of wdapi1140.dll is created
+                   allowing dd1440.dll to load.
   =======================================================================}
 
 interface
@@ -572,7 +574,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.6.2' ;
+     Version := 'V3.6.3' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
