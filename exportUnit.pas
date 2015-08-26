@@ -28,6 +28,8 @@ unit exportUnit;
   11.02.15 ... No. of exportable channels increased to 32
   04.06.15 ... Multiple files can be exported. Format now selected from drop-down liat.
   09.06.15 ... Replaces export.pas module in WinEDR.
+  25.08.15 ... Long export file names no longer split across two lines
+               No. of samples in exported EDR files now correct.
   }
 interface
 
@@ -132,7 +134,7 @@ begin
      edRange.LoLimit := 0.0 ;
      edRange.LoValue := 0.0 ;
      edRange.Units := 's' ;
-     edRange.HiLimit := (CdrFH.NumSamplesInFile div CdrFH.NumChannels)*cdrFH.dt ;
+     edRange.HiLimit := (CdrFH.NumSamplesInFile div CdrFH.NumChannels -1)*cdrFH.dt ;
      edRange.HiValue := edRange.HiLimit ;
 
      // Export formats
@@ -207,14 +209,13 @@ var
    ExportType : TADCDataFileType ;
 begin
 
-
      if rbAllRecords.Checked then begin
         StartAt := 0 ;
-        EndAt := CdrFH.NumSamplesInFile div CdrFH.NumChannels ;
+        EndAt := (CdrFH.NumSamplesInFile div CdrFH.NumChannels) -1 ;
         end
      else begin
         StartAt := Round(edRange.LoValue/CdrFH.dt) ;
-        EndAt := Round(edRange.HiValue/CdrFH.dt) ;
+        EndAt := Min(Round(edRange.HiValue/CdrFH.dt),(CdrFH.NumSamplesInFile div CdrFH.NumChannels) -1) ;
         end ;
 
      // Add record range to file name
@@ -324,14 +325,13 @@ var
    Done : Boolean ;
 begin
 
-     // Get time range to export
      if rbAllRecords.Checked then begin
         StartAt := 0 ;
-        EndAt := CdrFH.NumSamplesInFile div CdrFH.NumChannels ;
+        EndAt := (CdrFH.NumSamplesInFile div CdrFH.NumChannels) -1 ;
         end
      else begin
         StartAt := Round(edRange.LoValue/CdrFH.dt) ;
-        EndAt := Round(edRange.HiValue/CdrFH.dt) ;
+        EndAt := Min(Round(edRange.HiValue/CdrFH.dt),(CdrFH.NumSamplesInFile div CdrFH.NumChannels) -1) ;
         end ;
 
      // If destination file already exists, allow user to abort
@@ -436,14 +436,13 @@ var
    NumScans,NumScansRead,NumScansToRead,NumScansToExport : Integer ;
 begin
 
-     // Get time range to export
      if rbAllRecords.Checked then begin
         StartAt := 0 ;
-        EndAt := (CdrFH.NumSamplesInFile div CdrFH.NumChannels) - 1 ;
+        EndAt := (CdrFH.NumSamplesInFile div CdrFH.NumChannels) -1 ;
         end
      else begin
         StartAt := Round(edRange.LoValue/CdrFH.dt) ;
-        EndAt := Round(edRange.HiValue/CdrFH.dt) ;
+        EndAt := Min(Round(edRange.HiValue/CdrFH.dt),(CdrFH.NumSamplesInFile div CdrFH.NumChannels) -1) ;
         end ;
 
      // If destination file already exists, allow user to abort
@@ -559,11 +558,11 @@ begin
 
      if rbAllRecords.Checked then begin
         StartAt := 0 ;
-        EndAt := CdrFH.NumSamplesInFile div CdrFH.NumChannels ;
+        EndAt := (CdrFH.NumSamplesInFile div CdrFH.NumChannels) -1 ;
         end
      else begin
         StartAt := Round(edRange.LoValue/CdrFH.dt) ;
-        EndAt := Round(edRange.HiValue/CdrFH.dt) ;
+        EndAt := Min(Round(edRange.HiValue/CdrFH.dt),(CdrFH.NumSamplesInFile div CdrFH.NumChannels) -1) ;
         s := s + format( '%.6g-%.6gs',[edRange.LoValue,edRange.HiValue]) ;
         end ;
 

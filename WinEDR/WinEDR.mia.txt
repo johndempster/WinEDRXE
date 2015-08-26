@@ -294,8 +294,8 @@ else
   Install Files E:\Delphi XE3 Projects\WinEDRXE\tritonplus.bit to $TARGETDIR$
   Install Files E:\Delphi XE3 Projects\WinEDRXE\Vp500.bin to $TARGETDIR$
   Install Files E:\Delphi XE3 Projects\WinEDRXE\WinEDR.exe to $TARGETDIR$
-  Create Shortcut $DESKTOPDIR$\WinEDR V3.6.3 to $TARGETDIR$\WinEDR.exe
-  Create Shortcut $SHORTCUTFOLDER$\WinEDR V3.6.3 to $TARGETDIR$\WinEDR.exe
+  Create Shortcut $DESKTOPDIR$\WinEDR V3.6.4 to $TARGETDIR$\WinEDR.exe
+  Create Shortcut $SHORTCUTFOLDER$\WinEDR V3.6.4 to $TARGETDIR$\WinEDR.exe
   Install Files E:\Delphi XE3 Projects\WinEDRXE\winusb.dll to $TARGETDIR$
   Install Files E:\Delphi XE3 Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\cpd64.exe to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
   Install Files E:\Delphi XE3 Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\Install Digidata 1200 Driver (Windows NT,2000,XP).bat to $TARGETDIR$\Digidata 1200 Support Win 2000,XT

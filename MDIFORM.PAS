@@ -340,6 +340,10 @@ unit Mdiform;
                    Changes to rec.pas, viewsig.pas, pageview.pas
    V3.6.3 12.08.15 dd1440.pas: Now ensures 32/64 bit version of wdapi1140.dll is created
                    allowing dd1440.dll to load.
+   V3.6.4 26.08.15 Optopatch secondary channel gain and units now set correctly
+                   Export file name list no longer mangled
+                   axdd1400.dll, axdd1550.dll and axdd1550A.dll and associated files now
+                   copied to WinEDR settings folder from AxoScope or PCLAMP program folders.
   =======================================================================}
 
 interface
@@ -574,7 +578,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.6.3' ;
+     Version := 'V3.6.4' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }

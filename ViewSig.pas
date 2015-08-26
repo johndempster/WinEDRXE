@@ -226,7 +226,7 @@ procedure TViewSigFrm.edIdentKeyPress(Sender: TObject; var Key: Char);
   Write to log file
   -------------------------------------------}
 begin
-     if key = chr(13) then WriteToLogFile( edIdent.text ) ;
+     if key = #13 then WriteToLogFile( edIdent.text ) ;
      end;
 
 
