@@ -102,6 +102,8 @@ unit AmpModule;
 // 16.12.14 .ResetMultiClamp700 added (closes link forcing it to be reestablished)
 // 26.08.15 Optopatch secondary channel gain and units now set correctly
 //          Dagan BVC-700A added.
+// 16.10.15 Optopatch secondary channel gain and units now set correctly
+// 08.01.16 LoadFromXMLFile1() now checks if XML file contains settings and avoids access violation.
 
 interface
 
@@ -112,8 +114,6 @@ uses
 const
      MaxAmplifiers = 4 ;
      MaxAmplifierChannels = MaxAmplifiers*2 ;
-
-
 
      amCurrentClamp = 1 ;
      amVoltageClamp = 0 ;
@@ -6315,6 +6315,14 @@ begin
        NodeIndex := 0 ;
        FindXMLNode(xmldoc.DocumentElement,'AMPLIFIERSETTINGS',ProtNode,NodeIndex);
        end ;
+
+    // Exit if settings cannot be found
+    if ProtNode = Nil then begin
+       ShowMessage( 'Cannot find AMPLIFIERSETTINGS in ' + FileName ) ;
+       XMLDoc.Active := False ;
+       XMLDoc.Free ;
+       Exit ;
+       end;
 
     // Amplifiers
     NodeIndex := 0 ;

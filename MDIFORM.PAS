@@ -344,6 +344,12 @@ unit Mdiform;
                    Export file name list no longer mangled
                    axdd1400.dll, axdd1550.dll and axdd1550A.dll and associated files now
                    copied to WinEDR settings folder from AxoScope or PCLAMP program folders.
+   V3.6.5 16.10.15 scopedisplay: Data arrays larger than 10000 points copied now min/max compressed
+                   to less than 20000 points when copied to clipboard
+   V3.6.6 08.01.16 SESLABIO.pas: Now ensures FADCNumChannels > 1 when settings loaded by LoadFromXMLFile(). XML settings file
+                   now checked for LABINTERFACESETTINGS record to avoid access violation if not present.
+                   Digidata 1440,1550,1550A: Now loads DLLs from C:\Users\Public\Documents\SESLABIO rather than (WinEDR program folder).
+                   Amplifiers: XML settings file now checked for AMPLIFIERSETTINGS record to avoid access violation if not present.
   =======================================================================}
 
 interface
@@ -578,7 +584,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.6.4' ;
+     Version := 'V3.6.6' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
