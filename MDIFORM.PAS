@@ -350,6 +350,8 @@ unit Mdiform;
                    now checked for LABINTERFACESETTINGS record to avoid access violation if not present.
                    Digidata 1440,1550,1550A: Now loads DLLs from C:\Users\Public\Documents\SESLABIO rather than (WinEDR program folder).
                    Amplifiers: XML settings file now checked for AMPLIFIERSETTINGS record to avoid access violation if not present.
+   V3.6.7 09.02.16 File->Open and File->Import: File name now set to blank to ensure that available files are displayed in openfile dialog box.
+
   =======================================================================}
 
 interface
@@ -584,7 +586,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.6.6' ;
+     Version := 'V3.6.7' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
@@ -959,8 +961,7 @@ begin
      OpenDialog.DefaultExt := DataFileExtension ;
      if Main.DataDirectory <> '' then begin
         OpenDialog.InitialDir := Main.DataDirectory ;
-        OpenDialog.FileName := Main.DataDirectory + '*.edr' ;
-//        SetCurrentDir(Main.DataDirectory) ;
+        OpenDialog.FileName := '' ;
         end ;
      OpenDialog.Filter := format( ' EDR Files (*%s)|*%s',
                                   [DataFileExtension,DataFileExtension]) ;
@@ -2182,6 +2183,7 @@ begin
          OpenDialog.Filter := OpenDialog.Filter + Filters[i].Ext ;
      OpenDialog.options := [ofPathMustExist] ;
      OpenDialog.DefaultExt := 'DAT' ;
+     OpenDialog.FileName := '' ;
 
      OpenDialog.Title := 'Import File ' ;
      if Main.DataDirectory <> '' then begin
