@@ -1,6 +1,6 @@
 unit Log;
 { ====================================================
-  WinWCP - Display log file text (c) J. Dempster 1996
+  WinEDR - Display log file text (c) J. Dempster 1996
   ====================================================}
 
 interface

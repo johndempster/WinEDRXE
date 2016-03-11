@@ -351,7 +351,8 @@ unit Mdiform;
                    Digidata 1440,1550,1550A: Now loads DLLs from C:\Users\Public\Documents\SESLABIO rather than (WinEDR program folder).
                    Amplifiers: XML settings file now checked for AMPLIFIERSETTINGS record to avoid access violation if not present.
    V3.6.7 09.02.16 File->Open and File->Import: File name now set to blank to ensure that available files are displayed in openfile dialog box.
-
+   V3.6.8 09.03.16 Multiclamp 700A/B support updated to match WinWCP V5.1.5
+                   Seal test now has zap button
   =======================================================================}
 
 interface
@@ -586,7 +587,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.6.7' ;
+     Version := 'V3.6.8' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }

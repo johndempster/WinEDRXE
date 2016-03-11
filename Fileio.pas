@@ -56,6 +56,7 @@ unit Fileio;
               amplifier settings.xml
   17.10.14 ... Settings.ADCVoltageRangeIndex no longer used to store selected A/D voltage range
   12.02.15 ... GetCDRHeader() now checks that NP= in header matches actual number of samples in file and allows correction.
+  11/03/16 ..  'STZAPA=', Settings.SealTest.ZapAmplitude'STZAPD=', Settings.SealTest.ZapDuration added to INI file
   }
 
 
@@ -636,6 +637,8 @@ begin
      ReadInt( Header, 'STVCH=', Settings.SealTest.VoltageChannel ) ;
      ReadInt( Header, 'STUSE=', Settings.SealTest.Use ) ;
      ReadLogical( Header, 'STASC=', Settings.SealTest.AutoScale ) ;
+     ReadFloat( Header, 'STZAPA=', Settings.SealTest.ZapAmplitude ) ;
+     ReadFloat( Header, 'STZAPD=', Settings.SealTest.ZapDuration ) ;
 
      //Settings.ADCVoltageRangeIndex := 0 ;
      //ReadInt( Header, 'ADVRI=', Settings.ADCVoltageRangeIndex ) ;
@@ -852,6 +855,8 @@ begin
      AppendInt( Header, 'STVCH=', Settings.SealTest.VoltageChannel ) ;
      AppendInt( Header, 'STUSE=', Settings.SealTest.Use ) ;
      AppendLogical( Header, 'STASC=', Settings.SealTest.AutoScale ) ;
+     AppendFloat( Header, 'STZAPA=', Settings.SealTest.ZapAmplitude ) ;
+     AppendFloat( Header, 'STZAPD=', Settings.SealTest.ZapDuration ) ;
 
      AppendInt( Header, 'NC=', Settings.NumChannels ) ;
      //AppendInt( Header, 'ADVRI=', Settings.ADCVoltageRangeIndex ) ;

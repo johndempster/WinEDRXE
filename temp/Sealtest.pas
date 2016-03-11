@@ -75,13 +75,11 @@ unit Sealtest;
   14.03.12 .. Output channels for test pulse now selected by check box and pulse can be
               applied to additional channels by ticking boxes.
   17.04.12 .. No. of input channels displayed can now be selected from menu.
-  06.09.13 .. EPC9PanelFrm opened if EPC9/10 patch clamp in use.
-  21.01.14 .. Sweep shuts down on FormDeactivate to avoid access violations
-              when EPC9PanelFrm title bar held down.
-  09.07.15 .. DACScale arrays increased to cope with up to 128 analog output channels
-  02.10.15 .. Zap pulse added to panel
-// 05.11.15 HekaEPC9USB interface added
-  11.03.16 .. Copied from WinWCP V5.1.5 Now incorporates ZAP button
+  15.02.13 .. Page showing Rm,Ra,Cm now displayed as alternative to Gm,Ga,Cm
+              Resistance/cell membrane parameters smoothing factor can now be set by user
+  15.09.14 ... EPC9 panel now opened when form opened (if Heka EPC9/10)
+  17.10.14 ... Settings.ADCVoltageRangeIndex no longer used to store selected A/D voltage range
+  10.07.15 .. DACScale & DACHoldLevel arrays increased to cope with up to 128 analog output channels
   ==================================================}
 
 interface
@@ -91,13 +89,8 @@ uses WinTypes, WinProcs, Classes, Graphics, Forms, Controls, Buttons,
   math, maths, dialogs,
   ValEdit, ScopeDisplay, SESLabIO, ComCtrls, ValidatedEdit, FileIO,ampmodule, strutils ;
 
-const
-    Idle = 0 ;
-    StartSweep = 1 ;
-    SweepInProgress = 2;
-    EndofSweep = 3 ;
 type
-  //TState = ( Idle, StartSweep, SweepInProgress, EndofSweep ) ;
+  TState = ( Idle, StartSweep, SweepInProgress, EndofSweep ) ;
 
   TTestPulse = record
                Duration : single ;
@@ -119,7 +112,6 @@ type
     CurrentGrp: TGroupBox;
     Label7: TLabel;
     Label8: TLabel;
-    CellGrp: TGroupBox;
     Timer: TTimer;
     PulseGrp: TGroupBox;
     rbUseHoldingVoltage1: TRadioButton;
@@ -143,24 +135,9 @@ type
     edIHold: TValidatedEdit;
     edIPulse: TValidatedEdit;
     scDisplay: TScopeDisplay;
-    CellParametersPage: TPageControl;
-    PipetteTab: TTabSheet;
-    Label9: TLabel;
-    edResistance: TValidatedEdit;
-    CellTab: TTabSheet;
-    Label15: TLabel;
-    Label17: TLabel;
-    Label16: TLabel;
-    edGaccess: TValidatedEdit;
-    edGmembrane: TValidatedEdit;
-    edCmembrane: TValidatedEdit;
     TimerGrp: TGroupBox;
     edTimer: TEdit;
     bResetTimer: TButton;
-    bSaveToLog: TButton;
-    GroupBox2: TGroupBox;
-    rbGaFromPeak: TRadioButton;
-    rbGaFromExp: TRadioButton;
     ckAutoScale: TCheckBox;
     edPulseheight3: TValidatedEdit;
     Label20: TLabel;
@@ -178,6 +155,19 @@ type
     ChannelsGrp: TGroupBox;
     cbNumChannels: TComboBox;
     Label10: TLabel;
+    CellGrp: TGroupBox;
+    Label22: TLabel;
+    CellParametersPage: TPageControl;
+    PipetteTab: TTabSheet;
+    Label9: TLabel;
+    edResistance: TValidatedEdit;
+    CellTab: TTabSheet;
+    Label15: TLabel;
+    Label17: TLabel;
+    Label16: TLabel;
+    edGaccess: TValidatedEdit;
+    edGmembrane: TValidatedEdit;
+    edCmembrane: TValidatedEdit;
     CellRTab: TTabSheet;
     Label18: TLabel;
     Label19: TLabel;
@@ -185,14 +175,11 @@ type
     edRAccess: TValidatedEdit;
     edRMembrane: TValidatedEdit;
     edCMembrane1: TValidatedEdit;
+    bSaveToLog: TButton;
+    GroupBox2: TGroupBox;
+    rbGaFromPeak: TRadioButton;
+    rbGaFromExp: TRadioButton;
     edSmoothingFactor: TValidatedEdit;
-    Label22: TLabel;
-    ZapGrp: TGroupBox;
-    bzap: TButton;
-    edZapAmplitude: TValidatedEdit;
-    edZapDuration: TValidatedEdit;
-    Label23: TLabel;
-    Label24: TLabel;
     procedure TimerTimer(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure edHoldingVoltage1KeyPress(Sender: TObject; var Key: Char);
@@ -223,13 +210,8 @@ type
     procedure rbIclampClick(Sender: TObject);
     procedure cbNumChannelsChange(Sender: TObject);
     procedure edSmoothingFactorKeyPress(Sender: TObject; var Key: Char);
-    procedure FormCreate(Sender: TObject);
-    procedure bzapClick(Sender: TObject);
-    procedure edZapAmplitudeKeyPress(Sender: TObject; var Key: Char);
-    procedure edZapDurationKeyPress(Sender: TObject; var Key: Char);
   private
     { Private declarations }
-  Initialised : Boolean ;
   ADC : PSmallIntArray ;
   DAC : PSmallIntArray ;
   EndOfBuf : Integer ;
@@ -279,8 +261,7 @@ type
 
   public
     { Public declarations }
-    State : Integer ;
-    LoadEPC9Panel : Boolean ;
+    State : TState ;
     procedure StopADCandDAC ;
     procedure StartADCandDAC ;
     procedure ChangeDisplayGrid ;
@@ -305,10 +286,9 @@ implementation
 
 {$R *.DFM}
 
-uses Mdiform, mmsystem , Rec, TritonPanelUnit, EPC9PanelUnit;
+uses Mdiform, mmsystem , Rec, TritonPanelUnit;
 
 const
-     //NumDACChannels = 2 ;
      NumTestSamples = 512 ;
      MinDACInterval = 0.0002 ;
      MinPulseWidth = 0.0001 ;
@@ -318,6 +298,7 @@ const
      CurrentClampScale = 1E12 ;
      VoltageClampUnits = 'mV' ;
      VoltageClampScale = 1E3 ;
+
 
 procedure TSealTestFrm.FormShow(Sender: TObject);
 { ----------------
@@ -343,7 +324,7 @@ begin
                 Main.mnTriton.Click ;
                 end ;
              end ;
-          HekaEPC9,HekaEPC10,HekaEPC10Plus,HekaEPC10USB,HekaEPC9USB : begin
+          HekaEPC9,HekaEPC10,HekaEPC10Plus,HekaEPC10USB : begin
              if not Main.FormExists( 'EPC9PanelFrm' ) then begin
                 Main.mnEPC9Panel.Enabled := True ;
                 Main.mnEPC9Panel.Click ;
@@ -351,7 +332,8 @@ begin
              end ;
           end;
 
-     ClientWidth := ZapGrp.Left + ZapGrp.Width + 5 ;
+     Timer.Enabled := False ;
+     ClientWidth := CellGrp.Left + CellGrp.Width + 5 ;
 
      { Get pointers to start of lab. interface A/D and D/A buffer }
      Main.SESLabIO.GetADCBuffer( ADC ) ;
@@ -368,6 +350,12 @@ begin
      { Stop laboratory interface activity }
      if Main.SESLabIO.ADCActive then Main.SESLabIO.ADCStop ;
      if Main.SESLabIO.DACActive then Main.SESLabIO.DACStop ;
+
+     // Make the currently selected A/D voltage range compatible
+     //  with the laboratory interface hardware.
+ //    Main.SESLabIO.ADCVoltageRangeIndex := Min( Settings.ADCVoltageRangeIndex,
+ //                                               Main.SESLabIO.ADCNumVoltageRanges-1) ;
+
 
      // Amplifier
      cbAmplifier.Clear ;
@@ -406,7 +394,6 @@ begin
 
      scDisplay.TUnits := Settings.TUnits ;
 
-
      // Show available output channels
      ckPulseToAO0.Visible := False ;
      ckPulseToAO1.Visible := False ;
@@ -434,9 +421,6 @@ begin
      edHoldingVoltage2.Value := Settings.SealTest.HoldingVoltage2 ;
      edHoldingVoltage3.Value := Settings.SealTest.HoldingVoltage3 ;
 
-     edZapAmplitude.Value := Settings.SealTest.ZapAmplitude ;
-     edZapDuration.Value := Settings.SealTest.ZapDuration ;
-
      { Select test pulse to use }
      case Settings.SealTest.Use of
           2 : rbUseHoldingVoltage2.checked := True ;
@@ -459,7 +443,7 @@ begin
      TimerBusy := False ;
      ResetReadout := True ;
      FirstSweep := True ;
-     State := idle ;//StartSweep ;
+     State := StartSweep ;
      NewAmplifierGain := True ;
 
      // Clear display
@@ -469,8 +453,7 @@ begin
          end ;
 
      Resize ;
-     State := StartSweep ;
-     Initialised := True ;
+
      end ;
 
 
@@ -504,6 +487,15 @@ begin
             cbVoltageChannel.ItemIndex := ch ;
          end ;
 
+     scDisplay.ClearHorizontalCursors ;
+     for ch := 0 to NumTestChannels-1 do begin
+         Main.SESLabIO.ADCChannelZero[ch] := 0 ;
+         { Create horizontal cursors }
+         scDisplay.AddHorizontalCursor(ch,Settings.Colors.Cursors,True,'z') ;
+         scDisplay.yMax[ch] := Main.SESLabIO.ADCMaxValue ;
+         scDisplay.yMin[ch] := Main.SESLabIO.ADCMinValue ;
+         end ;
+
      end ;
 
 
@@ -523,12 +515,6 @@ begin
 
      if not TimerBusy then begin
           TimerBusy := True ;
-
-          if LoadEPC9Panel then begin
-               Main.mnEPC9Panel.Enabled := True ;
-                Main.mnEPC9Panel.Click ;
-                LoadEPC9Panel := False ;
-                end ;
           case State of
 
                StartSweep : Begin
@@ -569,7 +555,7 @@ begin
 
                    // Update Amplifier #1 gain display
 
-//                   ich := cbCurrentChannel.ItemIndex ;
+                   //ich := cbCurrentChannel.ItemIndex ;
                    if ClampMode[cbAmplifier.ItemIndex] <>
                       Amplifier.ClampMode[cbAmplifier.ItemIndex] then SetClampMode ;
 
@@ -577,8 +563,8 @@ begin
                    if Amplifier.GainTelegraphAvailable[cbAmplifier.ItemIndex] or
                       NewAmplifierGain then begin
                       // Display current amplifier gain
-//                      if Main.SESLabIO.LabInterfaceType = Triton then iCh := 1
-//                                                                 else iCh := 0 ;
+                      //if Main.SESLabIO.LabInterfaceType = Triton then iCh := 1
+                      //                                           else iCh := 0 ;
                       edAmplifierGain.Units := 'V/' + Amplifier.PrimaryChannelUnits[cbAmplifier.ItemIndex,ClampMode[cbAmplifier.ItemIndex]] ;
                       edAmplifierGain.Value := Amplifier.PrimaryChannelScaleFactor[cbAmplifier.ItemIndex] ;
                       NewAmplifierGain := False ;
@@ -592,6 +578,8 @@ begin
                    Main.SESLabIO.ADCNumChannels := NumTestChannels ;
                    Main.SESLabIO.ADCNumSamples := NumTestSamples ;
                    // A/D input voltage range
+//                   Main.SESLabIO.ADCVoltageRangeIndex := Min( Settings.ADCVoltageRangeIndex,
+//                                                              Main.SESLabIO.ADCNumVoltageRanges-1) ;
 
                    // Set A/D sweep triggering
                    Main.SESLabIO.ADCTriggerMode := tmWaveGen ;
@@ -692,11 +680,9 @@ begin
     ChangeUnits( edHoldingVoltage1, Units, Scale ) ;
     ChangeUnits( edHoldingVoltage2, Units, Scale ) ;
     ChangeUnits( edHoldingVoltage3, Units, Scale ) ;
-
     ChangeUnits( edPulseHeight1, Units, Scale ) ;
     ChangeUnits( edPulseHeight2, Units, Scale ) ;
     ChangeUnits( edPulseHeight3, Units, Scale ) ;
-    ChangeUnits( edZapAmplitude, Units, Scale ) ;
 
     end ;
 
@@ -773,6 +759,7 @@ begin
          scDisplay.HorizontalCursors[ch] := Main.SESLabIO.ADCChannelZero[ch] ;
          end ;
      scDisplay.TScale := Main.SESLabIO.ADCSamplingInterval*1000.0 ;
+     scDisplay.TUnits := 'ms' ;
      scDisplay.SetDataBuf( ADC ) ;
      end ;
 
@@ -783,8 +770,11 @@ procedure TSealTestFrm.CreateTestPulse ;
   ----------------------------}
 var
    i,j,ch,iStart,iEnd,iOffLevel,iOnLevel : Integer ;
-   HoldDACLevel : Array[0..MaxAmplifiers-1] of Integer ;
+   HoldDACLevel : Array[0..MaxDACChannels-1] of Integer ;
 begin
+
+     // Select output channel
+     //TestDAC := cbDACOut.ItemIndex ;
 
      { Select test pulse to use }
      case Settings.SealTest.Use of
@@ -802,10 +792,6 @@ begin
               end ;
           end ;
 
-     if not bZap.Enabled then begin
-        Settings.SealTest.PulseHeight := edZapAmplitude.Value ;
-        end;
-
      { D/A channel voltage -> bits scaling factors }
      for ch := 0 to Main.SESLabIO.DACMaxChannels-1 do begin
          DACScale[ch] := Main.SESLabIO.DACMaxValue/Main.SESLabIO.DACVoltageRange[ch] ;
@@ -813,16 +799,10 @@ begin
 
      { Test pulse duration and recording sweep length }
      TestPulse.Duration := Settings.SealTest.PulseWidth ;
-
-     if not bZap.Enabled then begin
-        TestPulse.Duration := edZapDuration.Value ;
-        bZap.Enabled := True ;
-        end;
-
      TestPulse.TStart := Max(TestPulse.Duration*0.15,0.002) ;
      TestPulse.TEnd := TestPulse.TStart + TestPulse.Duration ;
      TestPulse.RecordLength := TestPulse.TEnd + TestPulse.TStart*1.5 ;
-
+     //TestPulse.TEnd := TestPulse.TEnd - TestPulse.Duration*0.5 ;
      { Test pulse repeat period }
      TestPulse.RepeatPeriod := Max(TestPulse.RecordLength,0.1 ) ;
 
@@ -979,7 +959,7 @@ begin
          Sum := Sum + ADC^[j] ;
          end ;
      Avg := Sum/(EndofVHold+1) ;
-     HoldLevel := Round(Avg) ;
+     //HoldLevel := Round(Avg) ;
      VHold := (Avg - VZero)*VScale ;
 
      // Holding current
@@ -1166,7 +1146,7 @@ begin
         end
      else begin
         EdCmembrane.Value := 0.0 ;
-        EdCmembrane1.Value := 0.0 ;
+        EdCmembrane1.Value := EdCmembrane.Value ;
         end ;
      Main.Cm := EdCmembrane.Value ;
 
@@ -1187,12 +1167,8 @@ var
     ch : Integer ;
 begin
 
-    if not Initialised then exit ;
-    if State <> SweepInProgress then Exit ;
-
-    Timer.Enabled := False ;
-
     if Main.SESLabIO.ADCActive then Main.SESLabIO.ADCStop ;
+
     if Main.SESLabIO.DACActive then Main.SESLabIO.DACStop ;
 
     { Return voltage command to holding voltage and Sync. O/P to OFF }
@@ -1210,8 +1186,6 @@ procedure TSealTestFrm.StartADCandDAC ;
   ---------------------------------}
 begin
 
-     if not Initialised then exit ;
-
      // Ensure display channels visibility is updated
      ChangeDisplayGrid ;
 
@@ -1219,12 +1193,11 @@ begin
      if Main.FormExists( 'RecordFrm') then RecordFrm.StopADCandDAC ;
 
      { Start seal test pulses when form gains focus }
-
      Timer.enabled := True ;
      TimerBusy := False ;
      State := StartSweep ;
-
      end;
+
 
 
 procedure TSealTestFrm.edHoldingVoltage1KeyPress(Sender: TObject; var Key: Char);
@@ -1232,7 +1205,7 @@ procedure TSealTestFrm.edHoldingVoltage1KeyPress(Sender: TObject; var Key: Char)
   Set Voltage clamp holding voltage #1
   ------------------------------------}
 begin
-     if key = #13 then begin
+     if key = char(13) then begin
          Settings.SealTest.HoldingVoltage1 := edHoldingVoltage1.Value ;
         ResetReadout := True ;
         end ;
@@ -1245,7 +1218,7 @@ procedure TSealTestFrm.edHoldingVoltage2KeyPress(Sender: TObject; var Key: Char)
   Set Voltage clamp holding voltage #2
   ------------------------------------}
 begin
-     if key = #13 then begin
+     if key = char(13) then begin
         Settings.SealTest.HoldingVoltage2 := edHoldingVoltage2.Value ;
         ResetReadout := True ;
         end ;
@@ -1259,7 +1232,7 @@ procedure TSealTestFrm.EdHoldingVoltage3KeyPress(Sender: TObject;
   Set Voltage clamp holding voltage #3
   ------------------------------------}
 begin
-     if key = #13 then begin
+     if key = char(13) then begin
         Settings.SealTest.HoldingVoltage3 := edHoldingVoltage3.Value ;
         ResetReadout := True ;
         end ;
@@ -1274,7 +1247,7 @@ begin
      { Set holding voltage and pulse height to group #1 }
      Settings.SealTest.Use := 1 ;
      Settings.SealTest.HoldingVoltage1 := edHoldingVoltage1.Value ;
-     Settings.SealTest.PulseHeight1 := edPulseHeight1.Value ;
+     Settings.SealTest.PulseHeight1 :=edPulseHeight1.Value ;
      end;
 
 
@@ -1334,7 +1307,7 @@ procedure TSealTestFrm.edPulseWidthKeyPress(Sender: TObject; var Key: Char);
   Set width of seal test pulse
   ----------------------------}
 begin
-     if key = #13 then begin
+     if key = chr(13) then begin
         Settings.SealTest.PulseWidth := edPulseWidth.Value ;
         { Note. Force a re-start of D/A waveform so that D/A cycle
           time is updated }
@@ -1354,8 +1327,8 @@ procedure TSealTestFrm.FormDeactivate(Sender: TObject);
 begin
      { Terminate seal test pulses if form loses focus }
  //    Timer.enabled := false ;
-     StopADCandDAC ;
-     State := Idle ;
+ //    StopADCandDAC ;
+ //    State := Idle ;
      end;
 
 
@@ -1366,7 +1339,7 @@ procedure TSealTestFrm.FormActivate(Sender: TObject);
 begin
 
      StartADCandDAC ;
-     //outputdebugstring(pchar('sealtest activate'));
+
      end;
 
 
@@ -1388,14 +1361,6 @@ begin
 
      end;
 
-
-procedure TSealTestFrm.FormCreate(Sender: TObject);
-begin
-     Timer.Enabled := False ;
-     LoadEPC9Panel := False ;
-     Initialised := False ;
-     State := Idle ;
-     end;
 
 procedure TSealTestFrm.FormKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);
@@ -1443,16 +1408,14 @@ begin
      VoltsGrp.Top := ClientHeight - VoltsGrp.Height - 5 ;
      CurrentGrp.Top := VoltsGrp.Top ;
      CellGrp.Top := VoltsGrp.Top ;
-     ZapGrp.Top := VoltsGrp.Top ;
 
      ckAutoScale.Top := VoltsGrp.Top - ckAutoScale.Height - 5 ;
      scDisplay.Width := Max(ClientWidth - scDisplay.Left - 5,2) ;
      scDisplay.Height := Max( ckAutoScale.Top - scDisplay.Top - 2,2) ;
 
-     //State := StartSweep ;
-     StartADCandDAC ;
-     //Timer.Enabled := True ;
-
+     State := StartSweep ;
+     Timer.Enabled := True ;
+     
      end;
 
 
@@ -1520,13 +1483,6 @@ begin
         end ;
      end;
 
-
-procedure TSealTestFrm.bzapClick(Sender: TObject);
-//
-/// Zap button clicked
-begin
-    bZap.Enabled := False ;
-    end;
 
 procedure TSealTestFrm.edAmplifierGainKeyPress(Sender: TObject;
   var Key: Char);
@@ -1781,30 +1737,13 @@ begin
 
 procedure TSealTestFrm.edSmoothingFactorKeyPress(Sender: TObject;
   var Key: Char);
+// -----------------------------------
+// Set cell parameter smoothing factor
+// -----------------------------------
 begin
     if Key = #13 then begin
-       Settings.SealTest.SmoothingFactor := 1.0 / edSmoothingFactor.Value
+       Settings.SealTest.SmoothingFactor := 1.0 / edSmoothingFactor.Value ;
        end ;
-     end;
-
-procedure TSealTestFrm.edZapAmplitudeKeyPress(Sender: TObject; var Key: Char);
-// ---------------------
-// Zap amplitude changed
-// ---------------------
-begin
-     if key = #13 then begin
-        Settings.SealTest.ZapAmplitude := edZapAmplitude.Value ;
-        end ;
-     end;
-
-procedure TSealTestFrm.edZapDurationKeyPress(Sender: TObject; var Key: Char);
-// ---------------------
-// Zap duration changed
-// ---------------------
-begin
-     if key = #13 then begin
-        Settings.SealTest.ZapDuration := edZapDuration.Value ;
-        end ;
-     end;
+     end ;
 
 end.

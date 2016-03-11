@@ -208,6 +208,8 @@ TSealTest = record
           DACNum : Integer ;
           FirstSweep : Boolean ;
           SmoothingFactor : Single ;
+          ZapAmplitude : single ;
+          ZapDuration : single ;
           end ;
 
 TVCommand = record

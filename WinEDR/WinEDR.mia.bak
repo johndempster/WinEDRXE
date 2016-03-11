@@ -2200,8 +2200,8 @@ Main Install
 EDR
 $TARGETDIR$\WinEDR.exe
 WinEDR data files
-
-
+$TARGETDIR$\WinEDR.exe
+0
 .EDR
 "Open,%1,,,"
 {832FEADB-3683-45B9-9713-8468286F1512}
