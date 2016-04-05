@@ -125,6 +125,8 @@ unit AmpModule;
 // 04.02.16 Multiclamp 700A: Now Com port # now correctly isolated from message code
 //          allowing Amplifier #1/#2 to be correctly selected instead of #3/#4
 // 09.03.16 Transferred from WinWCP V5.1.5 to update amplifier support in WinEDR
+// 31.03.16 SettingsDirectory now correctly set to  'C:\Users\Public\Documents\WinEDR' rather
+//          than 'C:\Users\Public\Documents\WinEDR'
 
 interface
 
@@ -1329,7 +1331,7 @@ begin
      Axoclamp900AHnd := -1 ;
 
      // Load settings
-     SettingsDirectory := GetSpecialFolder(CSIDL_COMMON_DOCUMENTS) + '\WinWCP\';
+     SettingsDirectory := GetSpecialFolder(CSIDL_COMMON_DOCUMENTS) + '\WinEDR\';
      if not SysUtils.DirectoryExists(SettingsDirectory) then SysUtils.ForceDirectories(SettingsDirectory) ;
      SettingsFileName := SettingsDirectory + 'amplifier settings.xml' ;
      if FileExists( SettingsFileName ) then LoadFromXMLFile( SettingsFileName ) ;
