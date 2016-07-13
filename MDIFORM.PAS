@@ -355,6 +355,8 @@ unit Mdiform;
                    Seal test now has zap button
    V3.6.9 05.04.16 amplifer settings.xml now correctly stoted in'C:\Users\Public\Documents\WinEDR' rather
                    than 'C:\Users\Public\Documents\WinEDR'
+   V3.7.0 13.07.16 4 byte packing added to end TDD1550_Protocol & TDD1550A_Protocol record to avoid 'Error writing to device' error
+                   when external trigger selectef.
   =======================================================================}
 
 interface
@@ -589,7 +591,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.6.9' ;
+     Version := 'V3.7.0' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
