@@ -126,7 +126,8 @@ unit AmpModule;
 //          allowing Amplifier #1/#2 to be correctly selected instead of #3/#4
 // 09.03.16 Transferred from WinWCP V5.1.5 to update amplifier support in WinEDR
 // 31.03.16 SettingsDirectory now correctly set to  'C:\Users\Public\Documents\WinEDR' rather
-//          than 'C:\Users\Public\Documents\WinEDR'
+//          than 'C:\Users\Public\Documents\WinWCP'
+// 17.08.16 Axoclamp 2: Default current gains now correct (10,1,0.1 V/nA) for (HS10,1,0.1)
 
 interface
 
@@ -2155,9 +2156,9 @@ begin
             FPrimaryChannelUnits[AmpNumber] := 'nA' ;
             FPrimaryChannelUnitsCC[AmpNumber] := 'nA' ;
             case FAmpType[AmpNumber] of
-               amAxoclamp2HS01 : FPrimaryChannelScaleFactorX1Gain[AmpNumber] := 0.001 ;
-               amAxoclamp2HS1 : FPrimaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
-               amAxoclamp2HS10 : FPrimaryChannelScaleFactorX1Gain[AmpNumber] := 0.1 ;
+               amAxoclamp2HS01 : FPrimaryChannelScaleFactorX1Gain[AmpNumber] := 0.1 ;
+               amAxoclamp2HS1 : FPrimaryChannelScaleFactorX1Gain[AmpNumber] := 1.0 ;
+               amAxoclamp2HS10 : FPrimaryChannelScaleFactorX1Gain[AmpNumber] := 10.0 ;
                end ;
             FPrimaryChannelScaleFactorX1GainCC[AmpNumber] := FPrimaryChannelScaleFactorX1Gain[AmpNumber] ;
             FPrimaryChannelScaleFactor[AmpNumber] := FPrimaryChannelScaleFactorX1Gain[AmpNumber] ;

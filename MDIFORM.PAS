@@ -357,6 +357,7 @@ unit Mdiform;
                    than 'C:\Users\Public\Documents\WinEDR'
    V3.7.0 13.07.16 4 byte packing added to end TDD1550_Protocol & TDD1550A_Protocol record to avoid 'Error writing to device' error
                    when external trigger selectef.
+   V3.7.1 17.08.16 Axoclamp 2: Default current gains now correct (10,1,0.1 V/nA) for (HS10,1,0.1)
   =======================================================================}
 
 interface
@@ -591,7 +592,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.7.0' ;
+     Version := 'V3.7.1' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
