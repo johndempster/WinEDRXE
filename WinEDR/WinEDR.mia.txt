@@ -294,8 +294,8 @@ else
   Install Files E:\Delphi XE3 Projects\WinEDRXE\tritonplus.bit to $TARGETDIR$
   Install Files E:\Delphi XE3 Projects\WinEDRXE\Vp500.bin to $TARGETDIR$
   Install Files E:\Delphi XE3 Projects\WinEDRXE\WinEDR.exe to $TARGETDIR$
-  Create Shortcut $DESKTOPDIR$\WinEDR V3.7.1 to $TARGETDIR$\WinEDR.exe
-  Create Shortcut $SHORTCUTFOLDER$\WinEDR V3.7.1 to $TARGETDIR$\WinEDR.exe
+  Create Shortcut $DESKTOPDIR$\WinEDR V3.7.2 to $TARGETDIR$\WinEDR.exe
+  Create Shortcut $SHORTCUTFOLDER$\WinEDR V3.7.2 to $TARGETDIR$\WinEDR.exe
   Install Files E:\Delphi XE3 Projects\WinEDRXE\winusb.dll to $TARGETDIR$
   Install Files E:\Delphi XE3 Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\cpd64.exe to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
   Install Files E:\Delphi XE3 Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\Install Digidata 1200 Driver (Windows NT,2000,XP).bat to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
@@ -324,8 +324,9 @@ else
   Install Files E:\Delphi XE3 Projects\WinEDRXE\DD1550fpga.bin to $TARGETDIR$
   Install Files E:\Delphi XE3 Projects\WinEDRXE\DD1550A.dll to $TARGETDIR$
   Install Files E:\Delphi XE3 Projects\WinEDRXE\DD1550.dll to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\wdapi1140.dll.32 to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\wdapi1140.dll.64 to $TARGETDIR$
+  Install Files E:\Delphi XE3 Projects\WinEDRXE\AxDD1550B.dll to $TARGETDIR$
+  Install Files E:\Delphi XE3 Projects\WinEDRXE\DD1550Bfpga.bin to $TARGETDIR$
+  Install Files E:\Delphi XE3 Projects\WinEDRXE\wdapi1210.dll to $TARGETDIR$
   [DEFINE WEB MEDIA WinEDR]
   Get Component WinEDR Selection State into Variable SELECTED
   if Variable SELECTED Equals TRUE
