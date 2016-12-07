@@ -359,6 +359,7 @@ unit Mdiform;
                    when external trigger selectef.
    V3.7.1 17.08.16 Axoclamp 2: Default current gains now correct (10,1,0.1 V/nA) for (HS10,1,0.1)
    V3.7.2 30.09.16 Spport for Digidata 1550B added.
+   V3.7.3 07.12.16 Fluoescence ratio option now stored in INI file
   =======================================================================}
 
 interface

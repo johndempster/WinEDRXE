@@ -44,7 +44,7 @@ begin
 procedure TCDRZeroFrm.FormShow(Sender: TObject);
 begin
      edChannel.text := format('Ch.%d %s',[ChSel,Channel[ChSel].ADCName]) ;
-     edLevel.text := IntToStr( Channel[ChSel].ADCZero ) ;
+     edLevel.text := format( '%4g',[Channel[ChSel].ADCZero] ) ;
      end ;
 
 end.

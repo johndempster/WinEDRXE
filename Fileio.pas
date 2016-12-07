@@ -57,6 +57,7 @@ unit Fileio;
   17.10.14 ... Settings.ADCVoltageRangeIndex no longer used to store selected A/D voltage range
   12.02.15 ... GetCDRHeader() now checks that NP= in header matches actual number of samples in file and allows correction.
   11/03/16 ..  'STZAPA=', Settings.SealTest.ZapAmplitude'STZAPD=', Settings.SealTest.ZapDuration added to INI file
+  7/12/16 ...  fluoresecence ratio, resistance and event frequency special options in use now in INI file
   }
 
 
@@ -710,6 +711,7 @@ begin
      ReadLogical( Header, 'CAPINUSE=', Settings.Capacity.InUse) ;
 
      // Fluorescence settings
+     ReadLogical( Header, 'FLRINUSE=', Settings.Fluorescence.InUse) ;
      ReadFloat( Header, 'FLRMAX=', Settings.Fluorescence.RMax ) ;
      ReadFloat( Header, 'FLRMIN=', Settings.Fluorescence.RMin ) ;
      ReadFloat( Header, 'FLKEFF=', Settings.Fluorescence.KEff ) ;
@@ -722,6 +724,7 @@ begin
      ReadFloat( Header, 'FLCDMX=', Settings.Fluorescence.ConcDisplayMax ) ;
 
      // Real time event frequency settings
+     ReadLogical( Header, 'EFINUSE=', Settings.RTEventAnalysis.InUse) ;
      ReadInt( Header, 'EFCH=', Settings.RTEventAnalysis.Channel ) ;
      ReadFloat( Header, 'EFTHRESH=', Settings.RTEventAnalysis.DetectionThreshold ) ;
      ReadFloat( Header, 'EFRMEAN=', Settings.RTEventAnalysis.RunningMeanTime ) ;
@@ -729,6 +732,7 @@ begin
      ReadFloat( Header, 'EFCOUNTI=', Settings.RTEventAnalysis.CountingInterval ) ;
 
      // Real time resistance settings
+     ReadLogical( Header, 'RESINUSE=', Settings.RTResistance.InUse) ;
      ReadInt( Header, 'RESICH=', Settings.RTResistance.ImChannel ) ;
      ReadInt( Header, 'RESVCH=', Settings.RTResistance.VmChannel ) ;
      ReadFloat( Header, 'RESAMPLITUDE=', Settings.RTResistance.Amplitude ) ;
@@ -921,6 +925,7 @@ begin
      AppendLogical( Header, 'CAPINUSE=', Settings.Capacity.InUse) ;
 
      // Fluorescence settings
+     AppendLogical( Header, 'FLRINUSE=', Settings.Fluorescence.InUse) ;
      AppendFloat( Header, 'FLRMAX=', Settings.Fluorescence.RMax ) ;
      AppendFloat( Header, 'FLRMIN=', Settings.Fluorescence.RMin ) ;
      AppendFloat( Header, 'FLKEFF=', Settings.Fluorescence.KEff ) ;
@@ -933,6 +938,7 @@ begin
      AppendFloat( Header, 'FLCDMX=', Settings.Fluorescence.ConcDisplayMax ) ;
 
      // Real time event frequency settings
+     AppendLogical( Header, 'EFINUSE=', Settings.RTEventAnalysis.InUse) ;
      AppendInt( Header, 'EFCH=', Settings.RTEventAnalysis.Channel ) ;
      AppendFloat( Header, 'EFTHRESH=', Settings.RTEventAnalysis.DetectionThreshold ) ;
      AppendFloat( Header, 'EFRMEAN=', Settings.RTEventAnalysis.RunningMeanTime ) ;
@@ -940,6 +946,7 @@ begin
      AppendFloat( Header, 'EFCOUNTI=', Settings.RTEventAnalysis.CountingInterval ) ;
 
      // Real time resistance settings
+     AppendLogical( Header, 'RESINUSE=', Settings.RTResistance.InUse) ;
      AppendInt( Header, 'RESICH=', Settings.RTResistance.ImChannel ) ;
      AppendInt( Header, 'RESVCH=', Settings.RTResistance.VmChannel ) ;
      AppendFloat( Header, 'RESAMPLITUDE=', Settings.RTResistance.Amplitude ) ;

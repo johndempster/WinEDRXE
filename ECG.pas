@@ -2028,8 +2028,8 @@ begin
                 end ;
 
             // Subtract average ECG
-            i0 := scAvgDisplay.VerticalCursors[AvgI0Cursor] - AvgStart ;
-            i1 := scAvgDisplay.VerticalCursors[AvgI1Cursor] - AvgStart ;
+            i0 := Round(scAvgDisplay.VerticalCursors[AvgI0Cursor]) - AvgStart ;
+            i1 := Round(scAvgDisplay.VerticalCursors[AvgI1Cursor]) - AvgStart ;
             if i0 > i1 then begin
                i := i0 ;
                i0 := i1 ;
@@ -2128,10 +2128,10 @@ begin
              // Set Fitting/area cursor labels
         lbAvgI0Cursor.Left := scAvgDisplay.Left +
                               scAvgDisplay.XScreenCoord[
-                              scAvgDisplay.VerticalCursors[AvgI0Cursor]] ;
+                              Round(scAvgDisplay.VerticalCursors[AvgI0Cursor])] ;
         lbAvgI1Cursor.Left := scAvgDisplay.Left +
                               scAvgDisplay.XScreenCoord[
-                              scAvgDisplay.VerticalCursors[AvgI1Cursor]] ;
+                              Round(scAvgDisplay.VerticalCursors[AvgI1Cursor])] ;
 
         // Place horizontal line between fitting region cursors
         shAvgI0I1Line.Top := lbAvgI0Cursor.Top + (lbAvgI0Cursor.Height div 2) ;
@@ -2246,7 +2246,7 @@ begin
          if scECGDisplay.ChanVisible[ch] then ChannelOnDisplay := ch ;
 
      { Read out cursor }
-     iCursorPos := scECGDisplay.VerticalCursors[0] ;
+     iCursorPos := Round(scECGDisplay.VerticalCursors[0]) ;
      lbECGDisplay.Top := sbRWave.Top + sbRWave.Height + 1 ;
      lbECGDisplay.Left := MinInt( [scECGDisplay.XScreenCoord[iCursorPos]
                            + scECGDisplay.Left - (lbECGDisplay.Width div 2),
@@ -2616,7 +2616,7 @@ var
 begin
 
      { Read out cursor }
-     iCursorPos := scSpecDisplay.VerticalCursors[0] ;
+     iCursorPos := Round(scSpecDisplay.VerticalCursors[0]) ;
      lbSpecDisplay.Top := scSpecDisplay.Top + scSpecDisplay.Height + 1 ;
      lbSpecDisplay.Left := MinInt( [scSpecDisplay.XScreenCoord[iCursorPos]
                            + scSpecDisplay.Left - (lbSpecDisplay.Width div 2),

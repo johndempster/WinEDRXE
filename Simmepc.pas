@@ -372,7 +372,7 @@ begin
 
                  Sim.t := Sim.t + cdrFH.dt ;
                  j := cdrFH.NumChannels*i + ChOffset ;
-                 ADC[j] := Round(y/Channel[0].ADCScale) + Channel[0].ADCZero ;
+                 ADC[j] := Round(y/Channel[0].ADCScale) + Round(Channel[0].ADCZero) ;
                  end ;
 
          Channel[0].xMax := Sim.t ;

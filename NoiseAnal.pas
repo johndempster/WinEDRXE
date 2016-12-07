@@ -2743,7 +2743,7 @@ begin
                 scDisplay.HorizontalCursors[ch] := Channel[ch].ADCZero ;
              end
           else begin
-             Channel[ch].ADCZero := scDisplay.HorizontalCursors[ch] ;
+             Channel[ch].ADCZero := Round(scDisplay.HorizontalCursors[ch]) ;
              end ;
 
          Channel[ch].yMin := scDisplay.YMin[ch] ;

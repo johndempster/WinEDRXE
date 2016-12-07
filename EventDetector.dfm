@@ -33,10 +33,6 @@ object EventDetFrm: TEventDetFrm
     OnChange = PageChange
     object DetectEventsPage: TTabSheet
       Caption = 'Detect Events'
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object scDisplay: TScopeDisplay
         Left = 224
         Top = 8
@@ -473,6 +469,8 @@ object EventDetFrm: TEventDetFrm
               Left = 0
               Top = 0
               Caption = 'RateOfRise'
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object GroupBox11: TGroupBox
                 Left = 4
                 Top = 0
@@ -485,6 +483,8 @@ object EventDetFrm: TEventDetFrm
               Left = 0
               Top = 0
               Caption = 'Template'
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object GroupBox9: TGroupBox
                 Left = 4
                 Top = 0

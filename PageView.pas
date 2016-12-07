@@ -350,7 +350,7 @@ begin
                 scDisplay.HorizontalCursors[ch] := Channel[cbChannel.ItemIndex].ADCZero ;
              end
           else begin
-             Channel[cbChannel.ItemIndex].ADCZero := scDisplay.HorizontalCursors[ch] ;
+             Channel[cbChannel.ItemIndex].ADCZero := Round(scDisplay.HorizontalCursors[ch]) ;
              end ;
 
          if scDisplay.yMin[ch] <> Channel[cbChannel.ItemIndex].yMin then begin
@@ -380,7 +380,7 @@ begin
         for ch := 0 to scDisplay.NumChannels-1 do
             if scDisplay.HorizontalCursors[ch]
                <> Channel[cbChannel.ItemIndex].ADCZero then begin
-               Channel[cbChannel.ItemIndex].ADCZero := scDisplay.HorizontalCursors[ch] ;
+               Channel[cbChannel.ItemIndex].ADCZero := Round(scDisplay.HorizontalCursors[ch]) ;
                YChanged := True ;
                Break ;
                end ;
@@ -613,7 +613,7 @@ begin
      if (Button = mbRight) and (scDisplay.ActiveHorizontalCursor >=0) then begin
         // If right-mouse button down, display zero baseline level selection dialog box
         ZeroFrm.ChSel := cbChannel.ItemIndex ;
-        ZeroFrm.ZeroLevel := Channel[ZeroFrm.ChSel].ADCZero ;
+        ZeroFrm.ZeroLevel := Round(Channel[ZeroFrm.ChSel].ADCZero) ;
         ZeroFrm.ChanName := Channel[ZeroFrm.ChSel].ADCName ;
         ZeroFrm.NewZeroAt := Round(scDisplay.ScreenCoordToX( ZeroFrm.ChSel, X )) ;
         ZeroFrm.Left := PageViewFrm.Left + Main.Left + 10 + scDisplay.Left + X;

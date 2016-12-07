@@ -484,13 +484,13 @@ var
 begin
 
       { Time zero cursor }
-      Cursor0Pos := scDisplay.VerticalCursors[Cursors.C0] ;
+      Cursor0Pos := Round(scDisplay.VerticalCursors[Cursors.C0]) ;
       if Cursor0Pos >= 0 then begin
          TZeroScan := Round((scDisplay.XOffset + Cursor0Pos)*scDisplay.TScale/(CDRFH.dt*Settings.TScale)) ;
          end ;
 
       { Read out cursor }
-      Cursor1Pos := scDisplay.VerticalCursors[Cursors.C1] ;
+      Cursor1Pos := Round(scDisplay.VerticalCursors[Cursors.C1]) ;
 
       Channel[0].CursorTime := (Cursor1Pos + scDisplay.XOffset)*scDisplay.TScale
                                 - (TZeroScan*CDRFH.dt*Settings.TScale);
@@ -503,7 +503,7 @@ begin
                 scDisplay.HorizontalCursors[ch] := Channel[ch].ADCZero ;
              end
           else begin
-             Channel[ch].ADCZero := scDisplay.HorizontalCursors[ch] ;
+             Channel[ch].ADCZero := Round(scDisplay.HorizontalCursors[ch]) ;
              end ;
 
           { Signal level at cursor }

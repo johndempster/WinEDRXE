@@ -2451,7 +2451,7 @@ begin
      Settings.DwellTimes.Threshold := edThreshold.Value ;
 
      OldValue := Channel[ChanNum].ADCZero ;
-     Channel[ChanNum].ADCZero := scDetDisplay.HorizontalCursors[DetCurs.Base] ;
+     Channel[ChanNum].ADCZero := Round(scDetDisplay.HorizontalCursors[DetCurs.Base]) ;
      // Update header and view module
      if OldValue <> Channel[ChanNum].ADCZero then begin
         SaveCDRHeader( CDRFH ) ;
@@ -2460,8 +2460,8 @@ begin
 
      { Set position of trend removal selection block labels }
 
-     SelectionCursor0 := scDetDisplay.xOffset + scDetDisplay.VerticalCursors[DetCurs.C0] ;
-     SelectionCursor1 := scDetDisplay.xOffset + scDetDisplay.VerticalCursors[DetCurs.C1];
+     SelectionCursor0 := scDetDisplay.xOffset + Round(scDetDisplay.VerticalCursors[DetCurs.C0]) ;
+     SelectionCursor1 := scDetDisplay.xOffset + Round(scDetDisplay.VerticalCursors[DetCurs.C1]);
 
      { Update vertical display magnification so that changes are retained }
      Channel[ChanNum].yMin := scDetDisplay.YMin[ChanNum] ;
@@ -4060,7 +4060,7 @@ begin
         scEditDisplay.VerticalCursors[EditCurs.Z1] :=
                                    scEditDisplay.VerticalCursors[EditCurs.Z0] +
                                    Round(edCursorSpacing.Value) - 1 ;
-        EditCurs.OldZ0  := scEditDisplay.VerticalCursors[EditCurs.Z0] ;
+        EditCurs.OldZ0  := Round(scEditDisplay.VerticalCursors[EditCurs.Z0]) ;
         end ;
 
      // Move C1 cursor with C0
@@ -4068,12 +4068,12 @@ begin
         scEditDisplay.VerticalCursors[EditCurs.C1] :=
                                    scEditDisplay.VerticalCursors[EditCurs.C0] +
                                    Round(edCursorSpacing.Value) - 1 ;
-        EditCurs.OldC0  := scEditDisplay.VerticalCursors[EditCurs.C0] ;
+        EditCurs.OldC0  := Round(scEditDisplay.VerticalCursors[EditCurs.C0]) ;
         end ;
 
      // Calculate zero level
-     i0 := Min(Max(scEditDisplay.VerticalCursors[EditCurs.Z0],0),scEditDisplay.MaxPoints-1) ;
-     i1 := Min(Max(scEditDisplay.VerticalCursors[EditCurs.Z1],0),scEditDisplay.MaxPoints-1) ;
+     i0 := Min(Max(Round(scEditDisplay.VerticalCursors[EditCurs.Z0]),0),scEditDisplay.MaxPoints-1) ;
+     i1 := Min(Max(Round(scEditDisplay.VerticalCursors[EditCurs.Z1]),0),scEditDisplay.MaxPoints-1) ;
      YZero := 0.0 ;
      n := 0 ;
      for i := Min(i0,i1) to Max(i0,i1) do begin
@@ -4083,8 +4083,8 @@ begin
      if n > 0 then YZero := YZero / n ;
 
      // Calculate cursor level
-     i0 := Min(Max(scEditDisplay.VerticalCursors[EditCurs.C0],0),scEditDisplay.MaxPoints-1) ;
-     i1 := Min(Max(scEditDisplay.VerticalCursors[EditCurs.C1],0),scEditDisplay.MaxPoints-1) ;
+     i0 := Min(Max(Round(scEditDisplay.VerticalCursors[EditCurs.C0]),0),scEditDisplay.MaxPoints-1) ;
+     i1 := Min(Max(Round(scEditDisplay.VerticalCursors[EditCurs.C1]),0),scEditDisplay.MaxPoints-1) ;
      Y := 0.0 ;
      n := 0 ;
      for i := Min(i0,i1) to Max(i0,i1) do begin

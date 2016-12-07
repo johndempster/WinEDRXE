@@ -230,7 +230,7 @@ begin
      EndAtTime := edBackgroundTime.Value
                   + edTransientTime.Value
                   + EdSteadyStateTime.Value ;
-     iZeroLevel := Channel[ChSim].ADCZero ;
+     iZeroLevel := Round(Channel[ChSim].ADCZero) ;
      t := 0.0 ;
      while (not Done) do begin
 

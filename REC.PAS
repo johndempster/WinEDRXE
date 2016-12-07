@@ -701,10 +701,10 @@ begin
      ckCapacity.Checked :=  Settings.Capacity.InUse ;
 
      // Enable/disable event frequency plot
-     Settings.RTEventAnalysis.InUse := ckEventFrequency.Checked ;
+     ckEventFrequency.Checked := Settings.RTEventAnalysis.InUse ;
 
      // Enable/disable cell resistance plot
-     Settings.RTResistance.InUse := ckResistance.Checked ;
+     ckResistance.Checked := Settings.RTResistance.InUse ;
 
      // Number of chart markers still available
      edNumMarkers.text := format('%d',[MaxMarkers-MarkerList.Count]);
@@ -2476,7 +2476,7 @@ begin
                 scDisplay.HorizontalCursors[ch] := Main.SESLabIO.ADCChannelZero[ch] ;
              end
           else begin
-             Main.SESLabIO.ADCChannelZero[ch] := scDisplay.HorizontalCursors[ch] ;
+             Main.SESLabIO.ADCChannelZero[ch] := Round(scDisplay.HorizontalCursors[ch]) ;
              end ;
           end ;
 

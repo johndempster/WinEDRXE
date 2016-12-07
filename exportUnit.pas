@@ -273,7 +273,7 @@ begin
          for i := 0 to NumScansRead-1 do begin
              for ch := 0 to CdrFH.NumChannels-1 do if UseChannel(ch) then begin
                  OutBuf[j] := InBuf[i*CdrFH.NumChannels+Channel[ch].ChannelOffset]
-                              - Channel[ch].ADCZero ;
+                              - Round(Channel[ch].ADCZero) ;
                  Inc(j) ;
                  end ;
              end ;

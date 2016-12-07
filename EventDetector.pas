@@ -411,8 +411,8 @@ type
     EditCursor : Integer ;
     EditC0Cursor : Integer ;
     EditC1Cursor : Integer ;
-    OldEditC0CursorPos : Integer ;
-    OldEditC1CursorPos : Integer ;
+    OldEditC0CursorPos : Single ;
+    OldEditC1CursorPos : Single ;
     AverageCursor : Integer ;
     AverageT0Cursor : Integer ;
     AverageC0Cursor : Integer ;
@@ -2189,10 +2189,10 @@ begin
    Event.YBaseline := PreEventBaselineLevel( Buf^, EventScan, NumScans ) ;
 
    // Get range of points to be analysed from cursors
-   AnalysisStart := Min( scEditDisplay.VerticalCursors[EditC0Cursor],
-                         scEditDisplay.VerticalCursors[EditC1Cursor] ) ;
-   AnalysisEnd := Max( scEditDisplay.VerticalCursors[EditC0Cursor],
-                       scEditDisplay.VerticalCursors[EditC1Cursor] ) ;
+   AnalysisStart := Min( Round(scEditDisplay.VerticalCursors[EditC0Cursor]),
+                         Round(scEditDisplay.VerticalCursors[EditC1Cursor] )) ;
+   AnalysisEnd := Max( Round(scEditDisplay.VerticalCursors[EditC0Cursor]),
+                       Round(scEditDisplay.VerticalCursors[EditC1Cursor]) ) ;
 
    // Prevent range exceeding data buffer
    AnalysisStart := Min( Max( AnalysisStart,0), NumScans-2) ;
@@ -2544,8 +2544,8 @@ var
 begin
 
    // Sample position of new event
-   NewEventAt := scEditDisplay.VerticalCursors[EditCursor]
-                 + scEditDisplay.xOffset ;
+   NewEventAt := Round(scEditDisplay.VerticalCursors[EditCursor]
+                 + scEditDisplay.xOffset) ;
 
    // Find next higher event in list
    iEvent := 0 ;
@@ -2649,8 +2649,8 @@ var
 begin
 
       // Sample position of new event
-      CursorAtSample := scEditDisplay.VerticalCursors[EditCursor]
-                        + scEditDisplay.xOffset ;
+      CursorAtSample := Round(scEditDisplay.VerticalCursors[EditCursor]
+                        + scEditDisplay.xOffset) ;
 
       // Enable/disable Insert Event and Delete Event buttons
       // depending upon whether cursor is over an event
@@ -3309,17 +3309,18 @@ procedure TEventDetFrm.scDisplayCursorChange(Sender: TObject);
 // Display cursor position changed
 // -------------------------------
 var
-     iCursorPos,ch : Integer ;
+     ch : Integer ;
+     iCursorPos : Integer ;
 begin
 
      // Align detection display cursor
-     iCursorPos := scDisplay.VerticalCursors[DisplayCursor] ;
-     if scDetDisplay.VerticalCursors[DisplayCursor] <> iCursorPos then
+     iCursorPos := Round(scDisplay.VerticalCursors[DisplayCursor]) ;
+     if Round(scDetDisplay.VerticalCursors[DisplayCursor]) <> iCursorPos then
         scDetDisplay.VerticalCursors[DisplayCursor] := iCursorPos ;
 
      for ch := 0 to scDisplay.NumChannels-1 do if scDisplay.ChanVisible[ch] then begin
          { Get signal baseline cursor }
-         Channel[ch].ADCZero := scDisplay.HorizontalCursors[BaseLineCursor] ;
+         Channel[ch].ADCZero := Round(scDisplay.HorizontalCursors[BaseLineCursor]) ;
          Channel[ch].yMin := scDisplay.yMin[ch] ;
          Channel[ch].yMax := scDisplay.yMax[ch] ;
          end ;
@@ -4464,11 +4465,11 @@ begin
      scAverageDisplay.HorizontalCursors[0] := Event.YBaseline ;
 
      // Set limits of range to be analysed
-     AnalysisStart := Min( scAverageDisplay.VerticalCursors[AverageC0Cursor],
-                           scAverageDisplay.VerticalCursors[AverageC1Cursor] ) ;
+     AnalysisStart := Min( Round(scAverageDisplay.VerticalCursors[AverageC0Cursor]),
+                           Round(scAverageDisplay.VerticalCursors[AverageC1Cursor]) ) ;
      AnalysisStart := Max( AnalysisStart,0) ;
-     AnalysisEnd := Max( scAverageDisplay.VerticalCursors[AverageC0Cursor],
-                         scAverageDisplay.VerticalCursors[AverageC1Cursor] ) ;
+     AnalysisEnd := Max( Round(scAverageDisplay.VerticalCursors[AverageC0Cursor]),
+                         Round(scAverageDisplay.VerticalCursors[AverageC1Cursor]) ) ;
      AnalysisEnd := Min( Max(AnalysisEnd,AnalysisStart+1),AvgNumScans-1 ) ;
 
      // Find peak amplitude and area under curve
@@ -4809,12 +4810,12 @@ begin
         end;
 
     // Add points to curve fitter
-    TZero := scAverageDisplay.VerticalCursors[AverageT0Cursor] ;
-    iStart := Min( scAverageDisplay.VerticalCursors[AverageC0Cursor],
-                   scAverageDisplay.VerticalCursors[AverageC1Cursor] ) ;
-    iEnd := Max( scAverageDisplay.VerticalCursors[AverageC0Cursor],
-                 scAverageDisplay.VerticalCursors[AverageC1Cursor] ) ;
-    YZero :=scAverageDisplay.HorizontalCursors[cbChannel.ItemIndex] ;
+    TZero := Round(scAverageDisplay.VerticalCursors[AverageT0Cursor]) ;
+    iStart := Min( Round(scAverageDisplay.VerticalCursors[AverageC0Cursor]),
+                   Round(scAverageDisplay.VerticalCursors[AverageC1Cursor]) ) ;
+    iEnd := Max( Round(scAverageDisplay.VerticalCursors[AverageC0Cursor]),
+                 Round(scAverageDisplay.VerticalCursors[AverageC1Cursor]) ) ;
+    YZero := Round(scAverageDisplay.HorizontalCursors[cbChannel.ItemIndex]) ;
     CVFit.ClearPoints ;
     for i := iStart to iEnd do begin
         j := (i*scAverageDisplay.NumChannels)
