@@ -58,6 +58,9 @@ unit Fileio;
   12.02.15 ... GetCDRHeader() now checks that NP= in header matches actual number of samples in file and allows correction.
   11/03/16 ..  'STZAPA=', Settings.SealTest.ZapAmplitude'STZAPD=', Settings.SealTest.ZapDuration added to INI file
   7/12/16 ...  fluoresecence ratio, resistance and event frequency special options in use now in INI file
+  9.1.17 ....  'FLIONNAME=', Settings.Fluorescence.IonName and 'FLIONUNITS=', Settings.Fluorescence.IonUnits
+               added to INI file
+
   }
 
 
@@ -722,6 +725,10 @@ begin
      ReadInt( Header, 'FLCON=', Settings.Fluorescence.ConcChan ) ;
      ReadFloat( Header, 'FLRDMX=', Settings.Fluorescence.RatioDisplayMax ) ;
      ReadFloat( Header, 'FLCDMX=', Settings.Fluorescence.ConcDisplayMax ) ;
+     Settings.Fluorescence.IonName := 'Ca' ;
+     ReadString( Header, 'FLIONNAME=', Settings.Fluorescence.IonName ) ;
+     Settings.Fluorescence.IonUnits := 'uM' ;
+     ReadString( Header, 'FLIONUNITS=', Settings.Fluorescence.IonUnits ) ;
 
      // Real time event frequency settings
      ReadLogical( Header, 'EFINUSE=', Settings.RTEventAnalysis.InUse) ;
@@ -936,6 +943,8 @@ begin
      AppendInt( Header, 'FLCON=', Settings.Fluorescence.ConcChan ) ;
      AppendFloat( Header, 'FLRDMX=', Settings.Fluorescence.RatioDisplayMax ) ;
      AppendFloat( Header, 'FLCDMX=', Settings.Fluorescence.ConcDisplayMax ) ;
+     AppendString( Header, 'FLIONNAME=', Settings.Fluorescence.IonName ) ;
+     AppendString( Header, 'FLIONUNITS=', Settings.Fluorescence.IonUnits ) ;
 
      // Real time event frequency settings
      AppendLogical( Header, 'EFINUSE=', Settings.RTEventAnalysis.InUse) ;
@@ -975,8 +984,6 @@ begin
      AppendFloat( Header, 'EPCPOOL=', Settings.SimEPC.ReleasablePool) ;
      AppendFloat( Header, 'EPCDEP=', Settings.SimEPC.Depression) ;
      AppendFloat( Header, 'EPCTAUDEP=', Settings.SimEPC.TauDepression) ;
-
-
 
      if FileWrite( IniFileHandle, Header, Sizeof(Header) ) <> Sizeof(Header) then
         ShowMessage( IniFileName + ' Write - Failed ' ) ;

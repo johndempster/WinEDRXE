@@ -360,6 +360,10 @@ unit Mdiform;
    V3.7.1 17.08.16 Axoclamp 2: Default current gains now correct (10,1,0.1 V/nA) for (HS10,1,0.1)
    V3.7.2 30.09.16 Spport for Digidata 1550B added.
    V3.7.3 07.12.16 Fluoescence ratio option now stored in INI file
+   V3.7.4 09.01.17 Computed fluorescence ratio updated and bugs fixed (rec.pas)
+                   Computed channel readout now works correctly. Ch.0. can now be used as ratio channel
+                   ion concentration now computed correctly. Ratio channel name now changed to
+                   reflect channels ratioed. Computed ion name added to concentration channe.
   =======================================================================}
 
 interface
@@ -594,7 +598,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.7.2' ;
+     Version := 'V3.7.4' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
@@ -801,6 +805,8 @@ begin
      Settings.Fluorescence.ConcChan := 3 ;
      Settings.Fluorescence.RatioDisplayMax := 10.0 ;
      Settings.Fluorescence.ConcDisplayMax := 1.0 ;
+     Settings.Fluorescence.IonName := 'Ca' ;
+     Settings.Fluorescence.IonUnits := 'uM' ;
 
      { Default settings for cell capacity analysis }
      Settings.Capacity.InUse := False ;
@@ -841,7 +847,6 @@ begin
      Settings.RTResistance.Duration := 0.02 ;
      Settings.RTResistance.Interval := 1.0 ;
      Settings.RTResistance.Plot := 2 ;
-
 
      Settings.PageViewLinesPerPage := 8 ;
      Settings.PageViewLineDuration := 1.0 ;

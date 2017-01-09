@@ -8,6 +8,8 @@ unit SetComp;
 // 22.12.08 Real-time resistance calculation added
 // 24.02.09 Option to invert conductance channels in capacity calculation added
 // 27.05.09 ckGChannelsUseGainTelegraph added
+// 09.01.16 Ratio computation updated. Ion name and units added
+//          ratio channel selection rearranged.
 
 interface
 
@@ -20,15 +22,11 @@ type
     PageControl: TPageControl;
     FluorescenceTab: TTabSheet;
     CapacityTab: TTabSheet;
-    GroupBox1: TGroupBox;
     bOK: TButton;
     bCancel: TButton;
     GroupBox3: TGroupBox;
     edFThreshold: TValidatedEdit;
     Label2: TLabel;
-    ConcResultsGrp: TGroupBox;
-    edConcDisplayMax: TValidatedEdit;
-    Label4: TLabel;
     GroupBox2: TGroupBox;
     cbGImagChan: TComboBox;
     cbGRealChan: TComboBox;
@@ -58,12 +56,6 @@ type
     ckGmInUse: TCheckBox;
     ckGsInUse: TCheckBox;
     ckCmInUse: TCheckBox;
-    cbConcChan: TComboBox;
-    Label9: TLabel;
-    edRatioDisplayMax: TValidatedEdit;
-    Label8: TLabel;
-    cbRatioChan: TComboBox;
-    Label3: TLabel;
     ConcEquationGrp: TGroupBox;
     Label5: TLabel;
     Label6: TLabel;
@@ -71,8 +63,6 @@ type
     edRMax: TValidatedEdit;
     edRMin: TValidatedEdit;
     edKeff: TValidatedEdit;
-    ckRatioInUse: TCheckBox;
-    ckConcInUse: TCheckBox;
     Label1: TLabel;
     cbNumerChan: TComboBox;
     cbDenomChan: TComboBox;
@@ -116,6 +106,21 @@ type
     ckCapacityCompensationInUse: TCheckBox;
     Label33: TLabel;
     edEventCountingInterval: TValidatedEdit;
+    Label34: TLabel;
+    edIonName: TEdit;
+    GroupBox1: TGroupBox;
+    ConcResultsGrp: TGroupBox;
+    Label8: TLabel;
+    edRatioDisplayMax: TValidatedEdit;
+    GroupBox13: TGroupBox;
+    cbRatioChan: TComboBox;
+    ckRatioInUse: TCheckBox;
+    edConcDisplayMax: TValidatedEdit;
+    cbConcChan: TComboBox;
+    ckConcInUse: TCheckBox;
+    Label4: TLabel;
+    Label3: TLabel;
+    edIonUnits: TEdit;
     procedure FormShow(Sender: TObject);
     procedure bOKClick(Sender: TObject);
     procedure bCancelClick(Sender: TObject);
@@ -164,7 +169,8 @@ begin
      cbGsChan.Clear ;
      cbGmChan.Clear ;
      cbCmChan.Clear ;
-     for ch := 0 to Settings.NumChannels-1 do begin
+     for ch := 0 to Settings.NumChannels-1 do
+         begin
          Item := format('Ch.%d %s',[ch,Main.SESLabIO.ADCChannelName[ch]]) ;
          cbNumerChan.items.add( Item ) ;
          cbDenomChan.items.add( Item ) ;
@@ -191,6 +197,8 @@ begin
      edFThreshold.Value := Settings.Fluorescence.FThreshold ;
      edRatioDisplayMax.Value := Settings.Fluorescence.RatioDisplayMax ;
      edConcDisplayMax.Value := Settings.Fluorescence.ConcDisplayMax ;
+     edIonName.Text := Settings.Fluorescence.IonName ;
+     edIonUnits.Text := Settings.Fluorescence.IonUnits ;
 
      { Set capacity channels and parameters }
      SetChannel( cbGrealChan, Settings.Capacity.GrealChan ) ;
@@ -213,10 +221,10 @@ begin
      edRSeriesComp.Value := Settings.Capacity.RSeriesComp ;
      edCellCapacityComp.Value := Settings.Capacity.CellCapacityComp ;
 
-
      // Set event detection parameters
      cbChannel.Items.Clear ;
-     for ch := 0 to Main.SESLabIO.ADCNumChannels-1 do begin
+     for ch := 0 to Main.SESLabIO.ADCNumChannels-1 do
+        begin
         cbChannel.Items.Add(format('Ch.%d %s',[ch,Main.SESLabIO.ADCChannelName[ch]])) ;
         end ;
      cbChannel.ItemIndex := Min( Settings.RTEventAnalysis.Channel,
@@ -233,20 +241,18 @@ begin
      // Set resistance parameters
      cbImRes.Items.Clear ;
      cbVmRes.Items.Clear ;
-     for ch := 0 to Main.SESLabIO.ADCNumChannels-1 do begin
+     for ch := 0 to Main.SESLabIO.ADCNumChannels-1 do
+        begin
         cbImRes.Items.Add(format('Ch.%d %s',[ch,Main.SESLabIO.ADCChannelName[ch]])) ;
         cbVmRes.Items.Add(format('Ch.%d %s',[ch,Main.SESLabIO.ADCChannelName[ch]])) ;
         end ;
-     cbImRes.ItemIndex := Min( Settings.RTResistance.ImChannel,
-                               Main.SESLabIO.ADCNumChannels-1 ) ;
-     cbVmRes.ItemIndex := Min( Settings.RTResistance.VmChannel,
-                               Main.SESLabIO.ADCNumChannels-1 ) ;
+     cbImRes.ItemIndex := Min( Settings.RTResistance.ImChannel,Main.SESLabIO.ADCNumChannels-1 ) ;
+     cbVmRes.ItemIndex := Min( Settings.RTResistance.VmChannel,Main.SESLabIO.ADCNumChannels-1 ) ;
 
      edResAmplitude.Value := Settings.RTResistance.Amplitude ;
      edResDuration.Value := Settings.RTResistance.Duration ;
      edResInterval.Value := Settings.RTResistance.Interval ;
      cbResPlot.ItemIndex := Min(Max(Settings.RTResistance.Plot,0),cbResPlot.Items.Count-1) ;
-
 
      end;
 
@@ -321,6 +327,8 @@ begin
      Settings.Fluorescence.FThreshold := edFThreshold.Value ;
      Settings.Fluorescence.RatioDisplayMax := edRatioDisplayMax.Value ;
      Settings.Fluorescence.ConcDisplayMax := edConcDisplayMax.Value ;
+     Settings.Fluorescence.IonName := edIonName.Text ;
+     Settings.Fluorescence.IonUnits := edIonUnits.Text ;
 
      { Set capacity channel selections }
      Settings.Capacity.GrealChan := Getchannel( cbGrealChan, True ) ;

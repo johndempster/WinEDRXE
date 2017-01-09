@@ -9,7 +9,9 @@ unit Global;
   08.03.10 ... Settings.EventDetector.AvgFrequencyInterval added
 
   20.04.11 ... THistogram size increased to 4000
-  14.08.14 ... ProgDirectory etc. moved to Main. }
+  14.08.14 ... ProgDirectory etc. moved to Main.
+  09.01.16 ... IonName and Ion Units added to TFluorescenceSettings   }
+
 interface
 
 uses sysUtils, Graphics, Classes, stdctrls, ced1401, maths, wintypes ;
@@ -294,6 +296,8 @@ TFluorescenceSettings = record
                       ConcChan : Integer ;
                       RatioDisplayMax : single ;
                       ConcDisplayMax : single ;
+                      IonName : string ;
+                      IonUnits : string ;
                       end ;
 
 TCapacitySettings = record

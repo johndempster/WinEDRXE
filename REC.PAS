@@ -77,6 +77,14 @@ unit Rec;
   11.12.14 ... UpdateAOHold added. AO Hold scaling and units can now handle separate voltage
                and current stimulation channels (e.g. Axoclamp 2)
   12.02.15 ... Now escape sample counting loop if a complete half buffer is acquired
+  13.12.16 ... Computed channel readout now works correctly. Fluorescence ratio calculations
+               moved to ComputerRatio(). Calculations now respond to changes in input channel
+               zero levels.
+  09.01.17 ... Fluorescence ratio updated. Now changes label of ratio channel to channels
+               being ratioed and concentration channel given name of ion and units changed
+               defined in the computaion options.
+               Zero level form now displays channel name as well as number
+               Ion concentration now computed correctly in uM,mM and M units.
   ==============================================================================}
 interface
 
@@ -89,7 +97,6 @@ uses
 const
      MinScansPerWriteBuf = 16 ;
      NumWriteBufsMax = MaxADCSamples div 16 ;
-
 
 type
 
@@ -383,6 +390,7 @@ type
     procedure StartStimulator ;
     procedure StopStimulator ;
     procedure CalcComputedChannels ;
+    procedure CalculateRatio ;
     procedure StartSineWave ;
     procedure DisplaySignalLevels( var Buf : Array of SmallInt ;
                                    StartAt : Integer ) ;
@@ -847,7 +855,6 @@ begin
     end;
 
 
-
 procedure TRecordFrm.UpdateAmplifierGain ;
 // ------------------------------
 // Update amplifier gain readouts
@@ -1055,6 +1062,7 @@ var
     i,j,ch : Integer ;             // Counters/index variables
     Value : Single ;
     NewPoints : Integer ;
+    LastDisplayedScan : Integer ;
     s : string ;
 begin
 
@@ -1102,9 +1110,11 @@ begin
      if WriteBufs.OldestScan = WriteBufs.LatestScan then Done := True
                                                     else Done := False ;
      NewPoints := scDisplay.NumPoints ;
+     LastDisplayedScan := 0 ;
      While not Done do begin
         // Increment pointer to next available scan
         j := NewPoints*scDisplay.NumChannels ;
+        LastDisplayedScan := WriteBufs.OldestScan ;
         for i := 0 to scDisplay.NumChannels-1 do begin
             DisplayBuf^[j] := ADC^[WriteBufs.OldestScan] ;
             Inc(j) ;
@@ -1128,11 +1138,9 @@ begin
         s := '' ;
         for ch := 0 to scDisplay.NumChannels-1 do begin
             Value := Main.SESLabIO.ADCChannelUnitsPerBit[ch] *
-                     ( ADC^[WriteBufs.OldestScan+ scDisplay.ChanOffsets[ch]] - scDisplay.ChanZero[ch] ) ;
+                     ( ADC^[LastDisplayedScan + scDisplay.ChanOffsets[ch]] - scDisplay.ChanZero[ch] ) ;
             s := s + format( ' %s= %.4g %s<br>',
-                                    [scDisplay.ChanName[ch],
-                                     Value ,
-                                     scDisplay.ChanUnits[ch]] ) ;
+                             [scDisplay.ChanName[ch],Value ,scDisplay.ChanUnits[ch]] ) ;
             end ;
         lbReadOut.caption := s ;
         lbReadOut.Invalidate ;
@@ -1405,92 +1413,13 @@ const
      pAToAmp = 1E-12 ;
      TwoPi = 2*pi ;
 var
-   Ratio,Numerator,Denominator,Threshold : single ;
    iScan : Integer ;
-   ch : Integer ;
    yDiff : Integer ;
 begin
 
-     if Settings.Fluorescence.InUse then begin
-
-        if Settings.NewCalculation then begin
-
-           Fluor.NumerZero := Main.SESLabIO.ADCChannelZero[Settings.Fluorescence.NumerChan] ;
-           Fluor.NumerOffset := Main.SESLabIO.ADCChannelOffset[Settings.Fluorescence.NumerChan] ;
-           Fluor.DenomZero := Main.SESLabIO.ADCChannelZero[Settings.Fluorescence.DenomChan] ;
-           Fluor.DenomOffset := Main.SESLabIO.ADCChannelOffset[Settings.Fluorescence.DenomChan] ;
-
-           { Ratio O/P channel settings }
-           if Settings.Fluorescence.RatioChan >= 0 then begin
-              Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Fluorescence.RatioChan] :=
-                             Settings.Fluorescence.RatioDisplayMax/Main.SESLabIO.ADCMaxValue ;
-              Fluor.RatioScale := 1.0 / Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Fluorescence.RatioChan] ;
-              Fluor.RatioOffset :=  Main.SESLabIO.ADCChannelOffset[Settings.Fluorescence.RatioChan] ;
-              end
-           else Fluor.RatioOffset := -1 ;
-
-           { Concentration O/P channel settings }
-           if Settings.Fluorescence.ConcChan >= 0 then begin
-              Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Fluorescence.ConcChan] :=
-                             Settings.Fluorescence.ConcDisplayMax/Main.SESLabIO.ADCMaxValue ;
-              Fluor.ConcScale := Settings.Fluorescence.Keff /
-                     Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Fluorescence.RatioChan] ;
-              Fluor.ConcOffset := Main.SESLabIO.ADCChannelOffset[Settings.Fluorescence.ConcChan] ;
-              end
-           else Fluor.ConcOffset := -1 ;
-
-           { Set channel information }
-           for ch := 0 to Main.SESLabIO.ADCNumChannels -1 do begin
-               scDisplay.ChanOffsets[ch] := Main.SESLabIO.ADCChannelOffset[ch] ;
-               scDisplay.ChanUnits[ch] := Main.SESLabIO.ADCChannelUnits[Ch] ;
-               scDisplay.ChanName[ch] := Main.SESLabIO.ADCChannelName[Ch] ;
-               scDisplay.ChanScale[ch] := Abs(Main.SESLabIO.ADCChannelUnitsPerBit[Ch]) ;
-               scDisplay.HorizontalCursors[ch] := Main.SESLabIO.ADCChannelZero[ch] ;
-               scDisplay.yMin[ch] := Main.SESLabIO.ADCChannelYMin[ch] ;
-               scDisplay.yMax[ch] := Main.SESLabIO.ADCChannelYMax[ch] ;
-               scDisplay.ChanVisible[ch] := Main.SESLabIO.ADCChannelVisible[ch] ;
-               end ;
-           scDisplay.Invalidate ;
-
-           if CDRFH.FileHandle >= 0 then SaveCDRHeader ( CDRFH ) ;
-           Settings.NewCalculation := False ;
-           end ;
-
-        { Acceptance threshold for ratio calculation }
-        Threshold := Settings.Fluorescence.FThreshold /
-                     Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Fluorescence.NumerChan] ;
-
-        iScan := WriteBufs.OldestScan ;
-        while iScan <> WriteBufs.LatestScan do begin
-
-              { Calculate ratio of fluorescence channels }
-              Numerator := (ADC^[iScan+Fluor.NumerOffset] - Fluor.NumerZero) ;
-              Denominator := (ADC^[iScan+Fluor.DenomOffset] - Fluor.DenomZero) ;
-              if (Numerator >= Threshold) and (Denominator >= Threshold) then
-                 Ratio := Numerator/Denominator
-              else Ratio := 0.0 ;
-
-              if Fluor.RatioOffset >= 0 then
-                 ADC^[iScan+Fluor.RatioOffset] := Round(Ratio*Fluor.RatioScale) ;
-
-              { Calculate ion concentration using binding eqn. }
-              if Fluor.ConcOffset >= 0 then begin
-                 if Ratio <> Settings.Fluorescence.RMax then
-                    ADC^[iScan+Fluor.ConcOffset] := Round( Fluor.ConcScale *
-                                              (Ratio - Settings.Fluorescence.RMin) /
-                                              (Settings.Fluorescence.RMax - Ratio) )
-                 else ADC^[iScan+Fluor.ConcOffset] := 0 ;
-                 end ;
-              { Next block of channels }
-              iScan := iScan + Main.SESLabIO.ADCNumChannels ;
-              if iScan >= WriteBufs.NumSamples then
-                 iScan := iScan - WriteBufs.NumSamples ;
-
-              end ;
-        end ;
+     if Settings.Fluorescence.InUse then CalculateRatio ;
 
      if Settings.Capacity.InUse then CalculateCapacity ;
-
 
      // Event frequency display
      if Settings.RTEventAnalysis.InUse then begin
@@ -1582,6 +1511,112 @@ begin
 
      Settings.NewCalculation := False ;
      end ;
+
+
+procedure TRecordFrm.CalculateRatio ;
+// ------------------------------------
+// Calculate ratio betweem two channels
+// ------------------------------------
+var
+   iScan,ch : integer ;
+   Ratio,Numerator,Denominator,Threshold : single ;
+begin
+
+   if Settings.NewCalculation then
+      begin
+
+      { Ratio O/P channel settings }
+      if Settings.Fluorescence.RatioChan >= 0 then
+         begin
+         Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Fluorescence.RatioChan] :=
+                             Settings.Fluorescence.RatioDisplayMax/Main.SESLabIO.ADCMaxValue ;
+         Fluor.RatioScale := 1.0 / Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Fluorescence.RatioChan] ;
+         Fluor.RatioOffset :=  Main.SESLabIO.ADCChannelOffset[Settings.Fluorescence.RatioChan] ;
+         Main.SESLabIO.ADCChannelName[Settings.Fluorescence.RatioChan] :=
+            Main.SESLabIO.ADCChannelName[Settings.Fluorescence.NumerChan] + '/' +
+            Main.SESLabIO.ADCChannelName[Settings.Fluorescence.DenomChan] ;
+         Main.SESLabIO.ADCChannelUnits[Settings.Fluorescence.RatioChan] := ' ';
+         end
+      else Fluor.RatioOffset := -1 ;
+
+      { Concentration O/P channel settings }
+      if Settings.Fluorescence.ConcChan >= 0 then
+         begin
+         Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Fluorescence.ConcChan] :=
+                             Settings.Fluorescence.ConcDisplayMax/Main.SESLabIO.ADCMaxValue ;
+         Fluor.ConcScale := Settings.Fluorescence.Keff /
+                            Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Fluorescence.ConcChan] ;
+         Fluor.ConcOffset := Main.SESLabIO.ADCChannelOffset[Settings.Fluorescence.ConcChan] ;
+         Main.SESLabIO.ADCChannelName[Settings.Fluorescence.ConcChan] := Settings.Fluorescence.IonName ;
+         Main.SESLabIO.ADCChannelUnits[Settings.Fluorescence.ConcChan] := Settings.Fluorescence.IonUnits ;
+         end
+      else Fluor.ConcOffset := -1 ;
+
+      { Set channel information }
+      for ch := 0 to Main.SESLabIO.ADCNumChannels -1 do
+          begin
+          scDisplay.ChanOffsets[ch] := Main.SESLabIO.ADCChannelOffset[ch] ;
+          scDisplay.ChanUnits[ch] := Main.SESLabIO.ADCChannelUnits[Ch] ;
+          scDisplay.ChanName[ch] := Main.SESLabIO.ADCChannelName[Ch] ;
+          scDisplay.ChanScale[ch] := Abs(Main.SESLabIO.ADCChannelUnitsPerBit[Ch]) ;
+          scDisplay.HorizontalCursors[ch] := Main.SESLabIO.ADCChannelZero[ch] ;
+          scDisplay.yMin[ch] := Main.SESLabIO.ADCChannelYMin[ch] ;
+          scDisplay.yMax[ch] := Main.SESLabIO.ADCChannelYMax[ch] ;
+          scDisplay.ChanVisible[ch] := Main.SESLabIO.ADCChannelVisible[ch] ;
+          end ;
+      scDisplay.Invalidate ;
+
+      if CDRFH.FileHandle >= 0 then SaveCDRHeader ( CDRFH ) ;
+      Settings.NewCalculation := False ;
+      end ;
+
+   { Acceptance threshold for ratio calculation }
+   Threshold := Settings.Fluorescence.FThreshold /
+                Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Fluorescence.NumerChan] ;
+
+   // Channel offsets and zero levels
+   Fluor.NumerZero := Main.SESLabIO.ADCChannelZero[Settings.Fluorescence.NumerChan] ;
+   Fluor.NumerOffset := Main.SESLabIO.ADCChannelOffset[Settings.Fluorescence.NumerChan] ;
+   Fluor.NumerScale := Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Fluorescence.NumerChan] ;
+   Fluor.DenomZero := Main.SESLabIO.ADCChannelZero[Settings.Fluorescence.DenomChan] ;
+   Fluor.DenomOffset := Main.SESLabIO.ADCChannelOffset[Settings.Fluorescence.DenomChan] ;
+   Fluor.DenomScale := Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Fluorescence.DenomChan] ;
+   // Ensure computed channel zero are kept at zero
+   if Settings.Fluorescence.RatioChan >= 0 then
+      Main.SESLabIO.ADCChannelZero[Settings.Fluorescence.RatioChan] := 0 ;
+   if Settings.Fluorescence.ConcChan >= 0 then
+      Main.SESLabIO.ADCChannelZero[Settings.Fluorescence.ConcChan] := 0 ;
+
+   iScan := WriteBufs.OldestScan ;
+   while iScan <> WriteBufs.LatestScan do
+         begin
+         { Calculate ratio of fluorescence channels }
+         Numerator := (ADC^[iScan+Fluor.NumerOffset] - Fluor.NumerZero)*Fluor.NumerScale ;
+         Denominator := (ADC^[iScan+Fluor.DenomOffset] - Fluor.DenomZero)*Fluor.DenomScale ;
+         if (Numerator >= Threshold) and (Denominator >= Threshold) then Ratio := Numerator/Denominator
+                                                                    else Ratio := 0.0 ;
+
+         if Fluor.RatioOffset >= 0 then
+            begin
+            ADC^[iScan+Fluor.RatioOffset] := Round(Ratio*Fluor.RatioScale) ;
+
+            { Calculate ion concentration using binding eqn. }
+            if Fluor.ConcOffset >= 0 then
+               begin
+               if Ratio <> Settings.Fluorescence.RMax then
+                  ADC^[iScan+Fluor.ConcOffset] := Round( Fluor.ConcScale *
+                                              (Ratio - Settings.Fluorescence.RMin) /
+                                              (Settings.Fluorescence.RMax - Ratio) )
+               else ADC^[iScan+Fluor.ConcOffset] := 0 ;
+               end ;
+            { Next block of channels }
+            iScan := iScan + Main.SESLabIO.ADCNumChannels ;
+            if iScan >= WriteBufs.NumSamples then iScan := iScan - WriteBufs.NumSamples ;
+            end ;
+        end ;
+
+   end;
+
 
 
 procedure TRecordFrm.CalculateCapacity ;
@@ -3264,7 +3299,7 @@ begin
         ZeroFrm.ChSel := scDisplay.ActiveHorizontalCursor ;
         ZeroFrm.NewZeroAt := Round(scDisplay.ScreenCoordToX( ZeroFrm.ChSel, X )) ;
         ZeroFrm.ZeroLevel := Main.SESLabIO.ADCChannelZero[ZeroFrm.ChSel] ;
-        ZeroFrm.ChanName := Channel[ZeroFrm.ChSel].ADCName ;
+        ZeroFrm.ChanName := Main.SESLabIO.ADCChannelName[ZeroFrm.ChSel] ;
         ZeroFrm.Left := RecordFrm.Left + Main.Left + 10 + scDisplay.Left + X;
         ZeroFrm.Top := RecordFrm.Top + Main.Top + 10 + scDisplay.Top + Y ;
         ZeroFrm.ShowModal ;
