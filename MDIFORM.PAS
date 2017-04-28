@@ -364,6 +364,7 @@ unit Mdiform;
                    Computed channel readout now works correctly. Ch.0. can now be used as ratio channel
                    ion concentration now computed correctly. Ratio channel name now changed to
                    reflect channels ratioed. Computed ion name added to concentration channe.
+   V3.7.5 28.04.17 Errors when selecting NI PCI-6010 card now fixed
   =======================================================================}
 
 interface
@@ -598,7 +599,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.7.4' ;
+     Version := 'V3.7.5' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
