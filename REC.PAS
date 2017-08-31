@@ -85,6 +85,9 @@ unit Rec;
                defined in the computaion options.
                Zero level form now displays channel name as well as number
                Ion concentration now computed correctly in uM,mM and M units.
+  24.07.17 .. Amplifier.GetChannelSettings() now returns ADCInput, so
+              secondary channel analogue input for be changed in CC mode
+              for Axopatch 200 and AMS-2400
   ==============================================================================}
 interface
 
@@ -725,7 +728,7 @@ procedure TRecordFrm.UpdateChannelSettings ;
 // Update channel scaling factors in case amplifier gain/mode has changed
 // ----------------------------------------------------------------------
 var
-    ch : Integer ;
+    ch,ADCInput : Integer ;
     Changed : Boolean ;
     OldValue : Single ;
     OldUnits : String ;
@@ -742,11 +745,13 @@ begin
          OldName := Main.SESLabIO.ADCChannelName[ch] ;
 
          // Update channel scaling factors
-         Amplifier.GetChannelSettings( ch,Name,Units,VPU,Gain ) ;
+         ADCInput := Main.SESLabIO.ADCChannelInputNumber[ch] ;
+         Amplifier.GetChannelSettings( ch,Name,Units,VPU,Gain,ADCInput ) ;
          Main.SESLabIO.ADCChannelName[ch] := Name ;
          Main.SESLabIO.ADCChannelUnits[ch] := Units ;
          Main.SESLabIO.ADCChannelVoltsPerUnit[ch] := VPU ;
          Main.SESLabIO.ADCChannelGain[ch] := Gain ;
+         Main.SESLabIO.ADCChannelInputNumber[ch] := ADCInput ;
 
 //         RH.ADCVoltageRange[ch] := Main.SESLabIO.ADCVoltageRange /
 //                                   Main.SESLabIO.ADCChannelGain[ch] ;

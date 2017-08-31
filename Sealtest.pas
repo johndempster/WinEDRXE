@@ -82,6 +82,9 @@ unit Sealtest;
   02.10.15 .. Zap pulse added to panel
 // 05.11.15 HekaEPC9USB interface added
   11.03.16 .. Copied from WinWCP V5.1.5 Now incorporates ZAP button
+  24.07.17 .. Amplifier.GetChannelSettings() now returns ADCInput, so
+              secondary channel analogue input for be changed in CC mode
+              for Axopatch 200 and AMS-2400
   ==================================================}
 
 interface
@@ -511,9 +514,8 @@ procedure TSealTestFrm.TimerTimer(Sender: TObject);
 { ---------------------
   Timed Event scheduler
   ---------------------}
-
 var
-   ch,T : Integer ;
+   ch,T,ADCInput : Integer ;
    OldADCUnits : Array[0..MaxChannels-1] of String ;
    OldADCName : Array[0..MaxChannels-1] of String ;
    Changed : Boolean ;
@@ -552,11 +554,13 @@ begin
                        Units := Main.SESLabIO.ADCChannelUnits[ch] ;
                        VPU := Main.SESLabIO.ADCChannelVoltsPerUnit[ch] ;
                        Gain := Main.SESLabIO.ADCChannelGain[ch] ;
-                       Amplifier.GetChannelSettings( ch,Name,Units,VPU,Gain ) ;
+                       ADCInput := Main.SESLabIO.ADCChannelInputNumber[ch] ;
+                       Amplifier.GetChannelSettings( ch,Name,Units,VPU,Gain,ADCInput ) ;
                        Main.SESLabIO.ADCChannelName[ch] := Name ;
                        Main.SESLabIO.ADCChannelUnits[ch] := Units ;
                        Main.SESLabIO.ADCChannelVoltsPerUnit[ch] := VPU ;
                        Main.SESLabIO.ADCChannelGain[ch] := Gain ;
+                       Main.SESLabIO.ADCChannelInputNumber[ch] := ADCInput ;
                        end ;
 
                    // If units have changed, update current/voltage channels
@@ -608,8 +612,8 @@ begin
 
                    Main.SESLabIO.ADCStart ;
                    Main.SESLabIO.DACStart ;
-
-                   State := SweepInProgress ;
+                   if Main.SESLabIO.ADCActive then State := SweepInProgress
+                                              else State := Idle ;
                    End ;
 
                SweepInProgress : Begin

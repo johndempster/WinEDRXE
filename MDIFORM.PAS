@@ -599,7 +599,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.7.5' ;
+     Version := 'V3.7.6' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }

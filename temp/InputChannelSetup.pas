@@ -30,24 +30,20 @@ unit InputChannelSetup;
            when more than 16 AI channel were available fixed. (by returning amNone
            for all amplifiers numbers >= MaxAmplifiers. Amplifier.GetChannelSettings()
            no longer changes channel scale factors when Amplifier type is amNone
-  19.11.13 SetCurrentDir() now ensure file dialog box opens in correct directory
-  20.11.13 Displayed amplifier and channel settings now updated before being written to user-defined settings file
+// 19.11.13 SetCurrentDir() now ensure file dialog box opens in correct directory
+   20.11.13 Displayed amplifier and channel settings now updated before being written to user-defined settings file
             Settings files now have file ending set to .xml
+// 14.08.14 Load/Save Settings now open in settings directory
   18.09.14 Amplifier.VoltageCommandScaleFactor and Amplifier.CurrentCommandScaleFactor now updated by
            cbVoltageCommandChannel.ItemIndex and cbCurrentCommandChannel.ItemIndex not (AmplifiersTab.TabIndex)
            Correct current clamp scale factor now applied for AxoClamp 2s.
-  03.06.15 Amplifier.PrimaryChannelUnits & Amplifier.SecondaryChannelUnitsfor for both ICLAMP and VCLAMP modes
-           now updated when user makes change to primary channel units for patch clamps
-           which DO NOT have mode switched primary/secondary channels.
-  24.07.17 AxoPatch 200 and AMS-2440 secondary channel analogue input for CC mode can
-           now be defined by user and changed when CC mode selected
-           All other channels cannot be changed from default settings
+
                   }
 interface
 
 uses WinTypes, WinProcs, Classes, Graphics, Forms, Controls, Buttons,
   StdCtrls, Spin, ExtCtrls, shared, sysUtils, Grids, Dialogs, Global, FileIo,
-  maths, ValEdit, ValidatedEdit, math, ComCtrls, strutils ;
+  maths, ValEdit, ValidatedEdit, math, ComCtrls ;
 
 type
   TInputChannelSetupFrm = class(TForm)
@@ -72,10 +68,10 @@ type
     edCurrentCommandScaleFactor: TValidatedEdit;
     TelegraphChannelsGrp: TGroupBox;
     GainTelegraphPanel: TPanel;
-    lbGainTelegraph: TLabel;
+    lbTelegraphChannel1: TLabel;
     cbGainTelegraphChannel: TComboBox;
     ModeTelegraphPanel: TPanel;
-    lbModeTelegraph: TLabel;
+    Label1: TLabel;
     cbModeTelegraphChannel: TComboBox;
     ChannelTable: TStringGrid;
     GroupBox3: TGroupBox;
@@ -90,22 +86,17 @@ type
     PrimaryChannelGrp: TGroupBox;
     Label3: TLabel;
     Label10: TLabel;
+    lbPrimaryChannel: TLabel;
     edPrimaryChannelScaleFactor: TValidatedEdit;
     edPrimaryChannelUnits: TEdit;
+    cbPrimaryChannel: TComboBox;
     SecondaryChannelGrp: TGroupBox;
     Label5: TLabel;
     Label11: TLabel;
+    lbSecondaryChannel: TLabel;
     edSecondaryChannelScaleFactor: TValidatedEdit;
     edSecondaryChannelUnits: TEdit;
-    pnSecondaryInputCC: TPanel;
-    Label6: TLabel;
-    cbSecondaryAnalogInputCC: TComboBox;
-    Panel1: TPanel;
-    Label1: TLabel;
-    cbPrimaryAnalogInput: TComboBox;
-    pnSecondaryInputVC: TPanel;
-    Label7: TLabel;
-    cbSecondaryAnalogInputVC: TComboBox;
+    cbSecondaryChannel: TComboBox;
     procedure rbTmsecsClick(Sender: TObject);
     procedure rbTSecsClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -130,7 +121,6 @@ type
       var AllowChange: Boolean);
     procedure bSaveSettingsClick(Sender: TObject);
     procedure bLoadSettingsClick(Sender: TObject);
-    procedure cbSecondaryAnalogInputCCChange(Sender: TObject);
   private
     { Private declarations }
     AmpNumberonDisplay : Integer ;
@@ -140,7 +130,7 @@ type
     procedure FillAmplifierSettings ;
     procedure FillChannelSettings ;
     procedure UpdateChannelSettings ;
-    //procedure DisplayClampMode ;
+    procedure DisplayClampMode ;
     procedure UpdateADCChannelsWithAmplifierSettings ;
   public
     { Public declarations }
@@ -184,20 +174,12 @@ begin
                               else rbTmsecs.checked := true ;
 
      // List of available analog input channels
-     cbPrimaryAnalogInput.Clear ;
-     cbSecondaryAnalogInputVC.Clear ;
-     cbSecondaryAnalogInputCC.Clear ;
+     cbPrimaryChannel.Clear ;
      for i := 0 to Min(MaxAmplifiers*2,Main.SESLabIO.ADCMaxChannels)-1 do
-         begin
-         cbPrimaryAnalogInput.Items.Add(format('AI Ch.%d',[i])) ;
-         cbSecondaryAnalogInputCC.Items.Add(format('AI Ch.%d',[i])) ;
-         cbSecondaryAnalogInputVC.Items.Add(format('AI Ch.%d',[i])) ;
-         end;
-     cbPrimaryAnalogInput.ItemIndex := 0 ;
-     cbPrimaryAnalogInput.Enabled := False ;
-     cbSecondaryAnalogInputVC.ItemIndex := 1 ;
-     cbSecondaryAnalogInputVC.Enabled := False ;
-     cbSecondaryAnalogInputCC.ItemIndex := 1 ;
+         cbPrimaryChannel.Items.Add(format('AI Ch.%d',[i])) ;
+     cbPrimaryChannel.ItemIndex := 0 ;
+     cbSecondaryChannel.Items.Assign(cbPrimaryChannel.Items) ;
+     cbSecondaryChannel.ItemIndex := 1 ;
 
      // Telegraph channels
      cbGainTelegraphChannel.Clear ;
@@ -239,7 +221,6 @@ procedure TInputChannelSetupFrm.FillAmplifierSettings ;
 var
     AmplifierType : Integer ;
       s : string ;
-    InCCMode : Boolean ;
 begin
 
      if Main.SESLabIO.LabInterfaceType = Triton then begin
@@ -284,52 +265,29 @@ begin
                                      (Amplifier.NeedsGainTelegraphChannel[AmplifiersTab.TabIndex] or
                                       Amplifier.NeedsModeTelegraphChannel[AmplifiersTab.TabIndex]) ;
 
-
-     s := Amplifier.PrimaryOutputChannelName[AmplifiersTab.TabIndex,ClampMode] ;
-     PrimaryChannelGrp.Caption := format(' Ch.%d Primary channel (%s) ',
-                                  [Amplifier.PrimaryOutputChannel[AmplifiersTab.TabIndex],s]) ;
-     cbPrimaryAnalogInput.ItemIndex := Min(cbPrimaryAnalogInput.Items.Count-1,Max(0,
-                                       Amplifier.PrimaryOutputChannel[AmplifiersTab.TabIndex])) ;
+      s := Amplifier.PrimaryOutputChannelName[AmplifiersTab.TabIndex,ClampMode] ;
+     PrimaryChannelGrp.Caption := format('Primary channel (%s)',[s]) ;
+     cbPrimaryChannel.ItemIndex := Min(cbPrimaryChannel.Items.Count-1,Max(0,
+                                         Amplifier.PrimaryOutputChannel[AmplifiersTab.TabIndex])) ;
      edPrimaryChannelScaleFactor.Value := Amplifier.PrimaryChannelScaleFactorX1Gain[AmplifiersTab.TabIndex,ClampMode] ;
      edPrimaryChannelUnits.Text := Amplifier.PrimaryChannelUnits[AmplifiersTab.TabIndex,ClampMode] ;
      edPrimaryChannelScaleFactor.Units := 'V/' + Amplifier.PrimaryChannelUnits[AmplifiersTab.TabIndex,ClampMode] ;
-
-     // Secondary channel
-     s := Amplifier.SecondaryOutputChannelName[AmplifiersTab.TabIndex,ClampMode] ;
-     SecondaryChannelGrp.Caption := format(' Ch.%d Secondary channel (%s) ',
-                                    [Amplifier.SecondaryOutputChannel[AmplifiersTab.TabIndex],s]) ;
-     cbSecondaryAnalogInputVC.ItemIndex := Min(cbSecondaryAnalogInputVC.Items.Count-1,
-                                         Max(0,Amplifier.SecondaryOutputChannel[AmplifiersTab.TabIndex])) ;
-     cbSecondaryAnalogInputCC.ItemIndex := Min(cbSecondaryAnalogInputCC.Items.Count-1,
-                                         Max(0,Amplifier.SecondaryAnalogInputCC[AmplifiersTab.TabIndex])) ;
-
-     // Make secondary analog input menu for this clamp mode visible
-     if (ClampMode = IClampMode) then InCCMode := True
-                                 else InCCMode := False ;
-     pnSecondaryInputCC.Visible := InCCMode ;
-     pnSecondaryInputVC.Visible := not InCCMode ;
-
-     // Secondary analog input menu only enabled if amplifier output channel needs to be changed
-     if Amplifier.SecondaryOutputChannelName[AmplifiersTab.TabIndex,ICLampMode] =
-        Amplifier.SecondaryOutputChannelName[AmplifiersTab.TabIndex,VCLampMode] then
-        cbSecondaryAnalogInputCC.Enabled := False
-     else cbSecondaryAnalogInputCC.Enabled := True ;
-
+     SecondaryChannelGrp.Caption := format('Secondary channel (%s)',
+                                 [Amplifier.SecondaryOutputChannelName[AmplifiersTab.TabIndex,ClampMode]]) ;
+     cbSecondaryChannel.ItemIndex := Min(cbSecondaryChannel.Items.Count-1,Max(0,
+                                         Amplifier.SecondaryOutputChannel[AmplifiersTab.TabIndex])) ;
      edSecondaryChannelScaleFactor.Value := Amplifier.SecondaryChannelScaleFactorX1Gain[AmplifiersTab.TabIndex,ClampMode] ;
      edSecondaryChannelUnits.Text := Amplifier.SecondaryChannelUnits[AmplifiersTab.TabIndex,ClampMode] ;
      edSecondaryChannelScaleFactor.Units := 'V/' + Amplifier.SecondaryChannelUnits[AmplifiersTab.TabIndex,ClampMode] ;
 
      // Gain & mode telegraph
-
-     lbGainTelegraph.Caption := Amplifier.GainTelegraphName[AmplifiersTab.TabIndex] ;
-     lbModeTelegraph.Caption := Amplifier.ModeTelegraphName[AmplifiersTab.TabIndex] ;
-
      GainTelegraphPanel.Visible := Amplifier.NeedsGainTelegraphChannel[AmplifiersTab.TabIndex] ;
      ModeTelegraphPanel.Visible := Amplifier.NeedsModeTelegraphChannel[AmplifiersTab.TabIndex] ;
      cbGainTelegraphChannel.ItemIndex := Min(cbGainTelegraphChannel.Items.Count-1,Max(0,
                                          Amplifier.GainTelegraphChannel[AmplifiersTab.TabIndex])) ;
      cbModeTelegraphChannel.ItemIndex := Min(cbModeTelegraphChannel.Items.Count-1,Max(0,
                                          Amplifier.ModeTelegraphChannel[AmplifiersTab.TabIndex])) ;
+
 
      cbVoltageCommandChannel.ItemIndex := Min(cbVoltageCommandChannel.Items.Count-1,Max(0,
                                          Amplifier.VoltageCommandChannel[AmplifiersTab.TabIndex])) ;
@@ -338,6 +296,8 @@ begin
      cbCurrentCommandChannel.ItemIndex := Min(cbCurrentCommandChannel.Items.Count-1,Max(0,
                                           Amplifier.CurrentCommandChannel[AmplifiersTab.TabIndex])) ;
      edCurrentCommandScaleFactor.Value := Amplifier.CurrentCommandScaleFactor[cbCurrentCommandChannel.ItemIndex] ;
+
+     //DisplayClampMode ;
 
      AmpNumberOnDisplay := AmplifiersTab.TabIndex ;
 
@@ -351,28 +311,13 @@ procedure TInputChannelSetupFrm.UpdateAmplifierSettings ;
 begin
 
      // Type of amplifier
-     Amplifier.AmplifierType[AmplifiersTab.TabIndex] := Integer(cbAmplifier.Items.Objects[cbAmplifier.ItemIndex]) ;
+     Amplifier.AmplifierType[AmplifiersTab.TabIndex] := Integer(
+                               cbAmplifier.Items.Objects[cbAmplifier.ItemIndex]) ;
 
      Amplifier.PrimaryChannelScaleFactorX1Gain[AmplifiersTab.TabIndex,ClampMode] := edPrimaryChannelScaleFactor.Value ;
-
-     if Amplifier.ModeSwitchedPrimaryChannel[AmplifiersTab.TabIndex] then begin
-        Amplifier.PrimaryChannelUnits[AmplifiersTab.TabIndex,ClampMode] := edPrimaryChannelUnits.Text ;
-        end
-     else begin
-        Amplifier.PrimaryChannelUnits[AmplifiersTab.TabIndex,IClampMode] := edPrimaryChannelUnits.Text ;
-        Amplifier.PrimaryChannelUnits[AmplifiersTab.TabIndex,VClampMode] := edPrimaryChannelUnits.Text ;
-        end;
-
+     Amplifier.PrimaryChannelUnits[AmplifiersTab.TabIndex,ClampMode] := edPrimaryChannelUnits.Text ;
      Amplifier.SecondaryChannelScaleFactorX1Gain[AmplifiersTab.TabIndex,ClampMode] := edSecondaryChannelScaleFactor.Value ;
-     Amplifier.SecondaryAnalogInputCC[AmplifiersTab.TabIndex] := cbSecondaryAnalogInputCC.ItemIndex ;
-
-     if Amplifier.ModeSwitchedPrimaryChannel[AmplifiersTab.TabIndex] then begin
-        Amplifier.SecondaryChannelUnits[AmplifiersTab.TabIndex,ClampMode] :=edSecondaryChannelUnits.Text ;
-        end
-     else begin
-        Amplifier.SecondaryChannelUnits[AmplifiersTab.TabIndex,IClampMode] :=edSecondaryChannelUnits.Text ;
-        Amplifier.SecondaryChannelUnits[AmplifiersTab.TabIndex,VClampMode] :=edSecondaryChannelUnits.Text ;
-        end ;
+     Amplifier.SecondaryChannelUnits[AmplifiersTab.TabIndex,ClampMode] := edSecondaryChannelUnits.Text ;
 
      // Gain & mode telegraph
      Amplifier.GainTelegraphChannel[AmplifiersTab.TabIndex] := cbGainTelegraphChannel.ItemIndex ;
@@ -439,7 +384,7 @@ procedure TInputChannelSetupFrm.UpdateADCChannelsWithAmplifierSettings ;
 // Update A/D channel settings with amplifier settings
 // ---------------------------------------------------
 var
-   ch,ADCInput : Integer ;
+    ch : Integer ;
    Name,Units : string ;
    VPU,Gain : Single ;
 begin
@@ -449,7 +394,7 @@ begin
          Units := Main.SESLabIO.ADCChannelUnits[ch] ;
          VPU := Main.SESLabIO.ADCChannelVoltsPerUnit[ch] ;
          Gain := Main.SESLabIO.ADCChannelGain[ch] ;
-         Amplifier.GetChannelSettings( ch,Name,Units,VPU,Gain,ADCInput ) ;
+         Amplifier.GetChannelSettings( ch,Name,Units,VPU,Gain ) ;
          Main.SESLabIO.ADCChannelName[ch] := Name ;
          Main.SESLabIO.ADCChannelUnits[ch] := Units ;
          Main.SESLabIO.ADCChannelVoltsPerUnit[ch] := VPU ;
@@ -514,7 +459,7 @@ procedure TInputChannelSetupFrm.FormClose(Sender: TObject; var Action: TCloseAct
   Update values in file header (RawFH) and Exit
   ---------------------------------------------}
 var
-   ch,ADCInput : Integer ;
+   ch : Integer ;
    Name,Units : string ;
    VPU,Gain : Single ;
 begin
@@ -534,7 +479,7 @@ begin
                 Units := Main.SESLabIO.ADCChannelUnits[ch] ;
                 VPU := Main.SESLabIO.ADCChannelVoltsPerUnit[ch] ;
                 Gain := Main.SESLabIO.ADCChannelGain[ch] ;
-                Amplifier.GetChannelSettings( ch,Name,Units,VPU,Gain,ADCInput ) ;
+                Amplifier.GetChannelSettings( ch,Name,Units,VPU,Gain ) ;
                 Main.SESLabIO.ADCChannelName[ch] := Name ;
                 Main.SESLabIO.ADCChannelUnits[ch] := Units ;
                 Main.SESLabIO.ADCChannelVoltsPerUnit[ch] := VPU ;
@@ -553,7 +498,7 @@ begin
             Main.SESLabIO.ADCChannelYMax[ch] := Main.SESLabIO.ADCMaxValue ;
             end ;
 
-        //Main.NewFileUpdate ; Removed from WinWCP version
+        //Main.NewFileUpdate ;
 
      Action := caFree ;
      end ;
@@ -570,14 +515,6 @@ begin
      end ;
 
 
-procedure TInputChannelSetupFrm.cbSecondaryAnalogInputCCChange(Sender: TObject);
-// --------------------------------------------------
-// Secondary analog input (current clamp mode changed
-// --------------------------------------------------
-begin
-    Amplifier.SecondaryAnalogInputCC[AmplifiersTab.TabIndex] := cbSecondaryAnalogInputCC.ItemIndex ;
-    end;
-
 procedure TInputChannelSetupFrm.AmplifiersTabChange(Sender: TObject);
 // ---------------------------
 // New amplifier tab selected
@@ -592,13 +529,7 @@ procedure TInputChannelSetupFrm.edPrimaryChannelUnitsChange(Sender: TObject);
 // -----------------------------
 begin
      edPrimaryChannelScaleFactor.Units := 'V/'+ edPrimaryChannelUnits.Text ;
-     if Amplifier.ModeSwitchedPrimaryChannel[AmplifiersTab.TabIndex] then begin
-        Amplifier.PrimaryChannelUnits[AmplifiersTab.TabIndex,ClampMode] := edPrimaryChannelUnits.Text ;
-        end
-     else begin
-        Amplifier.PrimaryChannelUnits[AmplifiersTab.TabIndex,IClampMode] := edPrimaryChannelUnits.Text ;
-        Amplifier.PrimaryChannelUnits[AmplifiersTab.TabIndex,VClampMode] := edPrimaryChannelUnits.Text ;
-        end;
+     Amplifier.PrimaryChannelUnits[AmplifiersTab.TabIndex,ClampMode] :=edPrimaryChannelUnits.Text ;
      end ;
 
 procedure TInputChannelSetupFrm.edSecondaryChannelUnitsChange(Sender: TObject);
@@ -607,15 +538,8 @@ procedure TInputChannelSetupFrm.edSecondaryChannelUnitsChange(Sender: TObject);
 // -----------------------------
 begin
      edSecondaryChannelScaleFactor.Units := 'V/'+ edSecondaryChannelUnits.Text ;
-     if Amplifier.ModeSwitchedPrimaryChannel[AmplifiersTab.TabIndex] then begin
-        Amplifier.SecondaryChannelUnits[AmplifiersTab.TabIndex,ClampMode] := edSecondaryChannelUnits.Text ;
-        end
-     else begin
-        Amplifier.SecondaryChannelUnits[AmplifiersTab.TabIndex,IClampMode] := edSecondaryChannelUnits.Text ;
-        Amplifier.SecondaryChannelUnits[AmplifiersTab.TabIndex,VClampMode] := edSecondaryChannelUnits.Text ;
-        end ;
+     Amplifier.SecondaryChannelUnits[AmplifiersTab.TabIndex,ClampMode] :=edSecondaryChannelUnits.Text ;
      end;
-
 
 procedure TInputChannelSetupFrm.AmplifiersTabChanging(Sender: TObject;
   var AllowChange: Boolean);
@@ -661,7 +585,7 @@ begin
      end;
 
 
-{procedure TInputChannelSetupFrm.DisplayClampMode ;
+procedure TInputChannelSetupFrm.DisplayClampMode ;
 begin
      if Amplifier.ClampMode[AmplifiersTab.TabIndex] = amVoltageClamp then begin
         rbVClamp.Checked := True ;
@@ -672,7 +596,7 @@ begin
         rbIClamp.Checked := True ;
         end ;
 
-     end ;}
+     end ;
 
 
 
@@ -728,24 +652,21 @@ procedure TInputChannelSetupFrm.bSaveSettingsClick(Sender: TObject);
 // ---------------
 var
   s : TStringList ;
-  FileName : String ;
+  FileName : string ;
 begin
 
      SaveDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofPathMustExist] ;
-     SaveDialog.InitialDir := Main.SettingsDirectory ;
+     SaveDialog.InitialDir :=  Main.SettingsDirectory ;
      SetCurrentDir(Main.SettingsDirectory) ;
      SaveDialog.Title := 'Save Amplifier/Input Channel Settings' ;
      SaveDialog.FileName := '*.xml' ;
-     SaveDialog.Filter := ' XML Files (*.XML)';
 
      if SaveDialog.execute then begin
 
         UpdateAmplifierSettings ;
         UpdateChannelSettings ;
-
-        FileName := SaveDialog.FileName ;
-        if not ContainsText( FileName, '.xml' ) then FileName := FileName + '.xml' ;
-
+        
+        FileName := ChangeFileExt( SaveDialog.FileName, '.xml' ) ;
         s := TStringList.Create ;
         //s.LoadFromFile(SaveDialog.FileName) ;
         s.Insert(0,'<SETTINGS>') ;
@@ -772,12 +693,9 @@ begin
      OpenDialog.InitialDir := Main.SettingsDirectory ;
      SetCurrentDir(Main.SettingsDirectory) ;
      OpenDialog.Title := 'Load Amplifier/Input Channel Settings' ;
-     OpenDialog.Filter := ' XML Files (*.XML)';
-
      if OpenDialog.execute then begin
         Amplifier.LoadFromXMLFile(OpenDialog.FileName) ;
         Main.SESLabIO.LoadFromXMLFile(OpenDialog.FileName) ;
-     //   Main.SESLabIO.LabInterfaceType := Main.SESLabIO.LabInterfaceType ;
         FillAmplifierSettings ;
         FillChannelSettings ;
         end ;
