@@ -85,6 +85,7 @@ unit Sealtest;
   24.07.17 .. Amplifier.GetChannelSettings() now returns ADCInput, so
               secondary channel analogue input for be changed in CC mode
               for Axopatch 200 and AMS-2400
+  04.09.17 .. Max. no. of DAC channels limited to 4
   ==================================================}
 
 interface
