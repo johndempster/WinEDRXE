@@ -273,60 +273,59 @@ else
   Comment: Install/Re-Install product
   Create Shortcut $SHORTCUTFOLDER$\Uninstall #TITLE# to $UNINSTALLLINK$
   [OFFLINE CONTENT]
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\amadeus.bit to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\apollo.bit to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\AxDD132x.dll to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\AxDD1400.dll to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\axoutils32.dll to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\BLVP500.dll to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\dd1440.dll to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\EpcDLL.dll to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\EpcDLL.dll to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\itclib.dll to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\itcmm.dll to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\jet.bit to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\libusb0.dll to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\okFrontPanel.dll to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\pico.bit to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\richmond.bit to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\TecellaAmp.dll to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\triton.bit to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\tritonplus.bit to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\Vp500.bin to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\WinEDR.exe to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\amadeus.bit to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\apollo.bit to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\AxDD132x.dll to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\AxDD1400.dll to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\axoutils32.dll to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\BLVP500.dll to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\dd1440.dll to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\EpcDLL.dll to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\itclib.dll to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\itcmm.dll to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\jet.bit to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\libusb0.dll to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\okFrontPanel.dll to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\pico.bit to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\richmond.bit to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\TecellaAmp.dll to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\triton.bit to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\tritonplus.bit to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\Vp500.bin to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\WinEDR.exe to $TARGETDIR$
   Create Shortcut $DESKTOPDIR$\WinEDR V3.7.5 to $TARGETDIR$\WinEDR.exe
   Create Shortcut $SHORTCUTFOLDER$\WinEDR V3.7.5 to $TARGETDIR$\WinEDR.exe
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\winusb.dll to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\cpd64.exe to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
-  Install Files E:\Delphi XE3 Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\Install Digidata 1200 Driver (Windows NT,2000,XP).bat to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\winusb.dll to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\cpd64.exe to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\Install Digidata 1200 Driver (Windows NT,2000,XP).bat to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
   Create Shortcut $SHORTCUTFOLDER$\Install Digidata 1200 Driver (Windows NT,2000,XP) to $TARGETDIR$\Digidata 1200 Support Win 2000,XT\Install Digidata 1200 Driver (Windows NT,2000,XP).bat
-  Install Files E:\Delphi XE3 Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\SETUP_9X.INF to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
-  Install Files E:\Delphi XE3 Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\setup_64.inf to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
-  Install Files E:\Delphi XE3 Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\SETUP_NT.INF to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
-  Install Files E:\Delphi XE3 Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\TVicHW32.dll to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
-  Install Files E:\Delphi XE3 Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\TVicHW32.iss to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
-  Install Files E:\Delphi XE3 Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\TVicHW32.sys to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
-  Install Files E:\Delphi XE3 Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\TVICHW32.VXD to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
-  Install Files E:\Delphi XE3 Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\TVicHW64.iss to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
-  Install Files E:\Delphi XE3 Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\TVicHW64.sys to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\stim\Ramp -100 .. +100mV.xml to $ALLDOCUMENTS$\WinEDR\Stim
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\stim\sine1kHz.xml to $ALLDOCUMENTS$\WinEDR\Stim
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\stim\sine1kHz.DAT to $ALLDOCUMENTS$\WinEDR\Stim
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\stim\40x1Hz train.xml to $ALLDOCUMENTS$\WinEDR\Stim
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\stim\Step (100mVx100ms@1s).xml to $ALLDOCUMENTS$\WinEDR\Stim
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\stim\digpulse.xml to $ALLDOCUMENTS$\WinEDR\Stim
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\ABFFIO.dll to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\WINEDR User Guide.pdf to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\WinEDR.chm to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\AxDD1550.dll to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\AxDD1550A.dll to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\DD1550Afpga.bin to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\DD1550fpga.bin to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\DD1550A.dll to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\DD1550.dll to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\AxDD1550B.dll to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\DD1550Bfpga.bin to $TARGETDIR$
-  Install Files E:\Delphi XE3 Projects\WinEDRXE\wdapi1210.dll to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\SETUP_9X.INF to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\setup_64.inf to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\SETUP_NT.INF to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\TVicHW32.dll to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\TVicHW32.iss to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\TVicHW32.sys to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\TVICHW32.VXD to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\TVicHW64.iss to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\TVicHW64.sys to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\stim\Ramp -100 .. +100mV.xml to $ALLDOCUMENTS$\WinEDR\Stim
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\stim\sine1kHz.xml to $ALLDOCUMENTS$\WinEDR\Stim
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\stim\sine1kHz.DAT to $ALLDOCUMENTS$\WinEDR\Stim
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\stim\40x1Hz train.xml to $ALLDOCUMENTS$\WinEDR\Stim
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\stim\Step (100mVx100ms@1s).xml to $ALLDOCUMENTS$\WinEDR\Stim
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\stim\digpulse.xml to $ALLDOCUMENTS$\WinEDR\Stim
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\ABFFIO.dll to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\WINEDR User Guide.pdf to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\WinEDR.chm to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\AxDD1550.dll to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\AxDD1550A.dll to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\DD1550Afpga.bin to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\DD1550fpga.bin to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\DD1550A.dll to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\DD1550.dll to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\AxDD1550B.dll to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\DD1550Bfpga.bin to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\wdapi1210.dll to $TARGETDIR$
   [DEFINE WEB MEDIA WinEDR]
   Get Component WinEDR Selection State into Variable SELECTED
   if Variable SELECTED Equals TRUE

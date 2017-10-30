@@ -128,7 +128,9 @@ unit AmpModule;
 // 19.07.17 Analog input for secondary channel can now be remapped between voltage- and current-
 //          clamp modes for amplifiers which require a different signal output from the amplifier
 //          connected to the secondary channel in each clamp mode (applies to Axopatch 200 and AMS-2400)
-// 24.07.17 Copied from WinWCP to WinEDR
+// 15.09.17 NPI ELC-03XS voltage channel gain telegraph now correct (and renamed ELC-03SX to ELC-03XS).
+// 21.09.17 NPI ELC-03XS now uses Command Input in voltage-clamp mode and Potential Output in current clamp mode
+// 30.10.17 Copied from WinWCPXE
 
 interface
 
@@ -182,7 +184,7 @@ const
      amEPC7 = 36 ;
      amDaganCA1B = 37 ;
      amHekaEPC9 = 38 ;
-     amNPIELC03SX = 39 ;
+     amNPIELC03XS = 39 ;
      amDaganBVC700A = 40 ;
      NumAmplifiers = 41 ;
 
@@ -641,7 +643,7 @@ TAXC_AcquireMeterData = function(
     FSecondaryOutputChannelNameCC : Array[0..MaxAmplifiers] of String ;
     FSecondaryChannelUnitsCC : Array[0..MaxAmplifiers] of String ;
     FSecondaryChannelScaleFactorX1GainCC : Array[0..MaxAmplifiers] of Single ;
-    FSecondaryAnalogInputCC : Array[0..MaxAmplifiers] of Integer ;
+    FSecondaryAnalogInputOffsetCC : Array[0..MaxAmplifiers] of Integer ;
 
     FVoltageCommandScaleFactor : Array[0..MaxAmplifiers] of Single ;
     FVoltageCommandChannel : Array[0..MaxAmplifiers] of Integer ;
@@ -1019,10 +1021,10 @@ TAXC_AcquireMeterData = function(
           var ADCInput : Integer
           ) ;
 
-    function GetNPIELC03SXGain(
+    function GetNPIELC03XSGain(
          AmpNumber : Integer ;
          TelChan : Integer ) : single ;
-    procedure GetNPIELC03SXChannelSettings(
+    procedure GetNPIELC03XSChannelSettings(
           iChan : Integer ;
           var ChanName : String ;
           var ChanUnits : String ;
@@ -1332,7 +1334,7 @@ begin
          FPrimaryChannelScaleFactorX1GainCC[i] := 1.0 ;
          FSecondaryChannelScaleFactorX1Gain[i] := 1.0 ;
          FSecondaryChannelScaleFactorX1GainCC[i] := 1.0 ;
-         FSecondaryAnalogInputCC[i] := 0 ;
+         FSecondaryAnalogInputOffsetCC[i] := 0 ;
          FModeSwitchedPrimaryChannel[i] := False ;
          FAmpType[i] := amNone ;
          LastGain[i] := 1.0 ;
@@ -1417,7 +1419,7 @@ begin
      List.AddObject('NPI Turbo Tec-10CX',TObject(amTurboTec10CX)) ;
      List.AddObject('NPI Turbo Tec-20',TObject(amTurboTec20)) ;
      List.AddObject('NPI Turbo Tec-30',TObject(amTurboTec30)) ;
-     List.AddObject('NPI ELC03SX',TObject(amNPIELC03SX)) ;
+     List.AddObject('NPI ELC-03XS',TObject(amNPIELC03XS)) ;
 
      List.AddObject('Dagan TEV-200',TObject(amDaganTEV200A)) ;
      List.AddObject('Dagan PC-ONE-10 (10M)',TObject(amDaganPCOne10M)) ;
@@ -1472,7 +1474,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.001 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.001 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.001 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 1.0 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -1506,7 +1508,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.001 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.001 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.001 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 1.0 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -1572,7 +1574,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -1607,7 +1609,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.001 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -1643,7 +1645,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.01 ;  // X0.1 scaling)
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -1715,7 +1717,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -1784,7 +1786,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.001 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.001 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.001 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -1818,7 +1820,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.001 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.001 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.001 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -1852,7 +1854,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.1 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -1896,7 +1898,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.1 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -1931,7 +1933,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 1E-4 ; // Assumes 100MOhm feedback res.
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -1965,12 +1967,12 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.1 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
-            FCurrentCommandScaleFactor[AmpNumber] := 1E-9 ; // 1nA/V input
             FCurrentCommandChannel[AmpNumber] := Min(AmpNumber+1,MaxAmplifiers-1) ;
+            FCurrentCommandScaleFactor[FCurrentCommandChannel[AmpNumber]] := 1E-9 ; // 1nA/V input
 
             FGainTelegraphAvailable[AmpNumber] := True ;
             FModeTelegraphAvailable[AmpNumber] := False ;
@@ -1981,7 +1983,7 @@ begin
             FModeTelegraphChannel[AmpNumber] := DefModeTelegraphChannel[AmpNumber] ;
             end ;
 
-          amNPIELC03SX  : begin
+          amNPIELC03XS  : begin
             FPrimaryOutputChannel[AmpNumber] := 2*AmpNumber ;
             FPrimaryOutputChannelName[AmpNumber] := 'Current Output' ;
             FPrimaryOutputChannelNameCC[AmpNumber] := 'Current Output' ;
@@ -1992,25 +1994,25 @@ begin
             FPrimaryChannelScaleFactor[AmpNumber] := FPrimaryChannelScaleFactorX1Gain[AmpNumber] ;
 
             FSecondaryOutputChannel[AmpNumber] := 2*AmpNumber + 1 ;
-            FSecondaryOutputChannelName[AmpNumber] := 'Potential Output (mV)' ;
+            FSecondaryOutputChannelName[AmpNumber] := 'Command Input' ;
             FSecondaryOutputChannelNameCC[AmpNumber] := 'Potential Output (mV)' ;
             FSecondaryCHannelUnits[AmpNumber] := 'mV' ;
             FSecondaryCHannelUnitsCC[AmpNumber] := 'mV' ;
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
-            FVoltageCommandScaleFactor[AmpNumber] := 0.1 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
-            FCurrentCommandScaleFactor[AmpNumber] := 1E-9 ; // 1nA/V input
+            FVoltageCommandScaleFactor[AmpNumber] := 0.1 ;
             FCurrentCommandChannel[AmpNumber] := Min(AmpNumber+1,MaxAmplifiers-1) ;
+            FCurrentCommandScaleFactor[FCurrentCommandChannel[AmpNumber]] := 1E-9 ; // 1nA/V input
 
             FGainTelegraphAvailable[AmpNumber] := True ;
             FModeTelegraphAvailable[AmpNumber] := True ;
             FNeedsGainTelegraphChannel[AmpNumber] := True ;
             FNeedsModeTelegraphChannel[AmpNumber] := True ;
-            FModeSwitchedPrimaryChannel[AmpNumber] := False ;
+            FModeSwitchedPrimaryChannel[AmpNumber] := True ;
             FGainTelegraphChannel[AmpNumber] := DefGainTelegraphChannel[AmpNumber] ;
             FModeTelegraphChannel[AmpNumber] := DefModeTelegraphChannel[AmpNumber] ;
             end ;
@@ -2042,7 +2044,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2078,7 +2080,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2115,7 +2117,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.1 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2149,7 +2151,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2183,7 +2185,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.1 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2224,16 +2226,16 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
 
             FCurrentCommandChannel[AmpNumber] := Min(AmpNumber+1,MaxAmplifiers-1) ;
             case FAmpType[AmpNumber] of
-               amAxoclamp2HS01  :FCurrentCommandScaleFactor[FCurrentCommandChannel[AmpNumber] ] := 1E-9 ;
-               amAxoclamp2HS1 : FCurrentCommandScaleFactor[FCurrentCommandChannel[AmpNumber] ] := 1E-8 ;
-               amAxoclamp2HS10 : FCurrentCommandScaleFactor[FCurrentCommandChannel[AmpNumber] ] := 1E-7 ;
+               amAxoclamp2HS01  :FCurrentCommandScaleFactor[FCurrentCommandChannel[AmpNumber]] := 1E-9 ;
+               amAxoclamp2HS1 : FCurrentCommandScaleFactor[FCurrentCommandChannel[AmpNumber]] := 1E-8 ;
+               amAxoclamp2HS10 : FCurrentCommandScaleFactor[FCurrentCommandChannel[AmpNumber]] := 1E-7 ;
                end ;
 
 
@@ -2264,7 +2266,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.1 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2299,7 +2301,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2333,7 +2335,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.1 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2358,7 +2360,7 @@ begin
             FSecondaryOutputChannel[AmpNumber] := 0 ;
             FSecondaryOutputChannelName[AmpNumber] := 'Stimulus' ;
             FSecondaryOutputChannelNameCC[AmpNumber] := 'Stimulus' ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
             FVoltageCommandScaleFactor[AmpNumber] := 1.0 ;
             FVoltageCommandChannel[AmpNumber] := 0 ;
             FCurrentCommandScaleFactor[AmpNumber] := 1E-9 ;
@@ -2391,7 +2393,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.1 ; // 100mV/V Stim scale=0.1
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2425,7 +2427,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.1 ; // 100mV/V Stim scale=0.1
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2459,7 +2461,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.1 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2493,7 +2495,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ; // 50mV/V
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2514,7 +2516,7 @@ begin
             FSecondaryOutputChannel[AmpNumber] := 2*AmpNumber + 1 ;
             FPrimaryOutputChannelName[AmpNumber] := ' Primary ' ;
             FPrimaryOutputChannelNameCC[AmpNumber] := ' Primary ' ;
-            FSecondaryAnalogInputCC[AmpNumber] := 0 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
             FSecondaryOutputChannelName[AmpNumber] := ' Seoondary ' ;
             FSecondaryOutputChannelNameCC[AmpNumber] := ' Seoondary ' ;
             FVoltageCommandScaleFactor[AmpNumber] := 1.0 ;
@@ -2617,7 +2619,7 @@ begin
           amEPC7 : Result := 1.0 ;
           amDaganCA1B : Result := GetDaganCA1BGain(AmpNumber) ;
           amHekaEPC9 : Result := GetHekaEPC9Gain(AmpNumber) ;
-          amNPIELC03SX : Result := GetNPIELC03SXGain(AmpNumber,FGainTelegraphChannel[AmpNumber]) ;
+          amNPIELC03XS : Result := GetNPIELC03XSGain(AmpNumber,FGainTelegraphChannel[AmpNumber]) ;
           amDaganBVC700A : Result := 1.0 ;
           else Result := 1.0 ;
           end ;
@@ -2810,7 +2812,7 @@ begin
      AmplifierType := GetAmplifierType(AmpNumber) ;
      case AmplifierType of
         amDaganCA1B : Result := 'Im Gain' ;
-        amNPIELC03SX : Result := 'Current Sensitivity' ;
+        amNPIELC03XS : Result := 'Current Sensitivity' ;
         else Result := 'Gain' ;
         end ;
      end ;
@@ -2833,7 +2835,7 @@ begin
      AmplifierType := GetAmplifierType(AmpNumber) ;
      case AmplifierType of
         amDaganCA1B : Result := 'Proc Gain' ;
-        amNPIELC03SX : Result := 'Potential Sensitivity' ;
+        amNPIELC03XS : Result := 'Potential Sensitivity' ;
         else Result := 'Voltage/Current Clamp Mode' ;
         end ;
      end ;
@@ -3103,7 +3105,7 @@ begin
                                                 ChanScale,
                                                 ADCInput ) ;
 
-          amNPIELC03SX :  GetNPIELC03SXChannelSettings( iChan,
+          amNPIELC03XS :  GetNPIELC03XSChannelSettings( iChan,
                                                       ChanName,
                                                       ChanUnits,
                                                       ChanCalFactor,
@@ -3672,7 +3674,7 @@ begin
           ChanUnits := FSecondaryChannelUnitsCC[AmpNumber] ;
           ChanCalFactor := FSecondaryChannelScaleFactorX1GainCC[AmpNumber] ;
           // Alternative A/D input for current-clamp mode secondary channel
-          ADCInput := iChan + FSecondaryAnalogInputCC[AmpNumber] ;
+          ADCInput := iChan + FSecondaryAnalogInputOffsetCC[AmpNumber] ;
           end ;
        ChanScale := 1.0 ;
        FSecondaryChannelScaleFactor[AmpNumber] := ChanCalFactor*ChanScale ;
@@ -4589,7 +4591,7 @@ begin
           ChanUnits := FSecondaryChannelUnitsCC[AmpNumber];
           ChanCalFactor := FSecondaryChannelScaleFactorX1GainCC[AmpNumber];
           // Alternative A/D input for current-clamp mode secondary channel
-          ADCInput := iChan + FSecondaryAnalogInputCC[AmpNumber] ;
+          ADCInput := iChan + FSecondaryAnalogInputOffsetCC[AmpNumber] ;
           end ;
        ChanScale := 1.0 ;
        FSecondaryChannelScaleFactor[AmpNumber] := ChanCalFactor*ChanScale ;
@@ -6245,7 +6247,7 @@ begin
      end ;
 
 
-function TAmplifier.GetNPIELC03SXGain(
+function TAmplifier.GetNPIELC03XSGain(
          AmpNumber : Integer ;
          TelChan : Integer ) : single ;
 // ---------------------------------------------
@@ -6291,7 +6293,7 @@ begin
      end ;
 
 
-procedure TAmplifier.GetNPIELC03SXChannelSettings(
+procedure TAmplifier.GetNPIELC03XSChannelSettings(
           iChan : Integer ;
           var ChanName : String ;
           var ChanUnits : String ;
@@ -6315,7 +6317,7 @@ begin
        ChanUnits := FPrimaryChannelUnits[AmpNumber] ;
        ChanCalFactor := FPrimaryChannelScaleFactorX1Gain[AmpNumber] ;
        if GetGainTelegraphAvailable(AmpNumber) then begin
-          ChanScale := GetNPIELC03SXGain( AmpNumber, FGainTelegraphChannel[AmpNumber] ) ;
+          ChanScale := GetNPIELC03XSGain( AmpNumber, FGainTelegraphChannel[AmpNumber] ) ;
           FPrimaryChannelScaleFactor[AmpNumber] := ChanCalFactor*ChanScale ;
           end
        else begin
@@ -6323,16 +6325,29 @@ begin
           end ;
        end
     else if IsSecondaryChannel(iChan) then begin
-       ChanName := 'Vm' ;
-       AddAmplifierNumber( ChanName, iChan ) ;
-       ChanUnits := FSecondaryChannelUnits[AmpNumber] ;
-       ChanCalFactor := FPrimaryChannelScaleFactorX1Gain[AmpNumber] ;
-       if GetModeTelegraphAvailable(AmpNumber) then begin
-          ChanScale := GetNPIELC03SXGain( AmpNumber, FModeTelegraphChannel[AmpNumber] ) ;
-          FSecondaryChannelScaleFactor[AmpNumber] := ChanCalFactor*ChanScale ;
+
+       if LastMode[AmpNumber] = VClampMode then begin
+          // Voltage-clamp mode
+          ChanName := 'Vm' ;
+          AddAmplifierNumber( ChanName, iChan ) ;
+          ChanUnits := FSecondaryChannelUnits[AmpNumber] ;
+          ChanCalFactor := FSecondaryChannelScaleFactorX1Gain[AmpNumber] ;
+          ChanScale := 1.0 ;
+          ADCInput := iChan ;
           end
        else begin
-          ChanScale := FSecondaryChannelScaleFactor[AmpNumber]/ ChanCalFactor ;
+          // Current-clamp mode
+          ChanName := 'Vm' ;
+          AddAmplifierNumber( ChanName, iChan ) ;
+          ChanUnits := FSecondaryChannelUnitsCC[AmpNumber] ;
+          ChanCalFactor := FSecondaryChannelScaleFactorX1GainCC[AmpNumber] ;
+          // Alternative A/D input for current-clamp mode secondary channel
+          ADCInput := iChan + FSecondaryAnalogInputOffsetCC[AmpNumber] ;
+          if GetModeTelegraphAvailable(AmpNumber) then begin
+             ChanScale := GetNPIELC03XSGain( AmpNumber, FModeTelegraphChannel[AmpNumber] ) ;
+             FSecondaryChannelScaleFactor[AmpNumber] := ChanCalFactor*ChanScale ;
+             end
+          else ChanScale := 1.0 ;
           end ;
        end ;
 
@@ -6753,7 +6768,7 @@ begin
         AddElementText( iNode, 'SECONDARYOUTPUTCHANNELNAME', FSecondaryOutputChannelName[i] ) ;
         AddElementText( iNode, 'SECONDARYOUTPUTCHANNELNAMECC', FSecondaryOutputChannelNameCC[i] ) ;
         AddElementInt( iNode, 'SECONDARYOUTPUTCHANNEL', FSecondaryOutputChannel[i] ) ;
-        AddElementInt( iNode, 'SECONDARYANALOGINPUTCC', FSecondaryAnalogInputCC[i] ) ;
+        AddElementInt( iNode, 'SECONDARYANALOGINPUTCC', FSecondaryAnalogInputOffsetCC[i] ) ;
 
         AddElementFloat( iNode, 'PRIMARYCHANNELSCALEFACTORX1GAIN', FPrimaryChannelScaleFactorX1Gain[i] ) ;
         AddElementFloat( iNode, 'PRIMARYCHANNELSCALEFACTORX1GAINCC', FPrimaryChannelScaleFactorX1GainCC[i] ) ;
@@ -6872,7 +6887,7 @@ begin
            GetElementText( iNode, 'SECONDARYOUTPUTCHANNELNAME', FSecondaryOutputChannelName[i] ) ;
            GetElementText( iNode, 'SECONDARYOUTPUTCHANNELNAMECC', FSecondaryOutputChannelNameCC[i] ) ;
            GetElementInt( iNode, 'SECONDARYOUTPUTCHANNEL', FSecondaryOutputChannel[i] ) ;
-           GetElementInt( iNode, 'SECONDARYANALOGINPUTCC', FSecondaryAnalogInputCC[i] ) ;
+           GetElementInt( iNode, 'SECONDARYANALOGINPUTCC', FSecondaryAnalogInputOffsetCC[i] ) ;
 
            GetElementFloat( iNode, 'PRIMARYCHANNELSCALEFACTORX1GAIN', FPrimaryChannelScaleFactorX1Gain[i] ) ;
            GetElementFloat( iNode, 'PRIMARYCHANNELSCALEFACTORX1GAINCC', FPrimaryChannelScaleFactorX1GainCC[i] ) ;
@@ -7307,7 +7322,7 @@ function  TAmplifier.GetSecondaryAnalogInputCC(
 // ---------------------------
 begin
      if (AmpNumber >= 0) and (AmpNumber <= MaxAmplifiers) then begin
-        Result := FSecondaryOutputChannel[AmpNumber] + FSecondaryAnalogInputCC[AmpNumber];
+        Result := FSecondaryOutputChannel[AmpNumber] + FSecondaryAnalogInputOffsetCC[AmpNumber];
         end
      else Result := 0 ;
 
@@ -7321,7 +7336,7 @@ procedure TAmplifier.SetSecondaryAnalogInputCC(
 // (only when current-clamp signal source differs  different source is required
 begin
     if (AmpNumber >= 0) and (AmpNumber < MaxAmplifiers) then begin
-       FSecondaryAnalogInputCC[AmpNumber] := Value - FSecondaryOutputChannel[AmpNumber] ;
+       FSecondaryAnalogInputOffsetCC[AmpNumber] := Value - FSecondaryOutputChannel[AmpNumber] ;
        end ;
     end ;
 

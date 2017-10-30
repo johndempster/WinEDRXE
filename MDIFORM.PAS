@@ -365,6 +365,13 @@ unit Mdiform;
                    ion concentration now computed correctly. Ratio channel name now changed to
                    reflect channels ratioed. Computed ion name added to concentration channe.
    V3.7.5 28.04.17 Errors when selecting NI PCI-6010 card now fixed
+   V3.7.8 30.10.17 Amplifiers: Analog input for secondary channel can now be remapped between
+                   voltage- and current- clamp modes for amplifiers which require a different signal output
+                   from the amplifier connected to the secondary channel in each clamp mode (applies to Axopatch 200 and AMS-2400)
+                   ImportFromDataFile(): Multiple files can now be selected for import to WCP file format.
+                   HekaUnit.pas code changed to try to get it working with EPC-9 USB
+                   NPI ELC-03XS gain telegraph support updated fixed voltage scaling bug. Now supports alternative secondary channel analogue inputs
+                   LIH88driver.dll added to program folder
   =======================================================================}
 
 interface
@@ -599,7 +606,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.7.7' ;
+     Version := 'V3.7.8' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
