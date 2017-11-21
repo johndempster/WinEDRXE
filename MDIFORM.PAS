@@ -372,6 +372,7 @@ unit Mdiform;
                    HekaUnit.pas code changed to try to get it working with EPC-9 USB
                    NPI ELC-03XS gain telegraph support updated fixed voltage scaling bug. Now supports alternative secondary channel analogue inputs
                    LIH88driver.dll added to program folder
+   V3.7.9 21.11.17 D/A update of NI USB-600X devices now limited to 500 Hz or slower to avoid intermittent 5s delays in .ADCStop calls.
   =======================================================================}
 
 interface
@@ -606,7 +607,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.7.8' ;
+     Version := 'V3.7.9' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
