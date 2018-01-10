@@ -373,6 +373,8 @@ unit Mdiform;
                    NPI ELC-03XS gain telegraph support updated fixed voltage scaling bug. Now supports alternative secondary channel analogue inputs
                    LIH88driver.dll added to program folder
    V3.7.9 21.11.17 D/A update of NI USB-600X devices now limited to 500 Hz or slower to avoid intermittent 5s delays in .ADCStop calls.
+   V3.8.0 25.11.17 Unsupported function error prevented for non-600X boards fixing problem introduced V3.7.9
+   V3.8.l 10.01.18 Files->Import GetMem replaced by AllocMem in ADCDataFile.pas to ensure all buffers initialized to zero.
   =======================================================================}
 
 interface
@@ -607,7 +609,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.7.9' ;
+     Version := 'V3.8.1' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }

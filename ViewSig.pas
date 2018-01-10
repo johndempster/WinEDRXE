@@ -407,7 +407,7 @@ begin
      NumBytesInBuf := scDisplay.MaxPoints*CDRFH.NumChannels*2 ;
      DisplayBuf := GetMemory( NumBytesInBuf) ;
 
-     scDisplay.TScale := CDRFH.dt ;
+     scDisplay.TScale := CDRFH.dt*Settings.TScale ;
      scDisplay.TUnits := Settings.TUnits ;
 
      // Read data from file
