@@ -642,7 +642,6 @@ begin
                        { Analyse and display test pulse results }
                        Main.SESLabIO.ADCStop ;
                        Main.SESLabIO.DACStop ;
-
                        AnalyseTestPulse ;
 
                        FirstSweep := False ;

@@ -124,10 +124,13 @@ unit AmpModule;
 // 08.01.16 LoadFromXMLFile1() now checks if XML file contains settings and avoids access violation.
 // 04.02.16 Multiclamp 700A: Now Com port # now correctly isolated from message code
 //          allowing Amplifier #1/#2 to be correctly selected instead of #3/#4
-// 09.03.16 Transferred from WinWCP V5.1.5 to update amplifier support in WinEDR
-// 31.03.16 SettingsDirectory now correctly set to  'C:\Users\Public\Documents\WinEDR' rather
-//          than 'C:\Users\Public\Documents\WinWCP'
-// 17.08.16 Axoclamp 2: Default current gains now correct (10,1,0.1 V/nA) for (HS10,1,0.1)
+// 10.08.16 Axoclamp 2: Default current gains now correct (10,1,0.1 V/nA) for (HS10,1,0.1)
+// 19.07.17 Analog input for secondary channel can now be remapped between voltage- and current-
+//          clamp modes for amplifiers which require a different signal output from the amplifier
+//          connected to the secondary channel in each clamp mode (applies to Axopatch 200 and AMS-2400)
+// 15.09.17 NPI ELC-03XS voltage channel gain telegraph now correct (and renamed ELC-03SX to ELC-03XS).
+// 21.09.17 NPI ELC-03XS now uses Command Input in voltage-clamp mode and Potential Output in current clamp mode
+// 30.10.17 Copied from WinWCPXE
 
 interface
 
@@ -181,7 +184,7 @@ const
      amEPC7 = 36 ;
      amDaganCA1B = 37 ;
      amHekaEPC9 = 38 ;
-     amNPIELC03SX = 39 ;
+     amNPIELC03XS = 39 ;
      amDaganBVC700A = 40 ;
      NumAmplifiers = 41 ;
 
@@ -640,6 +643,7 @@ TAXC_AcquireMeterData = function(
     FSecondaryOutputChannelNameCC : Array[0..MaxAmplifiers] of String ;
     FSecondaryChannelUnitsCC : Array[0..MaxAmplifiers] of String ;
     FSecondaryChannelScaleFactorX1GainCC : Array[0..MaxAmplifiers] of Single ;
+    FSecondaryAnalogInputOffsetCC : Array[0..MaxAmplifiers] of Integer ;
 
     FVoltageCommandScaleFactor : Array[0..MaxAmplifiers] of Single ;
     FVoltageCommandChannel : Array[0..MaxAmplifiers] of Integer ;
@@ -679,7 +683,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     procedure GetManualChannelSettings(
@@ -687,7 +692,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     procedure GetCED1902ChannelSettings(
@@ -695,9 +701,9 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
-
 
     function GetAxopatch1DGain(
          AmpNumber : Integer ) : single ;
@@ -708,7 +714,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     function GetAxopatch200Gain(
@@ -720,7 +727,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     function GetWPC100Gain(
@@ -732,7 +740,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     function GetVP500Gain(
@@ -744,7 +753,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     function GetRK400Gain(
@@ -756,7 +766,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     function GetOptopatchGain(
@@ -768,7 +779,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     procedure OpenMultiClamp ;
@@ -781,7 +793,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : Single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     function GetTurboTecGain(
@@ -793,7 +806,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : Single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     function GetAMS2400Gain(
@@ -805,7 +819,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : Single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     function GetEPC8Gain(
@@ -817,7 +832,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : Single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     function GetSEC05LXGain(
@@ -829,7 +845,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : Single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     function GetDaganPCOneGain(
@@ -841,7 +858,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : Single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     function GetDagan3900AGain(
@@ -853,7 +871,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : Single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     function GetWarnerPC501AGain(
@@ -865,7 +884,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : Single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     function GetWarnerPC505BGain(
@@ -877,7 +897,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : Single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     function GetWarnerOC725CGain(
@@ -889,7 +910,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : Single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     function GetAxoClamp2Gain(
@@ -901,7 +923,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : Single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     function GetDaganTEV200AGain(
@@ -913,7 +936,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : Single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     function GetTritonGain(
@@ -925,7 +949,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : Single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     function GetAxoclamp900AGain(
@@ -937,7 +962,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : Single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
     procedure OpenAxoclamp900A ;
     procedure CloseAxoclamp900A ;
@@ -945,7 +971,6 @@ TAXC_AcquireMeterData = function(
     procedure DisplayAxoclamp900AError(
          Hnd : Integer ;
          Err : Integer ) ;
-
 
     function GetHekaEPC800Gain(
              AmpNumber : Integer ) : single ;
@@ -965,7 +990,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : Single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     procedure GetEPC7ChannelSettings(
@@ -973,7 +999,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : Single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     procedure GetHekaEPC9ChannelSettings(
@@ -981,7 +1008,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : Single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     procedure GetDaganCA1BChannelSettings(
@@ -989,18 +1017,20 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : Single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
-    function GetNPIELC03SXGain(
+    function GetNPIELC03XSGain(
          AmpNumber : Integer ;
          TelChan : Integer ) : single ;
-    procedure GetNPIELC03SXChannelSettings(
+    procedure GetNPIELC03XSChannelSettings(
           iChan : Integer ;
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : Single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     procedure GetDaganBVC700AChannelSettings(
@@ -1008,7 +1038,8 @@ TAXC_AcquireMeterData = function(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 
     function LoadProcedure(
@@ -1052,6 +1083,8 @@ TAXC_AcquireMeterData = function(
     function  GetPrimaryOutputChannelName(  AmpNumber : Integer ; ClampMode : Integer ) : String  ;
     function  GetSecondaryOutputChannel(  AmpNumber : Integer ) : Integer  ;
     function  GetSecondaryOutputChannelName(  AmpNumber : Integer ; ClampMode : Integer ) : String  ;
+    function  GetSecondaryAnalogInputCC(  AmpNumber : Integer ) : Integer  ;
+    procedure SetSecondaryAnalogInputCC( AmpNumber : Integer ; Value : Integer ) ;
 
     function getPrimaryChannelScaleFactor( AmpNumber : Integer ) : Single ;
     function getSecondaryChannelScaleFactor( AmpNumber : Integer ) : Single ;
@@ -1156,7 +1189,8 @@ TAXC_AcquireMeterData = function(
               var ChanName : String ;
               var ChanUnits : String ;
               var ChanCalFactor : Single ;
-              var ChanScale : Single
+              var ChanScale : Single ;
+              var ADCInput : Integer
               ) ;
 
     function GetTelegraphVoltage(
@@ -1233,6 +1267,10 @@ TAXC_AcquireMeterData = function(
                                                            read GetSecondaryChannelUnits
                                                            write SetSecondaryChannelUnits ;
 
+    Property SecondaryAnalogInputCC[AmpNumber : Integer] : Integer
+                                                           read GetSecondaryAnalogInputCC
+                                                           write SetSecondaryAnalogInputCC ;
+
   end;
 
 var
@@ -1296,6 +1334,7 @@ begin
          FPrimaryChannelScaleFactorX1GainCC[i] := 1.0 ;
          FSecondaryChannelScaleFactorX1Gain[i] := 1.0 ;
          FSecondaryChannelScaleFactorX1GainCC[i] := 1.0 ;
+         FSecondaryAnalogInputOffsetCC[i] := 0 ;
          FModeSwitchedPrimaryChannel[i] := False ;
          FAmpType[i] := amNone ;
          LastGain[i] := 1.0 ;
@@ -1332,7 +1371,7 @@ begin
      Axoclamp900AHnd := -1 ;
 
      // Load settings
-     SettingsDirectory := GetSpecialFolder(CSIDL_COMMON_DOCUMENTS) + '\WinEDR\';
+     SettingsDirectory := GetSpecialFolder(CSIDL_COMMON_DOCUMENTS) + '\WinWCP\';
      if not SysUtils.DirectoryExists(SettingsDirectory) then SysUtils.ForceDirectories(SettingsDirectory) ;
      SettingsFileName := SettingsDirectory + 'amplifier settings.xml' ;
      if FileExists( SettingsFileName ) then LoadFromXMLFile( SettingsFileName ) ;
@@ -1380,7 +1419,7 @@ begin
      List.AddObject('NPI Turbo Tec-10CX',TObject(amTurboTec10CX)) ;
      List.AddObject('NPI Turbo Tec-20',TObject(amTurboTec20)) ;
      List.AddObject('NPI Turbo Tec-30',TObject(amTurboTec30)) ;
-     List.AddObject('NPI ELC03SX',TObject(amNPIELC03SX)) ;
+     List.AddObject('NPI ELC-03XS',TObject(amNPIELC03XS)) ;
 
      List.AddObject('Dagan TEV-200',TObject(amDaganTEV200A)) ;
      List.AddObject('Dagan PC-ONE-10 (10M)',TObject(amDaganPCOne10M)) ;
@@ -1435,6 +1474,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.001 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.001 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.001 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 1.0 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -1468,6 +1508,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.001 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.001 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.001 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 1.0 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -1533,6 +1574,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -1567,6 +1609,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.001 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -1602,6 +1645,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.01 ;  // X0.1 scaling)
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -1673,12 +1717,12 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
             FCurrentCommandScaleFactor[AmpNumber] := 1E-9 ;
             FCurrentCommandChannel[AmpNumber] := AmpNumber ;
-
 
             FGainTelegraphAvailable[AmpNumber] := True ;
             FModeTelegraphAvailable[AmpNumber] := False ;
@@ -1742,6 +1786,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.001 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.001 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.001 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -1775,6 +1820,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.001 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.001 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.001 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -1808,7 +1854,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
-            //FSecondaryOutputChannel[AmpNumber] := 2*AmpNumber + 1 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.1 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -1852,6 +1898,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.1 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -1886,6 +1933,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 1E-4 ; // Assumes 100MOhm feedback res.
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -1919,11 +1967,12 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.1 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
-            FCurrentCommandScaleFactor[AmpNumber] := 1E-9 ; // 1nA/V input
             FCurrentCommandChannel[AmpNumber] := Min(AmpNumber+1,MaxAmplifiers-1) ;
+            FCurrentCommandScaleFactor[FCurrentCommandChannel[AmpNumber]] := 1E-9 ; // 1nA/V input
 
             FGainTelegraphAvailable[AmpNumber] := True ;
             FModeTelegraphAvailable[AmpNumber] := False ;
@@ -1934,7 +1983,7 @@ begin
             FModeTelegraphChannel[AmpNumber] := DefModeTelegraphChannel[AmpNumber] ;
             end ;
 
-          amNPIELC03SX  : begin
+          amNPIELC03XS  : begin
             FPrimaryOutputChannel[AmpNumber] := 2*AmpNumber ;
             FPrimaryOutputChannelName[AmpNumber] := 'Current Output' ;
             FPrimaryOutputChannelNameCC[AmpNumber] := 'Current Output' ;
@@ -1945,24 +1994,25 @@ begin
             FPrimaryChannelScaleFactor[AmpNumber] := FPrimaryChannelScaleFactorX1Gain[AmpNumber] ;
 
             FSecondaryOutputChannel[AmpNumber] := 2*AmpNumber + 1 ;
-            FSecondaryOutputChannelName[AmpNumber] := 'Potential Output (mV)' ;
+            FSecondaryOutputChannelName[AmpNumber] := 'Command Input' ;
             FSecondaryOutputChannelNameCC[AmpNumber] := 'Potential Output (mV)' ;
             FSecondaryCHannelUnits[AmpNumber] := 'mV' ;
             FSecondaryCHannelUnitsCC[AmpNumber] := 'mV' ;
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
-            FVoltageCommandScaleFactor[AmpNumber] := 0.1 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
-            FCurrentCommandScaleFactor[AmpNumber] := 1E-9 ; // 1nA/V input
+            FVoltageCommandScaleFactor[AmpNumber] := 0.1 ;
             FCurrentCommandChannel[AmpNumber] := Min(AmpNumber+1,MaxAmplifiers-1) ;
+            FCurrentCommandScaleFactor[FCurrentCommandChannel[AmpNumber]] := 1E-9 ; // 1nA/V input
 
             FGainTelegraphAvailable[AmpNumber] := True ;
             FModeTelegraphAvailable[AmpNumber] := True ;
             FNeedsGainTelegraphChannel[AmpNumber] := True ;
             FNeedsModeTelegraphChannel[AmpNumber] := True ;
-            FModeSwitchedPrimaryChannel[AmpNumber] := False ;
+            FModeSwitchedPrimaryChannel[AmpNumber] := True ;
             FGainTelegraphChannel[AmpNumber] := DefGainTelegraphChannel[AmpNumber] ;
             FModeTelegraphChannel[AmpNumber] := DefModeTelegraphChannel[AmpNumber] ;
             end ;
@@ -1994,6 +2044,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2029,6 +2080,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2065,6 +2117,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.1 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2098,6 +2151,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2131,6 +2185,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.1 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2171,15 +2226,16 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
 
             FCurrentCommandChannel[AmpNumber] := Min(AmpNumber+1,MaxAmplifiers-1) ;
             case FAmpType[AmpNumber] of
-               amAxoclamp2HS01  :FCurrentCommandScaleFactor[FCurrentCommandChannel[AmpNumber] ] := 1E-9 ;
-               amAxoclamp2HS1 : FCurrentCommandScaleFactor[FCurrentCommandChannel[AmpNumber] ] := 1E-8 ;
-               amAxoclamp2HS10 : FCurrentCommandScaleFactor[FCurrentCommandChannel[AmpNumber] ] := 1E-7 ;
+               amAxoclamp2HS01  :FCurrentCommandScaleFactor[FCurrentCommandChannel[AmpNumber]] := 1E-9 ;
+               amAxoclamp2HS1 : FCurrentCommandScaleFactor[FCurrentCommandChannel[AmpNumber]] := 1E-8 ;
+               amAxoclamp2HS10 : FCurrentCommandScaleFactor[FCurrentCommandChannel[AmpNumber]] := 1E-7 ;
                end ;
 
 
@@ -2210,6 +2266,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.1 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2244,6 +2301,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2277,6 +2335,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.1 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2301,6 +2360,7 @@ begin
             FSecondaryOutputChannel[AmpNumber] := 0 ;
             FSecondaryOutputChannelName[AmpNumber] := 'Stimulus' ;
             FSecondaryOutputChannelNameCC[AmpNumber] := 'Stimulus' ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
             FVoltageCommandScaleFactor[AmpNumber] := 1.0 ;
             FVoltageCommandChannel[AmpNumber] := 0 ;
             FCurrentCommandScaleFactor[AmpNumber] := 1E-9 ;
@@ -2333,6 +2393,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.1 ; // 100mV/V Stim scale=0.1
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2366,6 +2427,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.1 ; // 100mV/V Stim scale=0.1
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2399,6 +2461,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.1 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2432,6 +2495,7 @@ begin
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
 
             FVoltageCommandScaleFactor[AmpNumber] := 0.02 ; // 50mV/V
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
@@ -2450,6 +2514,11 @@ begin
         else begin
             FPrimaryOutputChannel[AmpNumber] := 2*AmpNumber ;
             FSecondaryOutputChannel[AmpNumber] := 2*AmpNumber + 1 ;
+            FPrimaryOutputChannelName[AmpNumber] := ' Primary ' ;
+            FPrimaryOutputChannelNameCC[AmpNumber] := ' Primary ' ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
+            FSecondaryOutputChannelName[AmpNumber] := ' Seoondary ' ;
+            FSecondaryOutputChannelNameCC[AmpNumber] := ' Seoondary ' ;
             FVoltageCommandScaleFactor[AmpNumber] := 1.0 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
             FCurrentCommandScaleFactor[AmpNumber] := 1.0 ;
@@ -2550,7 +2619,7 @@ begin
           amEPC7 : Result := 1.0 ;
           amDaganCA1B : Result := GetDaganCA1BGain(AmpNumber) ;
           amHekaEPC9 : Result := GetHekaEPC9Gain(AmpNumber) ;
-          amNPIELC03SX : Result := GetNPIELC03SXGain(AmpNumber,FGainTelegraphChannel[AmpNumber]) ;
+          amNPIELC03XS : Result := GetNPIELC03XSGain(AmpNumber,FGainTelegraphChannel[AmpNumber]) ;
           amDaganBVC700A : Result := 1.0 ;
           else Result := 1.0 ;
           end ;
@@ -2743,7 +2812,7 @@ begin
      AmplifierType := GetAmplifierType(AmpNumber) ;
      case AmplifierType of
         amDaganCA1B : Result := 'Im Gain' ;
-        amNPIELC03SX : Result := 'Current Sensitivity' ;
+        amNPIELC03XS : Result := 'Current Sensitivity' ;
         else Result := 'Gain' ;
         end ;
      end ;
@@ -2766,7 +2835,7 @@ begin
      AmplifierType := GetAmplifierType(AmpNumber) ;
      case AmplifierType of
         amDaganCA1B : Result := 'Proc Gain' ;
-        amNPIELC03SX : Result := 'Potential Sensitivity' ;
+        amNPIELC03XS : Result := 'Potential Sensitivity' ;
         else Result := 'Voltage/Current Clamp Mode' ;
         end ;
      end ;
@@ -2815,7 +2884,8 @@ procedure TAmplifier.GetChannelSettings(
           var ChanName : String ;         // Returns name of channel
           var ChanUnits : String ;        // Returns units of channel
           var ChanCalFactor : Single ;    // Returns V/Units calibration factor
-          var ChanScale : Single          // Returns channel gain factor
+          var ChanScale : Single ;        // Returns channel gain factor
+          var ADCInput : Integer          // Returns A/D input used
           ) ;
 // ------------------------------------------
 // Get current channel settings for amplifier
@@ -2833,72 +2903,84 @@ begin
                                            ChanName,
                                            ChanUnits,
                                            ChanCalFactor,
-                                           ChanScale ) ;
+                                           ChanScale,
+                                           ADCInput ) ;
 
           amManual : GetManualChannelSettings( iChan,
                                                ChanName,
                                                ChanUnits,
                                                ChanCalFactor,
-                                               ChanScale ) ;
+                                               ChanScale,
+                                               ADCInput ) ;
 
           amCED1902 : GetCED1902ChannelSettings( iChan,
                                                  ChanName,
                                                  ChanUnits,
                                                  ChanCalFactor,
-                                                 ChanScale ) ;
+                                                 ChanScale,
+                                                 ADCInput ) ;
 
           amAxoPatch1D : GetAxoPatch1DChannelSettings( iChan,
                                                        ChanName,
                                                        ChanUnits,
                                                        ChanCalFactor,
-                                                       ChanScale ) ;
+                                                       ChanScale,
+                                                       ADCInput ) ;
 
           amAxoPatch200 : GetAxoPatch200ChannelSettings( iChan,
                                                          ChanName,
                                                          ChanUnits,
                                                          ChanCalFactor,
-                                                         ChanScale ) ;
+                                                         ChanScale,
+                                                         ADCInput ) ;
 
           amWPC100 : GetWPC100ChannelSettings( iChan,
                                                ChanName,
                                                ChanUnits,
                                                ChanCalFactor,
-                                               ChanScale ) ;
+                                               ChanScale,
+                                               ADCInput ) ;
 
           amRK400 : GetRK400ChannelSettings( iChan,
                                              ChanName,
                                              ChanUnits,
                                              ChanCalFactor,
-                                             ChanScale ) ;
+                                             ChanScale,
+                                             ADCInput ) ;
 
           amVP500 : GetVP500ChannelSettings( iChan,
                                              ChanName,
                                              ChanUnits,
                                              ChanCalFactor,
-                                             ChanScale ) ;
+                                             ChanScale,
+                                             ADCInput ) ;
 
           amOptoPatch : GetOptoPatchChannelSettings( iChan,
                                                      ChanName,
                                                      ChanUnits,
                                                      ChanCalFactor,
-                                                     ChanScale ) ;
+                                                     ChanScale,
+                                                     ADCInput ) ;
 
           amMultiClamp700A : GetMultiClampChannelSettings( iChan,
                                                            ChanName,
                                                            ChanUnits,
                                                            ChanCalFactor,
-                                                           ChanScale ) ;
+                                                           ChanScale,
+                                                           ADCInput ) ;
 
           amMultiClamp700B :  GetMultiClampChannelSettings( iChan,
                                                             ChanName,
                                                             ChanUnits,
                                                             ChanCalFactor,
-                                                            ChanScale ) ;
+                                                            ChanScale,
+                                                            ADCInput ) ;
           amEPC8 :  GetEPC8ChannelSettings( iChan,
                                             ChanName,
                                             ChanUnits,
                                             ChanCalFactor,
-                                            ChanScale ) ;
+                                            ChanScale,
+                                            ADCInput ) ;
 
           amTurboTec03,
           amTurboTec05,
@@ -2909,19 +2991,22 @@ begin
                                                         ChanName,
                                                         ChanUnits,
                                                         ChanCalFactor,
-                                                        ChanScale ) ;
+                                                        ChanScale,
+                                                        ADCInput ) ;
 
           amAMS2400 :  GetAMS2400ChannelSettings( iChan,
                                                   ChanName,
                                                   ChanUnits,
                                                   ChanCalFactor,
-                                                  ChanScale ) ;
+                                                  ChanScale,
+                                                  ADCInput ) ;
 
           amSEC05LX :  GetSEC05LXChannelSettings( iChan,
                                                   ChanName,
                                                   ChanUnits,
                                                   ChanCalFactor,
-                                                  ChanScale ) ;
+                                                  ChanScale,
+                                                  ADCInput ) ;
 
           amDaganPCOne10M,
           amDaganPCOne100M,
@@ -2930,32 +3015,37 @@ begin
                                                        ChanName,
                                                        ChanUnits,
                                                        ChanCalFactor,
-                                                       ChanScale ) ;
+                                                       ChanScale,
+                                                       ADCInput ) ;
 
           amDagan3900A10nA,
           amDagan3900A100nA : GetDagan3900AChannelSettings( iChan,
                                                        ChanName,
                                                        ChanUnits,
                                                        ChanCalFactor,
-                                                       ChanScale ) ;
+                                                       ChanScale,
+                                                       ADCInput ) ;
 
           amWarnerPC501A :  GetWarnerPC501AChannelSettings( iChan,
                                                   ChanName,
                                                   ChanUnits,
                                                   ChanCalFactor,
-                                                  ChanScale ) ;
+                                                  ChanScale,
+                                                  ADCInput ) ;
 
           amWarnerPC505B :  GetWarnerPC505BChannelSettings( iChan,
                                                   ChanName,
                                                   ChanUnits,
                                                   ChanCalFactor,
-                                                  ChanScale ) ;
+                                                  ChanScale,
+                                                  ADCInput ) ;
 
           amWarnerOC725C :  GetWarnerOC725CChannelSettings( iChan,
                                                   ChanName,
                                                   ChanUnits,
                                                   ChanCalFactor,
-                                                  ChanScale ) ;
+                                                  ChanScale,
+                                                  ADCInput ) ;
 
           amAxoclamp2HS1,
           amAxoclamp2HS10,
@@ -2963,61 +3053,71 @@ begin
                                                   ChanName,
                                                   ChanUnits,
                                                   ChanCalFactor,
-                                                  ChanScale ) ;
+                                                  ChanScale,
+                                                  ADCInput ) ;
 
           amDaganTEV200A :  GetDaganTEV200AChannelSettings( iChan,
                                                   ChanName,
                                                   ChanUnits,
                                                   ChanCalFactor,
-                                                  ChanScale ) ;
+                                                  ChanScale,
+                                                  ADCInput ) ;
 
           amTriton :  GetTritonChannelSettings( iChan,
                                                 ChanName,
                                                 ChanUnits,
                                                 ChanCalFactor,
-                                                ChanScale ) ;
+                                                ChanScale,
+                                                ADCInput ) ;
 
           amAxoclamp900A :  GetAxoclamp900AChannelSettings( iChan,
                                                 ChanName,
                                                 ChanUnits,
                                                 ChanCalFactor,
-                                                ChanScale ) ;
+                                                ChanScale,
+                                                ADCInput ) ;
 
           amHekaEPC800 :  GetHekaEPC800ChannelSettings( iChan,
                                                 ChanName,
                                                 ChanUnits,
                                                 ChanCalFactor,
-                                                ChanScale ) ;
+                                                ChanScale,
+                                                ADCInput ) ;
 
           amEPC7 :  GetEPC7ChannelSettings( iChan,
                                             ChanName,
                                             ChanUnits,
                                             ChanCalFactor,
-                                            ChanScale ) ;
+                                            ChanScale,
+                                            ADCInput ) ;
 
           amDaganCA1B :  GetDaganCA1BChannelSettings( iChan,
                                             ChanName,
                                             ChanUnits,
                                             ChanCalFactor,
-                                            ChanScale ) ;
+                                            ChanScale,
+                                            ADCInput ) ;
 
           amHekaEPC9 :  GetHekaEPC9ChannelSettings( iChan,
                                                 ChanName,
                                                 ChanUnits,
                                                 ChanCalFactor,
-                                                ChanScale ) ;
+                                                ChanScale,
+                                                ADCInput ) ;
 
-          amNPIELC03SX :  GetNPIELC03SXChannelSettings( iChan,
+          amNPIELC03XS :  GetNPIELC03XSChannelSettings( iChan,
                                                       ChanName,
                                                       ChanUnits,
                                                       ChanCalFactor,
-                                                      ChanScale ) ;
+                                                      ChanScale,
+                                                      ADCInput ) ;
 
           amDaganBVC700A :  GetDaganBVC700AChannelSettings( iChan,
                                                             ChanName,
                                                             ChanUnits,
                                                             ChanCalFactor,
-                                                            ChanScale ) ;
+                                                            ChanScale,
+                                                            ADCInput ) ;
 
           end ;
 
@@ -3034,7 +3134,7 @@ function TAmplifier.GetCurrentChannel(
 // Get current channel for selected amplifier
 // ------------------------------------------
 var
-    iChan : Integer ;
+    iChan,ADCInput : Integer ;
     ChanName,ChanUnits : String ;
     ChanCalFactor,ChanScale : Single ;
 begin
@@ -3047,11 +3147,11 @@ begin
         end ;
 
      iChan := GetPrimaryOutputChannel(AmpNumber) ;
-     GetChannelSettings( iChan,ChanName,ChanUnits,ChanCalFactor,ChanScale ) ;
+     GetChannelSettings( iChan,ChanName,ChanUnits,ChanCalFactor,ChanScale,ADCInput ) ;
      if ANSIContainsText( ChanUnits, 'A' ) then Result := iChan ;
 
      iChan := GetSecondaryOutputChannel(AmpNumber) ;
-     GetChannelSettings( iChan,ChanName,ChanUnits,ChanCalFactor,ChanScale ) ;
+     GetChannelSettings( iChan,ChanName,ChanUnits,ChanCalFactor,ChanScale,ADCInput ) ;
      if ANSIContainsText( ChanUnits, 'A' ) then Result := iChan ;
 
      end ;
@@ -3064,7 +3164,7 @@ function TAmplifier.GetVoltageChannel(
 // Get current channel for selected amplifier
 // ------------------------------------------
 var
-    iChan : Integer ;
+    iChan,ADCInput : Integer ;
     ChanName,ChanUnits : String ;
     ChanCalFactor,ChanScale : Single ;
 begin
@@ -3076,11 +3176,11 @@ begin
         end ;
 
      iChan := GetPrimaryOutputChannel(AmpNumber) ;
-     GetChannelSettings( iChan,ChanName,ChanUnits,ChanCalFactor,ChanScale ) ;
+     GetChannelSettings( iChan,ChanName,ChanUnits,ChanCalFactor,ChanScale,ADCInput ) ;
      if ANSIContainsText( ChanUnits, 'V' ) then Result := iChan ;
 
      iChan := GetSecondaryOutputChannel(AmpNumber) ;
-     GetChannelSettings( iChan,ChanName,ChanUnits,ChanCalFactor,ChanScale ) ;
+     GetChannelSettings( iChan,ChanName,ChanUnits,ChanCalFactor,ChanScale,ADCInput ) ;
      if ANSIContainsText( ChanUnits, 'V' ) then Result := iChan ;
 
      end ;
@@ -3184,7 +3284,8 @@ procedure TAmplifier.GetNoneChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -------------------------------------
 // Get No amplifier channel settings
@@ -3226,7 +3327,8 @@ procedure TAmplifier.GetManualChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -------------------------------------
 // Get No amplifier channel settings
@@ -3287,7 +3389,8 @@ procedure TAmplifier.GetCED1902ChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -------------------------------------
 // Get CED 1902 channel settings
@@ -3298,7 +3401,7 @@ begin
 
     AmpNumber := AmpNumberOfChannel(iChan) ;
     if AmpNumber >= MaxAmplifiers then Exit ;
-    
+
     // Update amplifier settings
     if not CED1902.AmplifierSet then SetCED1902 ;
 
@@ -3389,7 +3492,8 @@ procedure TAmplifier.GetAxopatch1DChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -------------------------------------
 // Get Axon Axopatch 1D channel settings
@@ -3404,7 +3508,7 @@ begin
     if IsPrimaryChannel(iChan)then begin
        ChanName := 'Im' ;
        AddAmplifierNumber( ChanName, iChan ) ;
-       ChanUnits := FPrimaryChannelUnits[AmpNumber] ;
+                                                     ChanUnits := FPrimaryChannelUnits[AmpNumber] ;
        ChanCalFactor := FPrimaryChannelScaleFactorX1Gain[AmpNumber] ;
        if GetGainTelegraphAvailable(AmpNumber) then begin
           ChanScale := GetAxopatch1DGain( AmpNumber ) ;
@@ -3514,7 +3618,8 @@ procedure TAmplifier.GetAxopatch200ChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -------------------------------------
 // Get Axon Axopatch 200 channel settings
@@ -3526,7 +3631,7 @@ begin
 
     AmpNumber := AmpNumberOfChannel(iChan) ;
     if AmpNumber >= MaxAmplifiers then Exit ;
-    
+
     // Current/voltage clamp mode
     LastMode[AmpNumber] := GetAxopatch200Mode(AmpNumber) ;
 
@@ -3560,6 +3665,7 @@ begin
           AddAmplifierNumber( ChanName, iChan ) ;
           ChanUnits := FSecondaryChannelUnits[AmpNumber] ;
           ChanCalFactor := FSecondaryChannelScaleFactorX1Gain[AmpNumber] ;
+          ADCInput := iChan ;
           end
        else begin
           // Current-clamp mode
@@ -3567,6 +3673,8 @@ begin
           AddAmplifierNumber( ChanName, iChan ) ;
           ChanUnits := FSecondaryChannelUnitsCC[AmpNumber] ;
           ChanCalFactor := FSecondaryChannelScaleFactorX1GainCC[AmpNumber] ;
+          // Alternative A/D input for current-clamp mode secondary channel
+          ADCInput := iChan + FSecondaryAnalogInputOffsetCC[AmpNumber] ;
           end ;
        ChanScale := 1.0 ;
        FSecondaryChannelScaleFactor[AmpNumber] := ChanCalFactor*ChanScale ;
@@ -3639,7 +3747,8 @@ procedure TAmplifier.GetWPC100ChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -----------------------------
 // Get WPC 100 channel settings
@@ -3650,7 +3759,7 @@ begin
 
     AmpNumber := AmpNumberOfChannel(iChan) ;
     if AmpNumber >= MaxAmplifiers then Exit ;
-    
+
     if IsPrimaryChannel(iChan)then begin
        ChanName := 'Im' ;
        AddAmplifierNumber( ChanName, iChan ) ;
@@ -3745,7 +3854,8 @@ procedure TAmplifier.GetRK400ChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -----------------------------
 // Get RK400 channel settings
@@ -3865,7 +3975,8 @@ procedure TAmplifier.GetOptoPatchChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -----------------------------
 // Get Cairn OptoPatch channel settings
@@ -3876,7 +3987,7 @@ begin
 
     AmpNumber := AmpNumberofChannel(iChan) ;
     if AmpNumber >= MaxAmplifiers then Exit ;
-    
+
     LastMode[AmpNumber] := GetOptoPatchMode(AmpNumber) ;
 
     if IsPrimaryChannel(iChan) then begin
@@ -3951,7 +4062,8 @@ procedure TAmplifier.GetVP500ChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -----------------------------
 // Get Biologic VP500 channel settings
@@ -3962,7 +4074,7 @@ begin
 
     AmpNumber := AmpNumberOfChannel(iChan) ;
     if AmpNumber >= MaxAmplifiers then Exit ;
-    
+
     if  IsPrimaryChannel(iChan) then begin
        ChanName := 'Im' ;
        AddAmplifierNumber( ChanName, iChan ) ;
@@ -3997,10 +4109,11 @@ var
     ChanUnits : String ;
     ChanCalFactor : single ;
     ChanScale : single ;
+    ADCInput : Integer ;
 begin
 
      GetMultiClampChannelSettings( FPrimaryOutputChannel[AmpNumber],
-                                   ChanName,ChanUnits,ChanCalFactor,ChanScale ) ;
+                                   ChanName,ChanUnits,ChanCalFactor,ChanScale,ADCInput ) ;
      if ANSIContainsText(ChanUnits,'A') then LastMode[AmpNumber] := VCLAMPMode
                                         else LastMode[AmpNumber] := ICLAMPMode ;
      Result := LastMode[AmpNumber] ;
@@ -4066,7 +4179,8 @@ procedure TAmplifier.GetMultiClampChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // --------------------------
 // Get Axon Multi-Clamp channel settings
@@ -4300,7 +4414,8 @@ procedure TAmplifier.GetTurboTecChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -----------------------------------
 // Get NPI TurboTec10C channel settings
@@ -4311,7 +4426,7 @@ begin
 
     AmpNumber := AmpNumberOfChannel(iChan) ;
     if AmpNumber >= MaxAmplifiers then Exit ;
-    
+
     if IsPrimaryChannel(iChan)then begin
        ChanName := 'Im' ;
        AddAmplifierNumber( ChanName, iChan ) ;
@@ -4424,7 +4539,8 @@ procedure TAmplifier.GetAMS2400ChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -----------------------------------
 // Get A-M Systems 2400  channel settings
@@ -4436,7 +4552,7 @@ begin
 
     AmpNumber := AmpNumberOfChannel(iChan) ;
     if AmpNumber >= MaxAmplifiers then Exit ;
-    
+
     // Current/voltage clamp mode
     LastMode[AmpNumber] := GetAMS2400Mode(AmpNumber) ;
 
@@ -4466,6 +4582,7 @@ begin
           AddAmplifierNumber( ChanName, iChan ) ;
           ChanUnits := FSecondaryChannelUnits[AmpNumber];
           ChanCalFactor := FSecondaryChannelScaleFactorX1Gain[AmpNumber];
+          ADCInput := iChan ;
           end
        else begin
           // Current-clamp mode
@@ -4473,6 +4590,8 @@ begin
           AddAmplifierNumber( ChanName, iChan ) ;
           ChanUnits := FSecondaryChannelUnitsCC[AmpNumber];
           ChanCalFactor := FSecondaryChannelScaleFactorX1GainCC[AmpNumber];
+          // Alternative A/D input for current-clamp mode secondary channel
+          ADCInput := iChan + FSecondaryAnalogInputOffsetCC[AmpNumber] ;
           end ;
        ChanScale := 1.0 ;
        FSecondaryChannelScaleFactor[AmpNumber] := ChanCalFactor*ChanScale ;
@@ -4536,7 +4655,8 @@ procedure TAmplifier.GetEPC8ChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -------------------------------------
 // Get Heka EPC-8 channel settings
@@ -4547,7 +4667,7 @@ begin
 
     AmpNumber := AmpNumberOfChannel(iChan) ;
     if AmpNumber >= MaxAmplifiers then Exit ;
-    
+
     if IsPrimaryChannel(iChan)then begin
        ChanName := 'Im' ;
        AddAmplifierNumber( ChanName, iChan ) ;
@@ -4634,7 +4754,8 @@ procedure TAmplifier.GetSEC05LXChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -----------------------------------
 // Get NPI SEC05LX channel settings
@@ -4733,7 +4854,8 @@ procedure TAmplifier.GetDaganPCOneChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -----------------------------------
 // Get Dagan PC-One channel settings
@@ -4744,7 +4866,7 @@ begin
 
     AmpNumber := AmpNumberOfChannel(iChan) ;
     if AmpNumber >= MaxAmplifiers then Exit ;
-    
+
     if IsPrimaryChannel(iChan)then begin
        ChanName := 'Im' ;
        AddAmplifierNumber( ChanName, iChan ) ;
@@ -4832,7 +4954,8 @@ procedure TAmplifier.GetDagan3900AChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -----------------------------------
 // Get Dagan 3900A channel settings
@@ -4843,7 +4966,7 @@ begin
 
     AmpNumber := AmpNumberOfChannel(iChan) ;
     if AmpNumber >= MaxAmplifiers then Exit ;
-    
+
     if IsPrimaryChannel(iChan)then begin
        ChanName := 'Im' ;
        AddAmplifierNumber( ChanName, iChan ) ;
@@ -4950,7 +5073,8 @@ procedure TAmplifier.GetWarnerPC501AChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -----------------------------------
 // Get Warner PC501A channel settings
@@ -4961,7 +5085,7 @@ begin
 
     AmpNumber := AmpNumberOfChannel(iChan) ;
     if AmpNumber >= MaxAmplifiers then Exit ;
-    
+
     if IsPrimaryChannel(iChan)then begin
        ChanName := 'Im' ;
        AddAmplifierNumber( ChanName, iChan ) ;
@@ -5054,7 +5178,8 @@ procedure TAmplifier.GetWarnerPC505BChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -----------------------------------
 // Get Warner PC505B channel settings
@@ -5157,7 +5282,8 @@ procedure TAmplifier.GetWarnerOC725CChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -----------------------------------
 // Get Warner OC725C voltage clamp channel settings
@@ -5168,7 +5294,7 @@ begin
 
     AmpNumber := AmpNumberOfChannel(iChan) ;
     if AmpNumber >= MaxAmplifiers then Exit ;
-    
+
     if IsPrimaryChannel(iChan)then begin
        ChanName := 'Im' ;
        AddAmplifierNumber( ChanName, iChan ) ;
@@ -5219,7 +5345,8 @@ procedure TAmplifier.GetAxoclamp2ChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -----------------------------------
 // Get Axoclamp 2 voltage clamp channel settings
@@ -5313,7 +5440,8 @@ procedure TAmplifier.GetDaganTEV200AChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // ------------------------------------------------
 // Get Dagan TEV200A voltage clamp channel settings
@@ -5324,7 +5452,7 @@ begin
 
     AmpNumber := AmpNumberOfChannel(iChan) ;
     if AmpNumber >= MaxAmplifiers then Exit ;
-    
+
     if IsPrimaryChannel(iChan)then begin
        ChanName := 'Im' ;
        AddAmplifierNumber( ChanName, iChan ) ;
@@ -5368,7 +5496,8 @@ procedure TAmplifier.GetTritonChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -----------------------------------
 // Get Tecella Triton  voltage clamp channel settings
@@ -5485,7 +5614,8 @@ procedure TAmplifier.GetHekaEPC800ChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -------------------------------------
 // Get Heka EPC 800 channel settings
@@ -5522,13 +5652,13 @@ begin
     end ;
 
 
-
 procedure TAmplifier.GetEPC7ChannelSettings(
           iChan : Integer ;
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -------------------------------------
 // Get EPC 7 channel settings
@@ -5592,7 +5722,8 @@ procedure TAmplifier.GetHekaEPC9ChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -------------------------------------
 // Get Heka EPC 9/10 channel settings
@@ -5697,7 +5828,8 @@ procedure TAmplifier.GetDaganCA1BChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -------------------------------------
 // Get Dagab CA-1B channel settings
@@ -5741,7 +5873,8 @@ procedure TAmplifier.GetDaganBVC700AChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -------------------------------------
 // Get Dagan BVC700A channel settings
@@ -5832,10 +5965,11 @@ var
     ChanUnits : String ;
     ChanCalFactor : single ;
     ChanScale : single ;
+    ADCInput : Integer ;
 begin
 
      GetAxoclamp900AChannelSettings( FPrimaryOutputChannel[AmpNumber],
-                                   ChanName,ChanUnits,ChanCalFactor,ChanScale ) ;
+                                   ChanName,ChanUnits,ChanCalFactor,ChanScale,ADCInput ) ;
      if ANSIContainsText(ChanUnits,'A') then LastMode[AmpNumber] := ICLAMPMode
                                         else LastMode[AmpNumber] := VCLAMPMode ;
      Result := LastMode[AmpNumber] ;
@@ -5847,7 +5981,8 @@ procedure TAmplifier.GetAxoclamp900AChannelSettings(
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -----------------------------------
 // Get Axoclamp900A voltage clamp channel settings
@@ -6112,7 +6247,7 @@ begin
      end ;
 
 
-function TAmplifier.GetNPIELC03SXGain(
+function TAmplifier.GetNPIELC03XSGain(
          AmpNumber : Integer ;
          TelChan : Integer ) : single ;
 // ---------------------------------------------
@@ -6158,12 +6293,13 @@ begin
      end ;
 
 
-procedure TAmplifier.GetNPIELC03SXChannelSettings(
+procedure TAmplifier.GetNPIELC03XSChannelSettings(
           iChan : Integer ;
           var ChanName : String ;
           var ChanUnits : String ;
           var ChanCalFactor : single ;
-          var ChanScale : Single
+          var ChanScale : Single ;
+          var ADCInput : Integer
           ) ;
 // -----------------------------------
 // Get NPI ELC03SX channel settings
@@ -6181,7 +6317,7 @@ begin
        ChanUnits := FPrimaryChannelUnits[AmpNumber] ;
        ChanCalFactor := FPrimaryChannelScaleFactorX1Gain[AmpNumber] ;
        if GetGainTelegraphAvailable(AmpNumber) then begin
-          ChanScale := GetNPIELC03SXGain( AmpNumber, FGainTelegraphChannel[AmpNumber] ) ;
+          ChanScale := GetNPIELC03XSGain( AmpNumber, FGainTelegraphChannel[AmpNumber] ) ;
           FPrimaryChannelScaleFactor[AmpNumber] := ChanCalFactor*ChanScale ;
           end
        else begin
@@ -6189,22 +6325,33 @@ begin
           end ;
        end
     else if IsSecondaryChannel(iChan) then begin
-       ChanName := 'Vm' ;
-       AddAmplifierNumber( ChanName, iChan ) ;
-       ChanUnits := FSecondaryChannelUnits[AmpNumber] ;
-       ChanCalFactor := FPrimaryChannelScaleFactorX1Gain[AmpNumber] ;
-       if GetModeTelegraphAvailable(AmpNumber) then begin
-          ChanScale := GetNPIELC03SXGain( AmpNumber, FModeTelegraphChannel[AmpNumber] ) ;
-          FSecondaryChannelScaleFactor[AmpNumber] := ChanCalFactor*ChanScale ;
+
+       if LastMode[AmpNumber] = VClampMode then begin
+          // Voltage-clamp mode
+          ChanName := 'Vm' ;
+          AddAmplifierNumber( ChanName, iChan ) ;
+          ChanUnits := FSecondaryChannelUnits[AmpNumber] ;
+          ChanCalFactor := FSecondaryChannelScaleFactorX1Gain[AmpNumber] ;
+          ChanScale := 1.0 ;
+          ADCInput := iChan ;
           end
        else begin
-          ChanScale := FSecondaryChannelScaleFactor[AmpNumber]/ ChanCalFactor ;
+          // Current-clamp mode
+          ChanName := 'Vm' ;
+          AddAmplifierNumber( ChanName, iChan ) ;
+          ChanUnits := FSecondaryChannelUnitsCC[AmpNumber] ;
+          ChanCalFactor := FSecondaryChannelScaleFactorX1GainCC[AmpNumber] ;
+          // Alternative A/D input for current-clamp mode secondary channel
+          ADCInput := iChan + FSecondaryAnalogInputOffsetCC[AmpNumber] ;
+          if GetModeTelegraphAvailable(AmpNumber) then begin
+             ChanScale := GetNPIELC03XSGain( AmpNumber, FModeTelegraphChannel[AmpNumber] ) ;
+             FSecondaryChannelScaleFactor[AmpNumber] := ChanCalFactor*ChanScale ;
+             end
+          else ChanScale := 1.0 ;
           end ;
        end ;
 
     end ;
-
-
 
 
 // *** CED 1902 Amplifier methods ***
@@ -6621,6 +6768,7 @@ begin
         AddElementText( iNode, 'SECONDARYOUTPUTCHANNELNAME', FSecondaryOutputChannelName[i] ) ;
         AddElementText( iNode, 'SECONDARYOUTPUTCHANNELNAMECC', FSecondaryOutputChannelNameCC[i] ) ;
         AddElementInt( iNode, 'SECONDARYOUTPUTCHANNEL', FSecondaryOutputChannel[i] ) ;
+        AddElementInt( iNode, 'SECONDARYANALOGINPUTCC', FSecondaryAnalogInputOffsetCC[i] ) ;
 
         AddElementFloat( iNode, 'PRIMARYCHANNELSCALEFACTORX1GAIN', FPrimaryChannelScaleFactorX1Gain[i] ) ;
         AddElementFloat( iNode, 'PRIMARYCHANNELSCALEFACTORX1GAINCC', FPrimaryChannelScaleFactorX1GainCC[i] ) ;
@@ -6739,6 +6887,7 @@ begin
            GetElementText( iNode, 'SECONDARYOUTPUTCHANNELNAME', FSecondaryOutputChannelName[i] ) ;
            GetElementText( iNode, 'SECONDARYOUTPUTCHANNELNAMECC', FSecondaryOutputChannelNameCC[i] ) ;
            GetElementInt( iNode, 'SECONDARYOUTPUTCHANNEL', FSecondaryOutputChannel[i] ) ;
+           GetElementInt( iNode, 'SECONDARYANALOGINPUTCC', FSecondaryAnalogInputOffsetCC[i] ) ;
 
            GetElementFloat( iNode, 'PRIMARYCHANNELSCALEFACTORX1GAIN', FPrimaryChannelScaleFactorX1Gain[i] ) ;
            GetElementFloat( iNode, 'PRIMARYCHANNELSCALEFACTORX1GAINCC', FPrimaryChannelScaleFactorX1GainCC[i] ) ;
@@ -7165,6 +7314,33 @@ begin
      end ;
 
 
+function  TAmplifier.GetSecondaryAnalogInputCC(
+          AmpNumber : Integer  )
+           : Integer  ;
+// ---------------------------
+// Get offset for secondary analog input channel
+// ---------------------------
+begin
+     if (AmpNumber >= 0) and (AmpNumber <= MaxAmplifiers) then begin
+        Result := FSecondaryOutputChannel[AmpNumber] + FSecondaryAnalogInputOffsetCC[AmpNumber];
+        end
+     else Result := 0 ;
+
+     end ;
+
+procedure TAmplifier.SetSecondaryAnalogInputCC(
+          AmpNumber : Integer ;
+          Value : Integer ) ;
+//
+// Set offset for secondary channel analog input
+// (only when current-clamp signal source differs  different source is required
+begin
+    if (AmpNumber >= 0) and (AmpNumber < MaxAmplifiers) then begin
+       FSecondaryAnalogInputOffsetCC[AmpNumber] := Value - FSecondaryOutputChannel[AmpNumber] ;
+       end ;
+    end ;
+
+
 function  TAmplifier.GetVoltageCommandChannel(
           AOChan : Integer )
            : Integer  ;
@@ -7200,10 +7376,11 @@ function TAmplifier.getPrimaryChannelScaleFactor( AmpNumber : Integer ) : Single
 var
     ChanName,ChanUnits : String ;
     ChanCalFactor,ChanScale : Single ;
+    ADCInput : Integer ;
 begin
 
      GetChannelSettings( FPrimaryOutputChannel[AmpNumber],
-                         ChanName,ChanUnits,ChanCalFactor,ChanScale) ;
+                         ChanName,ChanUnits,ChanCalFactor,ChanScale,ADCInput) ;
      Result := ChanCalFactor*ChanScale ;
     end ;
 
@@ -7215,9 +7392,10 @@ function TAmplifier.getSecondaryChannelScaleFactor( AmpNumber : Integer ) : Sing
 var
     ChanName,ChanUnits : String ;
     ChanCalFactor,ChanScale : Single ;
+    ADCInput : Integer ;
 begin
      GetChannelSettings( FSecondaryOutputChannel[AmpNumber],
-                         ChanName,ChanUnits,ChanCalFactor,ChanScale) ;
+                         ChanName,ChanUnits,ChanCalFactor,ChanScale,ADCInput) ;
      Result := ChanCalFactor ;
     end ;
 
@@ -7231,12 +7409,13 @@ function TAmplifier.getPrimaryChannelScaleFactorX1Gain(
 var
     ChanName,ChanUnits : String ;
     ChanCalFactor,ChanScale : Single ;
+    ADCInput : Integer ;
 begin
     if (AmpNumber >= 0) and (AmpNumber < MaxAmplifiers) then begin
        // This call ensures that fixed primary channel scale factors overrides
        // user entered settings
        GetChannelSettings( FPrimaryOutputChannel[AmpNumber],
-                           ChanName,ChanUnits,ChanCalFactor,ChanScale) ;
+                           ChanName,ChanUnits,ChanCalFactor,ChanScale,ADCInput) ;
        if ClampMode = VClampMode then Result := FPrimaryChannelScaleFactorX1Gain[AmpNumber]
                                  else Result := FPrimaryChannelScaleFactorX1GainCC[AmpNumber] ;
        if Result = 0.0 then Result := 1.0 ;
@@ -7255,12 +7434,13 @@ function TAmplifier.getSecondaryChannelScaleFactorX1Gain(
 var
     ChanName,ChanUnits : String ;
     ChanCalFactor,ChanScale : Single ;
+    ADCInput : Integer ;
 begin
     if (AmpNumber >= 0) and (AmpNumber < MaxAmplifiers) then begin
        // This call ensures that fixed primary channel scale factors overrides
        // user entered settings
        GetChannelSettings( FSecondaryOutputChannel[AmpNumber],
-                           ChanName,ChanUnits,ChanCalFactor,ChanScale) ;
+                           ChanName,ChanUnits,ChanCalFactor,ChanScale,ADCInput) ;
        if ClampMode = VClampMode then Result := FSecondaryChannelScaleFactorX1Gain[AmpNumber]
                                  else Result := FSecondaryChannelScaleFactorX1GainCC[AmpNumber] ;
        if Result = 0.0 then Result := 1.0 ;

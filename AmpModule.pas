@@ -130,7 +130,7 @@ unit AmpModule;
 //          connected to the secondary channel in each clamp mode (applies to Axopatch 200 and AMS-2400)
 // 15.09.17 NPI ELC-03XS voltage channel gain telegraph now correct (and renamed ELC-03SX to ELC-03XS).
 // 21.09.17 NPI ELC-03XS now uses Command Input in voltage-clamp mode and Potential Output in current clamp mode
-// 30.10.17 Copied from WinWCPXE
+// 18.01.18 AMS-2400: Now reads voltage gain in current clamp mode correctly
 
 interface
 
@@ -812,6 +812,9 @@ TAXC_AcquireMeterData = function(
 
     function GetAMS2400Gain(
          AmpNumber : Integer ) : single ;
+    function GetAMS2400GainCC(
+         AmpNumber : Integer ) : single ;
+
     function GetAMS2400Mode(
          AmpNumber : Integer )  : Integer ;
     procedure GetAMS2400ChannelSettings(
@@ -1922,7 +1925,7 @@ begin
             FPrimaryChannelUnitsCC[AmpNumber] := 'mV' ;
 
             FPrimaryChannelScaleFactorX1Gain[AmpNumber] := 0.00001 ;
-            FPrimaryChannelScaleFactorX1GainCC[AmpNumber] := 0.00001 ;
+            FPrimaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
             FPrimaryChannelScaleFactor[AmpNumber] := 0.00001 ;
 
             FSecondaryOutputChannel[AmpNumber] := 2*AmpNumber + 1 ;
@@ -4456,6 +4459,7 @@ function TAmplifier.GetAMS2400Gain(
          AmpNumber : Integer ) : single ;
 // ---------------------------------------------------
 // Decode A-M Systems 2400 current gain from telegraph output
+// Voltage-clamp mode
 // ---------------------------------------------------
 const
      NumGains = 16 ;
@@ -4508,6 +4512,57 @@ begin
      Result := LastGain[AmpNumber] ;
 
      end ;
+
+
+function TAmplifier.GetAMS2400GainCC(
+         AmpNumber : Integer ) : single ;
+// ----------------------------------------------------------
+// Decode A-M Systems 2400 current gain from telegraph output
+// Current-clamp mode
+// ----------------------------------------------------------
+const
+     NumGains = 7 ;
+     VGainSpacing = 0.5 ;
+     VStart = 1.3 ;
+var
+   Gains : Array[0..NumGains-1] of single ;
+   V : single ;
+   iGain : Integer ;
+begin
+
+     // Note. Don't interrupt A/D sampling if it in progress.
+     // Use most recent gain setting instead
+
+    if (FGainTelegraphChannel[AmpNumber] >= 0) and
+        (FGainTelegraphChannel[AmpNumber] < Main.SESLabIO.ADCMaxChannels) and
+        (not ADCInUse) then begin
+
+        // Gain settings
+        Gains[0] := 1.0 ;
+        Gains[1] := 2.0 ;
+        Gains[2] := 5.0 ;
+        Gains[3] := 10.0 ;
+        Gains[4] := 20.0 ;
+        Gains[5] := 50.0 ;
+        Gains[6] := 100.0 ;
+
+        // Get voltage from telegraph channel
+        V := GetTelegraphVoltage( FGainTelegraphChannel[AmpNumber] ) ;
+
+        // Extract gain associated with telegraph voltage
+        if V < (VStart-0.1) then iGain := 0
+        else begin
+           iGain := Trunc( (V - VStart + 0.1)/VGainSpacing ) + 1 ;
+           end ;
+        iGain := Min(Max(iGain,0),NumGains-1) ;
+        LastGain[AmpNumber] := Gains[iGain] ;
+
+        end ;
+
+     Result := LastGain[AmpNumber] ;
+
+     end ;
+
 
 
 function TAmplifier.GetAMS2400Mode(
@@ -4563,16 +4618,18 @@ begin
           AddAmplifierNumber( ChanName, iChan ) ;
           ChanUnits := FPrimaryChannelUnits[AmpNumber];
           ChanCalFactor := FPrimaryChannelScaleFactorX1Gain[AmpNumber];
+          if GetGainTelegraphAvailable(AmpNumber) then ChanScale := GetAMS2400Gain( AmpNumber )
+          else ChanScale := FPrimaryChannelScaleFactor[AmpNumber]/ ChanCalFactor ;
           end
        else begin
           // Current-clamp mode
           ChanName := 'Vm' ;
           AddAmplifierNumber( ChanName, iChan ) ;
           ChanUnits := FPrimaryChannelUnitsCC[AmpNumber];
-          ChanCalFactor := FPrimaryChannelScaleFactorX1GainCC[AmpNumber]
+          ChanCalFactor := FPrimaryChannelScaleFactorX1GainCC[AmpNumber] ;
+          if GetGainTelegraphAvailable(AmpNumber) then ChanScale := GetAMS2400GainCC( AmpNumber )
+          else ChanScale := FPrimaryChannelScaleFactor[AmpNumber]/ ChanCalFactor ;
           end ;
-       if GetGainTelegraphAvailable(AmpNumber) then ChanScale := GetAMS2400Gain( AmpNumber )
-       else ChanScale := FPrimaryChannelScaleFactor[AmpNumber]/ ChanCalFactor ;
        FPrimaryChannelScaleFactor[AmpNumber] := ChanCalFactor*ChanScale ;
        end
     else if IsSecondaryChannel(iChan) then begin

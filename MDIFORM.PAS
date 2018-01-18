@@ -375,6 +375,7 @@ unit Mdiform;
    V3.7.9 21.11.17 D/A update of NI USB-600X devices now limited to 500 Hz or slower to avoid intermittent 5s delays in .ADCStop calls.
    V3.8.0 25.11.17 Unsupported function error prevented for non-600X boards fixing problem introduced V3.7.9
    V3.8.l 10.01.18 Files->Import GetMem replaced by AllocMem in ADCDataFile.pas to ensure all buffers initialized to zero.
+   V3.8.2 18.01.18 AMS-2400: Now reads voltage gain in current clamp mode correctly
   =======================================================================}
 
 interface
@@ -609,7 +610,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.8.1' ;
+     Version := 'V3.8.2' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
