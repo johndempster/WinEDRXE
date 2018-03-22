@@ -376,6 +376,8 @@ unit Mdiform;
    V3.8.0 25.11.17 Unsupported function error prevented for non-600X boards fixing problem introduced V3.7.9
    V3.8.l 10.01.18 Files->Import GetMem replaced by AllocMem in ADCDataFile.pas to ensure all buffers initialized to zero.
    V3.8.2 18.01.18 AMS-2400: Now reads voltage gain in current clamp mode correctly
+   V3.8.3 22.02.18 CHT File Import in ADCDATAFILE.pas: A/D voltage range now imported correctly. Fixes negative A/D voltage scales factors which
+                   caused files exported as ABF V1.6 to be misidentified as ABF V2.0 with scaling factors misread and corrupted data points at beginning
   =======================================================================}
 
 interface
@@ -610,7 +612,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.8.2' ;
+     Version := 'V3.8.3' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
