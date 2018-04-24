@@ -378,6 +378,7 @@ unit Mdiform;
    V3.8.2 18.01.18 AMS-2400: Now reads voltage gain in current clamp mode correctly
    V3.8.3 22.02.18 CHT File Import in ADCDATAFILE.pas: A/D voltage range now imported correctly. Fixes negative A/D voltage scales factors which
                    caused files exported as ABF V1.6 to be misidentified as ABF V2.0 with scaling factors misread and corrupted data points at beginning
+   V3.8.4 24.04.18 Stimulus Start On Record option added allowing stimulus protocols to be initiated automatically when Record button pressed
   =======================================================================}
 
 interface
@@ -612,7 +613,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.8.3' ;
+     Version := 'V3.8.4' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
@@ -672,6 +673,7 @@ begin
      Settings.ADCSamplingInterval := 0.001 ;
      //Settings.ADCVoltageRangeIndex := 0 ;
      Settings.NumChannels := 1 ;
+     Settings.StartStimulusOnRecord := False ;
 
      Settings.TriggerMode := 'F' ;
      Settings.ExternalTriggerActiveHigh := False ;

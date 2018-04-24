@@ -88,6 +88,7 @@ unit Rec;
   24.07.17 .. Amplifier.GetChannelSettings() now returns ADCInput, so
               secondary channel analogue input for be changed in CC mode
               for Axopatch 200 and AMS-2400
+  24.04.18 .. Option to start stimulus protocol when recording started added
   ==============================================================================}
 interface
 
@@ -288,6 +289,7 @@ type
     ckEventFrequency: TCheckBox;
     ckResistance: TCheckBox;
     bSpecial: TButton;
+    ckStartStimOnRecord: TCheckBox;
     procedure TimerTimer(Sender: TObject);
     procedure bRecordClick(Sender: TObject);
     procedure FormResize(Sender: TObject);
@@ -348,6 +350,7 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
+    procedure ckStartStimOnRecordClick(Sender: TObject);
   private
     { Private declarations }
     NewAmplifierGain : Boolean ;
@@ -543,6 +546,8 @@ begin
      bStartStimulus.Enabled := StimulatorAvailable ;
      bStopStimulus.Enabled := False ;
      StimulatorStartRequired := False ;
+
+     ckStartStimOnRecord.Checked := Settings.StartStimulusOnRecord ;
 
      // Update list of stimulus programs
      UpdateStimProgramList ;
@@ -2200,6 +2205,8 @@ begin
      RecordingStatus := format( 'Recording: 0/%.1f s (0 Kb) ',
                                 [Settings.RecordDuration]) ;
 
+     // Start stimulus if start on record is requested
+     if ckStartStimOnRecord.Checked then bStartStimulus.Click ;
 
      end;
 
@@ -3033,6 +3040,14 @@ begin
      Settings.NewCalculation := True ;
      if not ckResistance.Checked then StopStimulator ;
      end;
+
+procedure TRecordFrm.ckStartStimOnRecordClick(Sender: TObject);
+// -----------------------------------
+// Start Stim on Record option changed
+// -----------------------------------
+begin
+      Settings.StartStimulusOnRecord := ckStartStimOnRecord.Checked
+      end;
 
 procedure TRecordFrm.edNumChannelsKeyPress(Sender: TObject; var Key: Char);
 // ---------------------------

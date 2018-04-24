@@ -393,6 +393,7 @@ TSettings = record
           Resolution16bit : Boolean ;
           TriggerMode : string ;
           ExternalTriggerActiveHigh : Boolean ;
+          StartStimulusOnRecord : Boolean ;        // Start stimulus protocol when record button pressed
           EventDetector : TEventDetector ;
           NumTriggerSweeps : Integer ;
           NumChannels : Integer ;

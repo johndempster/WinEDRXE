@@ -60,7 +60,7 @@ unit Fileio;
   7/12/16 ...  fluoresecence ratio, resistance and event frequency special options in use now in INI file
   9.1.17 ....  'FLIONNAME=', Settings.Fluorescence.IonName and 'FLIONUNITS=', Settings.Fluorescence.IonUnits
                added to INI file
-
+  24.04.18 ..  'STARTSTIMREC=', Settings.StartStimulusOnRecord added
   }
 
 
@@ -538,6 +538,8 @@ begin
      ReadInt( Header, 'NC=', Settings.NumChannels ) ;
      Settings.NumChannels := Max( 1,Settings.NumChannels ) ;
 
+     ReadLogical( Header, 'STARTSTIMREC=', Settings.StartStimulusOnRecord ) ;
+
      { CED 1902 amplifier settings }
      ReadInt( Header, 'CEDI=', Amplifier.CED1902.Input ) ;
      ReadInt( Header, 'CEDG=', Amplifier.CED1902.Gain ) ;
@@ -791,6 +793,8 @@ begin
 
      // Record duration
      AppendFloat( Header, 'RECDUR=', Settings.RecordDuration ) ;
+
+     AppendLogical( Header, 'STARTSTIMREC=', Settings.StartStimulusOnRecord ) ;
 
      { Last raw data file used }
      //AppendString( Header, 'FILE=', CdrFH.FileName ) ;
