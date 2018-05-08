@@ -2,8 +2,8 @@ object TritonPanelFrm: TTritonPanelFrm
   Left = 598
   Top = 11
   Caption = 'Tecella Patch Clamp '
-  ClientHeight = 910
-  ClientWidth = 545
+  ClientHeight = 659
+  ClientWidth = 335
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -24,11 +24,11 @@ object TritonPanelFrm: TTritonPanelFrm
     Left = 8
     Top = 0
     Width = 321
-    Height = 697
+    Height = 641
     TabOrder = 0
     object GroupBox2: TGroupBox
       Left = 8
-      Top = 301
+      Top = 250
       Width = 305
       Height = 311
       Caption = ' Compensation '
@@ -42,6 +42,10 @@ object TritonPanelFrm: TTritonPanelFrm
         TabOrder = 0
         object AutoPage: TTabSheet
           Caption = 'Auto'
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object GroupBox6: TGroupBox
             Left = 8
             Top = 56
@@ -434,13 +438,17 @@ object TritonPanelFrm: TTritonPanelFrm
         object CapacityPage: TTabSheet
           Caption = 'Capacity'
           ImageIndex = 1
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object panCFast: TPanel
             Left = 1
-            Top = 0
+            Top = 2
             Width = 280
             Height = 24
             BevelOuter = bvNone
-            Caption = ' '
+            Caption = 'panCFast'
             TabOrder = 0
             object Label2: TLabel
               Left = 0
@@ -455,42 +463,41 @@ object TritonPanelFrm: TTritonPanelFrm
               Font.Style = [fsBold]
               ParentFont = False
             end
+            object edCFast: TEdit
+              Left = 184
+              Top = 0
+              Width = 75
+              Height = 20
+              AutoSize = False
+              Font.Charset = ANSI_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -11
+              Font.Name = 'Arial'
+              Font.Style = []
+              ParentFont = False
+              ReadOnly = True
+              TabOrder = 0
+              Text = 'edCFast'
+            end
             object tbCFast: TTrackBar
-              Left = 85
+              Left = 94
               Top = 0
               Width = 88
               Height = 20
               Max = 100
               Frequency = 10
-              TabOrder = 0
+              TabOrder = 1
               ThumbLength = 12
               OnChange = tbCFastChange
-            end
-            object edCFast: TValidatedEdit
-              Left = 175
-              Top = 0
-              Width = 81
-              Height = 23
-              OnKeyPress = edCFastKeyPress
-              Font.Charset = ANSI_CHARSET
-              Font.Color = clWindowText
-              Font.Height = -12
-              Font.Name = 'Arial'
-              Font.Style = []
-              Text = ' 0.0 mV'
-              Scale = 1.000000000000000000
-              Units = 'mV'
-              NumberFormat = '%.1f'
-              LoLimit = -1000.000000000000000000
-              HiLimit = 1000.000000000000000000
             end
           end
           object panCSlowA: TPanel
             Left = 1
-            Top = 30
+            Top = 24
             Width = 280
             Height = 24
             BevelOuter = bvNone
+            Caption = 'panCSlowA'
             TabOrder = 1
             object Label3: TLabel
               Left = 0
@@ -505,6 +512,21 @@ object TritonPanelFrm: TTritonPanelFrm
               Font.Style = [fsBold]
               ParentFont = False
             end
+            object edCSlowA: TEdit
+              Left = 184
+              Top = 0
+              Width = 75
+              Height = 22
+              Font.Charset = ANSI_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -11
+              Font.Name = 'Arial'
+              Font.Style = []
+              ParentFont = False
+              ReadOnly = True
+              TabOrder = 0
+              Text = 'edCFast'
+            end
             object ckCslowA: TCheckBox
               Left = 262
               Top = 0
@@ -513,45 +535,28 @@ object TritonPanelFrm: TTritonPanelFrm
               Caption = 'ckCfast'
               Checked = True
               State = cbChecked
-              TabOrder = 0
+              TabOrder = 1
               OnClick = ckCslowAClick
             end
             object tbCSlowA: TTrackBar
-              Left = 85
+              Left = 94
               Top = 0
               Width = 88
               Height = 20
               Max = 100
               Frequency = 10
-              TabOrder = 1
+              TabOrder = 2
               ThumbLength = 12
               OnChange = tbCSlowAChange
-            end
-            object edCSlowA: TValidatedEdit
-              Left = 175
-              Top = 0
-              Width = 81
-              Height = 23
-              OnKeyPress = edCSlowAKeyPress
-              Font.Charset = ANSI_CHARSET
-              Font.Color = clWindowText
-              Font.Height = -12
-              Font.Name = 'Arial'
-              Font.Style = []
-              Text = ' 0.0 mV'
-              Scale = 1.000000000000000000
-              Units = 'mV'
-              NumberFormat = '%.1f'
-              LoLimit = -1000.000000000000000000
-              HiLimit = 1000.000000000000000000
             end
           end
           object panCSlowB: TPanel
             Left = 1
-            Top = 60
+            Top = 49
             Width = 280
             Height = 24
             BevelOuter = bvNone
+            Caption = 'Panel2'
             TabOrder = 2
             object Label4: TLabel
               Left = 0
@@ -566,6 +571,21 @@ object TritonPanelFrm: TTritonPanelFrm
               Font.Style = [fsBold]
               ParentFont = False
             end
+            object edCSlowB: TEdit
+              Left = 184
+              Top = 0
+              Width = 75
+              Height = 22
+              Font.Charset = ANSI_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -11
+              Font.Name = 'Arial'
+              Font.Style = []
+              ParentFont = False
+              ReadOnly = True
+              TabOrder = 0
+              Text = 'edCFast'
+            end
             object ckCslowB: TCheckBox
               Left = 262
               Top = 0
@@ -574,45 +594,28 @@ object TritonPanelFrm: TTritonPanelFrm
               Caption = 'ckCfast'
               Checked = True
               State = cbChecked
-              TabOrder = 0
+              TabOrder = 1
               OnClick = ckCslowBClick
             end
             object tbCSlowB: TTrackBar
-              Left = 85
+              Left = 94
               Top = 0
               Width = 88
               Height = 20
               Max = 100
               Frequency = 10
-              TabOrder = 1
+              TabOrder = 2
               ThumbLength = 12
               OnChange = tbCSlowBChange
-            end
-            object edCSlowB: TValidatedEdit
-              Left = 175
-              Top = 0
-              Width = 81
-              Height = 23
-              OnKeyPress = edCSlowBKeyPress
-              Font.Charset = ANSI_CHARSET
-              Font.Color = clWindowText
-              Font.Height = -12
-              Font.Name = 'Arial'
-              Font.Style = []
-              Text = ' 0.0 mV'
-              Scale = 1.000000000000000000
-              Units = 'mV'
-              NumberFormat = '%.1f'
-              LoLimit = -1000.000000000000000000
-              HiLimit = 1000.000000000000000000
             end
           end
           object panCSlowC: TPanel
             Left = 1
-            Top = 90
+            Top = 74
             Width = 280
             Height = 24
             BevelOuter = bvNone
+            Caption = 'Panel2'
             TabOrder = 3
             object Label5: TLabel
               Left = 0
@@ -627,6 +630,21 @@ object TritonPanelFrm: TTritonPanelFrm
               Font.Style = [fsBold]
               ParentFont = False
             end
+            object edCSlowC: TEdit
+              Left = 184
+              Top = 0
+              Width = 75
+              Height = 22
+              Font.Charset = ANSI_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -11
+              Font.Name = 'Arial'
+              Font.Style = []
+              ParentFont = False
+              ReadOnly = True
+              TabOrder = 0
+              Text = 'edCFast'
+            end
             object ckCslowC: TCheckBox
               Left = 262
               Top = 0
@@ -635,45 +653,28 @@ object TritonPanelFrm: TTritonPanelFrm
               Caption = 'ckCfast'
               Checked = True
               State = cbChecked
-              TabOrder = 0
+              TabOrder = 1
               OnClick = ckCslowCClick
             end
             object tbCSlowC: TTrackBar
-              Left = 85
-              Top = -1
+              Left = 94
+              Top = 0
               Width = 88
               Height = 20
               Max = 100
               Frequency = 10
-              TabOrder = 1
+              TabOrder = 2
               ThumbLength = 12
               OnChange = tbCSlowCChange
-            end
-            object edCSlowC: TValidatedEdit
-              Left = 175
-              Top = 0
-              Width = 81
-              Height = 23
-              OnKeyPress = edCSlowCKeyPress
-              Font.Charset = ANSI_CHARSET
-              Font.Color = clWindowText
-              Font.Height = -12
-              Font.Name = 'Arial'
-              Font.Style = []
-              Text = ' 0.0 mV'
-              Scale = 1.000000000000000000
-              Units = 'mV'
-              NumberFormat = '%.1f'
-              LoLimit = -1000.000000000000000000
-              HiLimit = 1000.000000000000000000
             end
           end
           object panCSlowD: TPanel
             Left = 1
-            Top = 119
+            Top = 98
             Width = 280
             Height = 24
             BevelOuter = bvNone
+            Caption = 'Panel2'
             TabOrder = 4
             object Label6: TLabel
               Left = 0
@@ -688,6 +689,21 @@ object TritonPanelFrm: TTritonPanelFrm
               Font.Style = [fsBold]
               ParentFont = False
             end
+            object edCSlowD: TEdit
+              Left = 184
+              Top = 0
+              Width = 75
+              Height = 22
+              Font.Charset = ANSI_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -11
+              Font.Name = 'Arial'
+              Font.Style = []
+              ParentFont = False
+              ReadOnly = True
+              TabOrder = 0
+              Text = 'edCFast'
+            end
             object ckCslowD: TCheckBox
               Left = 262
               Top = 0
@@ -696,49 +712,36 @@ object TritonPanelFrm: TTritonPanelFrm
               Caption = 'ckCfast'
               Checked = True
               State = cbChecked
-              TabOrder = 0
+              TabOrder = 1
               OnClick = ckCslowDClick
             end
             object tbCSlowD: TTrackBar
-              Left = 85
+              Left = 94
               Top = 0
               Width = 88
               Height = 20
               Max = 100
               Frequency = 10
-              TabOrder = 1
+              TabOrder = 2
               ThumbLength = 12
               OnChange = tbCSlowDChange
-            end
-            object edCSlowD: TValidatedEdit
-              Left = 175
-              Top = 0
-              Width = 81
-              Height = 23
-              OnKeyPress = edCSlowDKeyPress
-              Font.Charset = ANSI_CHARSET
-              Font.Color = clWindowText
-              Font.Height = -12
-              Font.Name = 'Arial'
-              Font.Style = []
-              Text = ' 0.0 mV'
-              Scale = 1.000000000000000000
-              Units = 'mV'
-              NumberFormat = '%.1f'
-              LoLimit = -1000.000000000000000000
-              HiLimit = 1000.000000000000000000
             end
           end
         end
         object ResistancePage: TTabSheet
           Caption = 'Resistance'
           ImageIndex = 2
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object panRLeak: TPanel
             Left = 1
-            Top = 30
+            Top = 26
             Width = 280
-            Height = 26
+            Height = 24
             BevelOuter = bvNone
+            Caption = 'Panel2'
             TabOrder = 0
             object Label9: TLabel
               Left = 0
@@ -753,6 +756,21 @@ object TritonPanelFrm: TTritonPanelFrm
               Font.Style = [fsBold]
               ParentFont = False
             end
+            object edRLeak: TEdit
+              Left = 176
+              Top = 0
+              Width = 80
+              Height = 22
+              Font.Charset = ANSI_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -11
+              Font.Name = 'Arial'
+              Font.Style = []
+              ParentFont = False
+              ReadOnly = True
+              TabOrder = 0
+              Text = 'edCFast'
+            end
             object ckRleak: TCheckBox
               Left = 262
               Top = 0
@@ -761,45 +779,28 @@ object TritonPanelFrm: TTritonPanelFrm
               Caption = 'ckCfast'
               Checked = True
               State = cbChecked
-              TabOrder = 0
+              TabOrder = 1
               OnClick = ckRleakClick
             end
             object tbRLeak: TTrackBar
-              Left = 85
+              Left = 88
               Top = 0
               Width = 88
               Height = 20
               Max = 100
               Frequency = 10
-              TabOrder = 1
+              TabOrder = 2
               ThumbLength = 12
               OnChange = tbRLeakChange
-            end
-            object edRLeak: TValidatedEdit
-              Left = 175
-              Top = 0
-              Width = 81
-              Height = 23
-              OnKeyPress = edRLeakKeyPress
-              Font.Charset = ANSI_CHARSET
-              Font.Color = clWindowText
-              Font.Height = -12
-              Font.Name = 'Arial'
-              Font.Style = []
-              Text = ' 0.0 mV'
-              Scale = 1.000000000000000000
-              Units = 'mV'
-              NumberFormat = '%.1f'
-              LoLimit = -1000.000000000000000000
-              HiLimit = 1000.000000000000000000
             end
           end
           object panRLeakFine: TPanel
             Left = 1
-            Top = 60
+            Top = 54
             Width = 280
-            Height = 26
+            Height = 24
             BevelOuter = bvNone
+            Caption = 'Panel2'
             TabOrder = 1
             object Label14: TLabel
               Left = 0
@@ -814,6 +815,21 @@ object TritonPanelFrm: TTritonPanelFrm
               Font.Style = [fsBold]
               ParentFont = False
             end
+            object edRLeakFine: TEdit
+              Left = 176
+              Top = 0
+              Width = 80
+              Height = 22
+              Font.Charset = ANSI_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -11
+              Font.Name = 'Arial'
+              Font.Style = []
+              ParentFont = False
+              ReadOnly = True
+              TabOrder = 0
+              Text = 'edCFast'
+            end
             object ckRLeakFine: TCheckBox
               Left = 262
               Top = -1
@@ -822,45 +838,28 @@ object TritonPanelFrm: TTritonPanelFrm
               Caption = 'ckCfast'
               Checked = True
               State = cbChecked
-              TabOrder = 0
+              TabOrder = 1
               OnClick = ckRLeakFineClick
             end
             object tbRLeakFine: TTrackBar
-              Left = 85
+              Left = 88
               Top = 0
               Width = 88
               Height = 20
               Max = 100
               Frequency = 10
-              TabOrder = 1
+              TabOrder = 2
               ThumbLength = 12
               OnChange = tbRLeakFineChange
-            end
-            object edRLeakFine: TValidatedEdit
-              Left = 175
-              Top = 0
-              Width = 81
-              Height = 23
-              OnKeyPress = edRLeakFineKeyPress
-              Font.Charset = ANSI_CHARSET
-              Font.Color = clWindowText
-              Font.Height = -12
-              Font.Name = 'Arial'
-              Font.Style = []
-              Text = ' 0.0 mV'
-              Scale = 1.000000000000000000
-              Units = 'mV'
-              NumberFormat = '%.1f'
-              LoLimit = -1000.000000000000000000
-              HiLimit = 1000.000000000000000000
             end
           end
           object panRSeries: TPanel
             Left = 1
             Top = 2
             Width = 280
-            Height = 26
+            Height = 24
             BevelOuter = bvNone
+            Caption = 'Panel2'
             TabOrder = 2
             object Label7: TLabel
               Left = 0
@@ -875,6 +874,21 @@ object TritonPanelFrm: TTritonPanelFrm
               Font.Style = [fsBold]
               ParentFont = False
             end
+            object edRSeries: TEdit
+              Left = 176
+              Top = 0
+              Width = 80
+              Height = 22
+              Font.Charset = ANSI_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -11
+              Font.Name = 'Arial'
+              Font.Style = []
+              ParentFont = False
+              ReadOnly = True
+              TabOrder = 0
+              Text = 'edCFast'
+            end
             object ckRseries: TCheckBox
               Left = 262
               Top = 0
@@ -883,7 +897,7 @@ object TritonPanelFrm: TTritonPanelFrm
               Caption = 'ckCfast'
               Checked = True
               State = cbChecked
-              TabOrder = 0
+              TabOrder = 1
               OnClick = ckRseriesClick
             end
             object tbRSeries: TTrackBar
@@ -893,39 +907,26 @@ object TritonPanelFrm: TTritonPanelFrm
               Height = 20
               Max = 100
               Frequency = 10
-              TabOrder = 1
+              TabOrder = 2
               ThumbLength = 12
               OnChange = tbRSeriesChange
-            end
-            object edRSeries: TValidatedEdit
-              Left = 175
-              Top = 0
-              Width = 81
-              Height = 23
-              OnKeyPress = edRSeriesKeyPress
-              Font.Charset = ANSI_CHARSET
-              Font.Color = clWindowText
-              Font.Height = -12
-              Font.Name = 'Arial'
-              Font.Style = []
-              Text = ' 0.0 mV'
-              Scale = 1.000000000000000000
-              Units = 'mV'
-              NumberFormat = '%.1f'
-              LoLimit = -1000.000000000000000000
-              HiLimit = 1000.000000000000000000
             end
           end
         end
         object JunctionPotPage: TTabSheet
           Caption = 'Junction Pot.'
           ImageIndex = 3
+          ExplicitLeft = 0
+          ExplicitTop = 0
+          ExplicitWidth = 0
+          ExplicitHeight = 0
           object panJunctionPot: TPanel
             Left = 1
             Top = 2
             Width = 280
             Height = 24
             BevelOuter = bvNone
+            Caption = 'Panel2'
             TabOrder = 0
             object Label8: TLabel
               Left = 0
@@ -940,53 +941,51 @@ object TritonPanelFrm: TTritonPanelFrm
               Font.Style = [fsBold]
               ParentFont = False
             end
+            object edJunctionPot: TEdit
+              Left = 176
+              Top = 0
+              Width = 80
+              Height = 22
+              Font.Charset = ANSI_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -11
+              Font.Name = 'Arial'
+              Font.Style = []
+              ParentFont = False
+              ReadOnly = True
+              TabOrder = 0
+              Text = 'edCFast'
+            end
             object ckJunctionPot: TCheckBox
               Left = 262
-              Top = 5
+              Top = 0
               Width = 17
               Height = 17
               Caption = 'ckCfast'
               Checked = True
               State = cbChecked
-              TabOrder = 0
+              TabOrder = 1
               OnClick = ckJunctionPotClick
             end
             object tbJunctionPot: TTrackBar
-              Left = 85
+              Left = 88
               Top = 0
               Width = 88
               Height = 20
               Max = 100
               Frequency = 10
-              TabOrder = 1
+              TabOrder = 2
               ThumbLength = 12
               OnChange = tbJunctionPotChange
-            end
-            object edJunctionPot: TValidatedEdit
-              Left = 175
-              Top = 0
-              Width = 81
-              Height = 23
-              OnKeyPress = edJunctionPotKeyPress
-              Font.Charset = ANSI_CHARSET
-              Font.Color = clWindowText
-              Font.Height = -12
-              Font.Name = 'Arial'
-              Font.Style = []
-              Text = ' 0.0 mV'
-              Scale = 1.000000000000000000
-              Units = 'mV'
-              NumberFormat = '%.1f'
-              LoLimit = -1000.000000000000000000
-              HiLimit = 1000.000000000000000000
             end
           end
           object panJunctionPotFIne: TPanel
             Left = 1
-            Top = 30
+            Top = 26
             Width = 280
             Height = 24
             BevelOuter = bvNone
+            Caption = 'Panel2'
             TabOrder = 1
             object Label12: TLabel
               Left = 0
@@ -1010,36 +1009,33 @@ object TritonPanelFrm: TTritonPanelFrm
               Checked = True
               State = cbChecked
               TabOrder = 0
-              OnClick = ckJunctionPotFineClick
+              OnClick = ckJunctionPotClick
+            end
+            object edJunctionPotFine: TEdit
+              Left = 176
+              Top = 0
+              Width = 80
+              Height = 22
+              Font.Charset = ANSI_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -11
+              Font.Name = 'Arial'
+              Font.Style = []
+              ParentFont = False
+              ReadOnly = True
+              TabOrder = 1
+              Text = 'edCFast'
             end
             object tbJunctionPotFine: TTrackBar
-              Left = 85
+              Left = 88
               Top = 0
               Width = 88
               Height = 20
               Max = 100
               Frequency = 10
-              TabOrder = 1
+              TabOrder = 2
               ThumbLength = 12
               OnChange = tbJunctionPotFineChange
-            end
-            object edJunctionPotFine: TValidatedEdit
-              Left = 175
-              Top = 0
-              Width = 81
-              Height = 23
-              OnKeyPress = edJunctionPotFineKeyPress
-              Font.Charset = ANSI_CHARSET
-              Font.Color = clWindowText
-              Font.Height = -12
-              Font.Name = 'Arial'
-              Font.Style = []
-              Text = ' 0.0 mV'
-              Scale = 1.000000000000000000
-              Units = 'mV'
-              NumberFormat = '%.1f'
-              LoLimit = -1000.000000000000000000
-              HiLimit = 1000.000000000000000000
             end
           end
         end
@@ -1079,7 +1075,6 @@ object TritonPanelFrm: TTritonPanelFrm
         Top = 16
         Width = 169
         Height = 18
-        Hint = 'Update all channels with the same settings'
         Caption = 'Update All Channels'
         Font.Charset = ANSI_CHARSET
         Font.Color = clWindowText
@@ -1095,7 +1090,7 @@ object TritonPanelFrm: TTritonPanelFrm
       Left = 8
       Top = 88
       Width = 297
-      Height = 161
+      Height = 113
       Caption = ' Amplifier '
       TabOrder = 2
       object Label10: TLabel
@@ -1178,7 +1173,7 @@ object TritonPanelFrm: TTritonPanelFrm
       end
       object bCalibrate: TButton
         Left = 48
-        Top = 132
+        Top = 86
         Width = 241
         Height = 18
         Hint = 
@@ -1196,64 +1191,25 @@ object TritonPanelFrm: TTritonPanelFrm
         TabOrder = 3
         OnClick = bCalibrateClick
       end
-      object gpCurrentStimulus: TGroupBox
+      object ckICLAMPOn: TCheckBox
         Left = 48
-        Top = 62
+        Top = 64
         Width = 241
-        Height = 65
-        Caption = ' Current Stimulus '
+        Height = 17
+        Caption = 'Enable current stimulus'
+        Font.Charset = ANSI_CHARSET
+        Font.Color = clWindowText
+        Font.Height = -12
+        Font.Name = 'Arial'
+        Font.Style = [fsBold]
+        ParentFont = False
         TabOrder = 4
-        object Label22: TLabel
-          Left = 135
-          Top = 16
-          Width = 88
-          Height = 14
-          Hint = 
-            'Current offset used to correct for stimulus bias current of Pico' +
-            ' amplifiier'
-          Caption = 'Zero Correction'
-          Font.Charset = ANSI_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -11
-          Font.Name = 'Arial'
-          Font.Style = [fsBold]
-          ParentFont = False
-        end
-        object ckICLAMPOn: TCheckBox
-          Left = 8
-          Top = 16
-          Width = 117
-          Height = 17
-          Caption = 'Enable Stimulus'
-          Font.Charset = ANSI_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -12
-          Font.Name = 'Arial'
-          Font.Style = [fsBold]
-          ParentFont = False
-          TabOrder = 0
-          OnClick = ckICLAMPOnClick
-        end
-        object edCurrentStimulusBias: TValidatedEdit
-          Left = 135
-          Top = 34
-          Width = 86
-          Height = 21
-          Hint = 'Stimulus bias current offset to correct current zero '
-          OnKeyPress = edCurrentStimulusBiasKeyPress
-          ShowHint = True
-          Text = ' 0 pA'
-          Scale = 1.000000000000000000
-          Units = 'pA'
-          NumberFormat = '%.4g'
-          LoLimit = -1.000000015047466E30
-          HiLimit = 1.000000015047466E30
-        end
+        OnClick = ckICLAMPOnClick
       end
     end
     object GroupBox5: TGroupBox
       Left = 8
-      Top = 255
+      Top = 204
       Width = 297
       Height = 43
       Caption = ' Filters '
@@ -1272,19 +1228,16 @@ object TritonPanelFrm: TTritonPanelFrm
         ParentFont = False
       end
       object edFilter: TEdit
-        Left = 198
-        Top = 16
+        Left = 192
+        Top = 14
         Width = 73
         Height = 20
-        Hint = 'Low pass filtter cut-off frequency '
         AutoSize = False
-        Ctl3D = True
         Font.Charset = ANSI_CHARSET
         Font.Color = clWindowText
         Font.Height = -11
         Font.Name = 'Arial'
         Font.Style = []
-        ParentCtl3D = False
         ParentFont = False
         ReadOnly = True
         TabOrder = 0
@@ -1295,11 +1248,8 @@ object TritonPanelFrm: TTritonPanelFrm
         Top = 14
         Width = 88
         Height = 20
-        Hint = 'Select low pass filer cut-off'
         Max = 100
-        ParentShowHint = False
         Frequency = 10
-        ShowHint = True
         TabOrder = 1
         ThumbLength = 12
         OnChange = tbFilterChange
@@ -1316,7 +1266,7 @@ object TritonPanelFrm: TTritonPanelFrm
     end
     object GroupBox1: TGroupBox
       Left = 8
-      Top = 613
+      Top = 564
       Width = 305
       Height = 53
       TabOrder = 5
@@ -1407,10 +1357,9 @@ object TritonPanelFrm: TTritonPanelFrm
     end
     object ckEnableDACStreaming: TCheckBox
       Left = 8
-      Top = 669
+      Top = 618
       Width = 193
       Height = 17
-      Hint = 'Select streaming stimulus mode (stimuli defined point by point)'
       Caption = 'Stimulus streaming enabled'
       Font.Charset = ANSI_CHARSET
       Font.Color = clWindowText
@@ -1418,8 +1367,6 @@ object TritonPanelFrm: TTritonPanelFrm
       Font.Name = 'Arial'
       Font.Style = [fsBold]
       ParentFont = False
-      ParentShowHint = False
-      ShowHint = True
       TabOrder = 6
       OnClick = ckEnableDACStreamingClick
     end
