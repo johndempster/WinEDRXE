@@ -381,6 +381,8 @@ unit Mdiform;
    V3.8.4 24.04.18 Stimulus Start On Record option added allowing stimulus protocols to be initiated automatically when Record button pressed
    V3.8.5 08.05.18 Tecella Triton support updated. Junction potential offset determined in voltage-clamp mode now subtracted from membrane potential in
                      current-clamp mode. Current stimulus bias current offset can now be added to set stimulus current to zero current-clamp mode.
+   V3.8.6 16.05.18 Amplifiers: PrimaryScaleFactorX1, SecondayScaleFactorX1 now set in correct units by Multiclamp and therefore appears correctly in Amplifiers Setup.
+   V3.8.7 24.09.18 Amplifiers: Heka EPC-800 current command output now allocated to a different analog out channel since this amplifier has separate voltage- and current-clamp command inputs.
   =======================================================================}
 
 interface
@@ -615,7 +617,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.8.5' ;
+     Version := 'V3.8.7' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }

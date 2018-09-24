@@ -5,6 +5,8 @@ unit FilePropsUnit;
 // 25.07.06
 // 14.06.10 More details and header text added to properties
 // 04.02.11 Scroll bars added text windows, dialog box widened
+// 16.05.18 V/Units in calibration table now shows actual scaling factor rather than X1 gain factor.
+//
 
 interface
 
@@ -85,7 +87,7 @@ begin
      for ch := 0 to CDRfH.NumChannels-1 do begin
          ChannelTable.cells[ChNum,ch+1] := IntToStr(ch) ;
          ChannelTable.cells[ChName,ch+1] := Channel[ch].ADCName ;
-         ChannelTable.cells[ChCal,ch+1] := Format( '%5.4g',[Channel[ch].ADCCalibrationFactor] ) ;
+         ChannelTable.cells[ChCal,ch+1] := Format( '%5.4g',[Channel[ch].ADCCalibrationFactor*Channel[ch].ADCAmplifierGain] ) ;
          ChannelTable.cells[ChUnits,ch+1] := Channel[ch].ADCUnits ;
          end ;
 
@@ -129,6 +131,8 @@ begin
          Channel[ch].ADCCalibrationFactor := ExtractFloat(
                                              ChannelTable.cells[ChCal,ch+1],
                                              Channel[ch].ADCCalibrationFactor);
+         if Channel[ch].ADCAmplifierGain <> 0.0 then
+            Channel[ch].ADCCalibrationFactor := Channel[ch].ADCCalibrationFactor / Channel[ch].ADCAmplifierGain ;
          Channel[ch].ADCUnits := ChannelTable.cells[ChUnits,ch+1] ;
          end ;
 
