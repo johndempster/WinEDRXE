@@ -383,6 +383,12 @@ unit Mdiform;
                      current-clamp mode. Current stimulus bias current offset can now be added to set stimulus current to zero current-clamp mode.
    V3.8.6 16.05.18 Amplifiers: PrimaryScaleFactorX1, SecondayScaleFactorX1 now set in correct units by Multiclamp and therefore appears correctly in Amplifiers Setup.
    V3.8.7 24.09.18 Amplifiers: Heka EPC-800 current command output now allocated to a different analog out channel since this amplifier has separate voltage- and current-clamp command inputs.
+   V3.8.8 17.06.19 Support for Tecella Pico updated to match WinWCP.
+                   SealTest More reliable calculation and averaging of cell parameters, less affected by invalid pulse signals.
+   V3.8.9 29.07.19 Now reads WCP file scan interval and A/D voltage range correctly when only one record in WCP file
+                   Baseline tracking can now be disabled in event detector
+                   Variance plot and power spectrum calculation now faster by maing progress reporting more efficient
+                   Application window size and location now preserved in INI file.
   =======================================================================}
 
 interface
@@ -393,7 +399,7 @@ uses
   PrintRec, Rec, SealTest, ViewSig,
   About, Log, defset, ced1902u, simmepc, SingleChanAnal,
   simnoise, simchan, NoiseAnal, digfilt, SESLabIO, ComCtrls,
-  ADCDataFile, math, strutils, recplotunit, UITYpes, Vcl.HtmlHelpViewer, shlobj, epc9panelunit  ;
+  ADCDataFile, math, strutils, recplotunit, UITYpes, Vcl.HtmlHelpViewer, shlobj, epc9panelunit, tritonpanelunit  ;
 
 const
     AllForms = True ;
@@ -593,6 +599,9 @@ type
     procedure UpdateAllDisplays ;
     function FormExists( FormName : String ) : Boolean ;
     function GetSpecialFolder(const ASpecialFolderID: Integer): string;
+function ShowTritonPanel : Boolean ;
+
+
 
     end;
 
@@ -604,7 +613,7 @@ implementation
 
 uses AmpModule, Invert, EventDetector, PageView, EditMarkers,
   Import, ImportASCIIUnit, maths , ECG, ImportRawUnit, VP500Panel,
-  FilePropsUnit, DBSPanelUnit, TritonPanelUnit, LabInterfaceSetup,
+  FilePropsUnit, DBSPanelUnit, LabInterfaceSetup,
   InputChannelSetup, EditProtocolUnit , DCLAMPUnit, exportUnit;
 
 {$R *.DFM}
@@ -617,7 +626,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.8.7' ;
+     Version := 'V3.8.9' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
@@ -698,6 +707,7 @@ begin
      Settings.EventDetector.TDecayFrom := 0 ;
      Settings.EventDetector.RisingEdgeWindow := 20 ;
      Settings.EventDetector.AvgFrequencyInterval := 1.0 ;
+     Settings.EventDetector.EnableBaselineTracking := True ;
 
      Settings.DwellTimes.ChanNum := 0 ;
      Settings.DwellTimes.RecordSize := 512 ;
@@ -780,8 +790,8 @@ begin
      Settings.SealTest.CurrentChannel := 0 ;
      Settings.SealTest.VoltageChannel := 1 ;
      Settings.SealTest.AutoScale := True ;
-     Settings.SealTest.DACNum := 0 ;
-     Settings.SealTest.SmoothingFactor := 0.1 ;
+ //    Settings.SealTest.DACNum := 0 ;
+     Settings.SealTest.NumAverages := 10 ;
 
      { Set flag indicating this is the first sweep, to force an autoscale }
      Settings.SealTest.FirstSweep := True ;
@@ -2299,12 +2309,14 @@ begin
              Channel[ch].ADCAmplifierGain := Main.ImportFile.ChannelGain[ch] ;
              end ;
 
-         { Copy sampling interval and A/D range }
-         CdrFH.dt := Main.ImportFile.ScanInterval ;
-         CdrFH.ADCVoltageRange := Main.ImportFile.ChannelADCVoltageRange[0] ;
-
          NumRead := Main.ImportFile.LoadADCBuffer( 0, Main.ImportFile.NumScansPerRecord, Buf^ ) ;
          if NumRead <= 0 then Break ;
+
+         { Copy sampling interval and A/D range
+           NOTE. Must be after ImportFile.LoadADCBuffer() to ensure scan interval and ADCVoltageRange valid}
+
+         CdrFH.dt := Main.ImportFile.ScanInterval ;
+         CdrFH.ADCVoltageRange := Main.ImportFile.ChannelADCVoltageRange[0] ;
 
          // Correct calibration factor for any differences between
          for ch := 0 to Main.ImportFile.NumChannelsPerScan-1 do begin
@@ -2837,6 +2849,35 @@ begin
   Result := StrPas(vSpecialPath);
 
   end;
+
+function TMain.ShowTritonPanel : Boolean ;
+// -------------------------------
+//  Display Triton control window
+// ------------------------------- }
+begin
+     // Display Triton control panel if it is not open
+     Result := False ;
+     case Main.SESLabIO.LabInterfaceType of
+          Triton : begin
+             if not Main.FormExists( 'TritonPanelFrm' ) then
+                begin
+                // Create form
+                TritonPanelFrm := TTritonPanelFrm.Create(Self) ;
+                TritonPanelFrm.Top := 15 ;
+                TritonPanelFrm.Left := 710 ;
+                end
+             else
+                begin
+                // Make form visible, active and on top
+                if TritonPanelFrm.WindowState = wsMinimized then TritonPanelFrm.WindowState := wsNormal ;
+                TritonPanelFrm.BringToFront ;
+                TritonPanelFrm.SetFocus ;
+                end ;
+             Result := True ;
+             end ;
+          end;
+end;
+
 
 
 end.

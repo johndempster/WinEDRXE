@@ -1,43 +1,46 @@
 unit WinEDR_TLB;
 
 // ************************************************************************ //
-// WARNING                                                                    
-// -------                                                                    
-// The types declared in this file were generated from data read from a       
-// Type Library. If this type library is explicitly or indirectly (via        
-// another type library referring to this type library) re-imported, or the   
-// 'Refresh' command of the Type Library Editor activated while editing the   
-// Type Library, the contents of this file will be regenerated and all        
-// manual modifications will be lost.                                         
+// WARNING
+// -------
+// The types declared in this file were generated from data read from a
+// Type Library. If this type library is explicitly or indirectly (via
+// another type library referring to this type library) re-imported, or the
+// 'Refresh' command of the Type Library Editor activated while editing the
+// Type Library, the contents of this file will be regenerated and all
+// manual modifications will be lost.
 // ************************************************************************ //
 
-// PASTLWTR : 1.2
-// File generated on 02/12/2013 16:44:58 from Type Library described below.
+// $Rev: 52393 $
+// File generated on 17/06/2019 17:05:25 from Type Library described below.
 
 // ************************************************************************  //
-// Type Lib: E:\Delphi Projects\WinEDR\WinEDR.tlb (1)
+// Type Lib: C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\WinEDR (1)
 // LIBID: {1D3AA672-406C-4763-9645-84DE3DF7F1CA}
 // LCID: 0
-// Helpfile: 
+// Helpfile:
 // HelpString: WinEDR Library
-// DepndLst: 
-//   (1) v2.0 stdole, (C:\Windows\system32\stdole2.tlb)
+// DepndLst:
+//   (1) v2.0 stdole, (C:\Windows\SysWOW64\stdole2.tlb)
+// SYS_KIND: SYS_WIN32
 // ************************************************************************ //
-{$TYPEDADDRESS OFF} // Unit must be compiled without type-checked pointers. 
+{$TYPEDADDRESS OFF} // Unit must be compiled without type-checked pointers.
 {$WARN SYMBOL_PLATFORM OFF}
 {$WRITEABLECONST ON}
 {$VARPROPSETTER ON}
+{$ALIGN 4}
+
 interface
 
-uses Windows, ActiveX, Classes, Graphics, StdVCL, Variants;
-  
+uses Winapi.Windows, System.Classes, System.Variants, System.Win.StdVCL, Vcl.Graphics, Vcl.OleServer, Winapi.ActiveX;
+
 
 // *********************************************************************//
-// GUIDS declared in the TypeLibrary. Following prefixes are used:        
-//   Type Libraries     : LIBID_xxxx                                      
-//   CoClasses          : CLASS_xxxx                                      
-//   DISPInterfaces     : DIID_xxxx                                       
-//   Non-DISP interfaces: IID_xxxx                                        
+// GUIDS declared in the TypeLibrary. Following prefixes are used:
+//   Type Libraries     : LIBID_xxxx
+//   CoClasses          : CLASS_xxxx
+//   DISPInterfaces     : DIID_xxxx
+//   Non-DISP interfaces: IID_xxxx
 // *********************************************************************//
 const
   // TypeLibrary Major and minor versions
@@ -51,14 +54,14 @@ const
 type
 
 // *********************************************************************//
-// Forward declaration of types defined in TypeLibrary                    
+// Forward declaration of types defined in TypeLibrary
 // *********************************************************************//
   IAUTO = interface;
   IAUTODisp = dispinterface;
 
 // *********************************************************************//
-// Declaration of CoClasses defined in Type Library                       
-// (NOTE: Here we map each CoClass to its Default Interface)              
+// Declaration of CoClasses defined in Type Library
+// (NOTE: Here we map each CoClass to its Default Interface)
 // *********************************************************************//
   AUTO = IAUTO;
 
@@ -105,6 +108,35 @@ type
     procedure Set_SealTestPulseDuration(Value: OleVariant); safecall;
     function Get_Status: OleVariant; safecall;
     procedure Set_Status(Value: OleVariant); safecall;
+    function Get_PicoConfig: Integer; safecall;
+    procedure Set_PicoConfig(Value: Integer); safecall;
+    function Get_PicoEnableCFast: Integer; safecall;
+    procedure Set_PicoEnableCFast(Value: Integer); safecall;
+    function Get_PicoEnableCSlow: Integer; safecall;
+    procedure Set_PicoEnableCSlow(Value: Integer); safecall;
+    function Get_PicoEnableJP: Integer; safecall;
+    procedure Set_PicoEnableJP(Value: Integer); safecall;
+    function Get_PicoFilter: Integer; safecall;
+    procedure Set_PicoFilter(Value: Integer); safecall;
+    function Get_PicoGain: Integer; safecall;
+    procedure Set_PicoGain(Value: Integer); safecall;
+    function Get_PicoInput: Integer; safecall;
+    procedure Set_PicoInput(Value: Integer); safecall;
+    procedure PicoAutoCompCFast; safecall;
+    procedure PicoAutoCompCSlow; safecall;
+    procedure PicoAutoCompJP; safecall;
+    function Get_PicoCFastComp: OleVariant; safecall;
+    procedure Set_PicoCFastComp(Value: OleVariant); safecall;
+    function Get_PicoCSlowComp: OleVariant; safecall;
+    procedure Set_PicoCSlowComp(Value: OleVariant); safecall;
+    function Get_PicoJPComp: OleVariant; safecall;
+    procedure Set_PicoJPComp(Value: OleVariant); safecall;
+    procedure PicoClearCompC; safecall;
+    procedure PicoClearCompJP; safecall;
+    function Get_SealTestNumAverages: OleVariant; safecall;
+    procedure Set_SealTestNumAverages(Value: OleVariant); safecall;
+    function Get_SealTestGaFromPeak: Integer; safecall;
+    procedure Set_SealTestGaFromPeak(Value: Integer); safecall;
     property RecordDuration: OleVariant read Get_RecordDuration write Set_RecordDuration;
     property TriggerMode: OleVariant read Get_TriggerMode write Set_TriggerMode;
     property StimulusProtocol: OleVariant read Get_StimulusProtocol write Set_StimulusProtocol;
@@ -118,6 +150,18 @@ type
     property SealTestPulseAmplitude: OleVariant read Get_SealTestPulseAmplitude write Set_SealTestPulseAmplitude;
     property SealTestPulseDuration: OleVariant read Get_SealTestPulseDuration write Set_SealTestPulseDuration;
     property Status: OleVariant read Get_Status write Set_Status;
+    property PicoConfig: Integer read Get_PicoConfig write Set_PicoConfig;
+    property PicoEnableCFast: Integer read Get_PicoEnableCFast write Set_PicoEnableCFast;
+    property PicoEnableCSlow: Integer read Get_PicoEnableCSlow write Set_PicoEnableCSlow;
+    property PicoEnableJP: Integer read Get_PicoEnableJP write Set_PicoEnableJP;
+    property PicoFilter: Integer read Get_PicoFilter write Set_PicoFilter;
+    property PicoGain: Integer read Get_PicoGain write Set_PicoGain;
+    property PicoInput: Integer read Get_PicoInput write Set_PicoInput;
+    property PicoCFastComp: OleVariant read Get_PicoCFastComp write Set_PicoCFastComp;
+    property PicoCSlowComp: OleVariant read Get_PicoCSlowComp write Set_PicoCSlowComp;
+    property PicoJPComp: OleVariant read Get_PicoJPComp write Set_PicoJPComp;
+    property SealTestNumAverages: OleVariant read Get_SealTestNumAverages write Set_SealTestNumAverages;
+    property SealTestGaFromPeak: Integer read Get_SealTestGaFromPeak write Set_SealTestGaFromPeak;
   end;
 
 // *********************************************************************//
@@ -149,14 +193,31 @@ type
     property SealTestPulseAmplitude: OleVariant dispid 220;
     property SealTestPulseDuration: OleVariant dispid 221;
     property Status: OleVariant dispid 222;
+    property PicoConfig: Integer dispid 223;
+    property PicoEnableCFast: Integer dispid 224;
+    property PicoEnableCSlow: Integer dispid 225;
+    property PicoEnableJP: Integer dispid 226;
+    property PicoFilter: Integer dispid 227;
+    property PicoGain: Integer dispid 228;
+    property PicoInput: Integer dispid 229;
+    procedure PicoAutoCompCFast; dispid 230;
+    procedure PicoAutoCompCSlow; dispid 231;
+    procedure PicoAutoCompJP; dispid 232;
+    property PicoCFastComp: OleVariant dispid 233;
+    property PicoCSlowComp: OleVariant dispid 234;
+    property PicoJPComp: OleVariant dispid 235;
+    procedure PicoClearCompC; dispid 236;
+    procedure PicoClearCompJP; dispid 237;
+    property SealTestNumAverages: OleVariant dispid 238;
+    property SealTestGaFromPeak: Integer dispid 239;
   end;
 
 // *********************************************************************//
-// The Class CoAUTO provides a Create and CreateRemote method to          
-// create instances of the default interface IAUTO exposed by              
-// the CoClass AUTO. The functions are intended to be used by             
-// clients wishing to automate the CoClass objects exposed by the         
-// server of this typelibrary.                                            
+// The Class CoAUTO provides a Create and CreateRemote method to
+// create instances of the default interface IAUTO exposed by
+// the CoClass AUTO. The functions are intended to be used by
+// clients wishing to automate the CoClass objects exposed by the
+// server of this typelibrary.
 // *********************************************************************//
   CoAUTO = class
     class function Create: IAUTO;
@@ -165,7 +226,7 @@ type
 
 implementation
 
-uses ComObj;
+uses System.Win.ComObj;
 
 class function CoAUTO.Create: IAUTO;
 begin
@@ -178,3 +239,4 @@ begin
 end;
 
 end.
+

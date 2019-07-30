@@ -195,8 +195,8 @@ THistogram = class(TObject)
               end ;
 
 TSealTest = record
-          CurrentChannel : Integer ;
-          VoltageChannel : Integer ;
+          CurrentChannel : LongInt ;
+          VoltageChannel : LongInt ;
           HoldingVoltage1 : single ;
           HoldingVoltage2 : single ;
           HoldingVoltage3 : single ;
@@ -205,13 +205,15 @@ TSealTest = record
           PulseHeight2 : single ;
           PulseHeight3 : single ;
           PulseWidth : single ;
-          Use : Integer ;
+          Use : LongInt ;
           AutoScale : Boolean ;
-          DACNum : Integer ;
+          DisplayScale : LongInt ;
+          FreeRun : Boolean ;
           FirstSweep : Boolean ;
-          SmoothingFactor : Single ;
+          NumAverages : Integer ;
           ZapAmplitude : single ;
           ZapDuration : single ;
+          GaFromPeak : Boolean ;
           end ;
 
 TVCommand = record
@@ -243,6 +245,7 @@ TEventDetector = record
                TDecayFrom : Integer ;
                RisingEdgeWindow : Integer ;
                AvgFrequencyInterval : Single ;
+               EnableBaselineTracking : Boolean ;
                end ;
 
 TPageSettings = record

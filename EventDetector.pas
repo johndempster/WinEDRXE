@@ -81,6 +81,7 @@ unit EventDetector;
 //              Access violation when manual event created by user off end recording trapped
 // 16.07.14 ... SaveEventList() now executed from .timer() every time Insert/Delete events pressed
 //              to avoid events insertions/deletions being lost when NewFile() function called
+// 30.07.19 ... Baseline tracking in Threshold detection mode can now be disabled.
 
 interface
 
@@ -312,6 +313,10 @@ type
     scEditDisplay: TScopeDisplay;
     scMarkDisplay: TScopeDisplay;
     Timer: TTimer;
+    cbReviewChannel: TComboBox;
+    Label11: TLabel;
+    Label25: TLabel;
+    ckEnableBaselineTracking: TCheckBox;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormResize(Sender: TObject);
@@ -396,6 +401,8 @@ type
     procedure cbPlotYVarChange(Sender: TObject);
     procedure edAverageIntervalKeyPress(Sender: TObject; var Key: Char);
     procedure TimerTimer(Sender: TObject);
+    procedure cbReviewChannelChange(Sender: TObject);
+    procedure ckEnableBaselineTrackingClick(Sender: TObject);
   private
     { Private declarations }
 
@@ -629,9 +636,14 @@ begin
 
      { Fill channel selection list }
      cbChannel.Clear ;
+     cbReviewChannel.Clear ;
      for ch := 0 to CdrFH.NumChannels-1 do
-          cbChannel.items.add( format('Ch.%d %s',[ch,Channel[ch].ADCName]) ) ;
+         begin
+         cbChannel.items.add( format('Ch.%d %s',[ch,Channel[ch].ADCName]) ) ;
+         cbReviewChannel.items.add( format('Ch.%d %s',[ch,Channel[ch].ADCName]) ) ;
+         end;
      cbChannel.ItemIndex := Min(Max(Settings.EventDetector.Channel,0),CdrFH.NumChannels-1) ;
+     cbReviewChannel.ItemIndex := Min(Max(Settings.EventDetector.Channel,0),CdrFH.NumChannels-1) ;
 
      VarNames[vEventNum] := 'Event No.' ;
      VarNames[vTime] := 'Time' ;
@@ -785,6 +797,10 @@ begin
 
      // Detection channel
      cbChannel.ItemIndex := Max(Min(Settings.EventDetector.Channel,CDRFH.NumChannels-1),0) ;
+     cbReviewChannel.ItemIndex := Max(Min(Settings.EventDetector.Channel,CDRFH.NumChannels-1),0) ;
+
+     // Threshold detection mode baseline traccking
+     ckEnableBaselineTracking.Checked := Settings.EventDetector.EnableBaselineTracking ;
 
      // Analysis polarity
      rbPositive.Checked := Settings.EventDetector.PositivePeaks ;
@@ -1166,6 +1182,8 @@ begin
       end ;
 
    j := Channel[cbChannel.ItemIndex].ChannelOffset ;
+   if not ckEnableBaselineTracking.checked then RunningMean := 0 ;
+
    for i := 0 to NumPoints-1 do begin
 
        // Difference between signal and running mean zero level
@@ -4746,6 +4764,15 @@ begin
      end ;
 
 
+procedure TEventDetFrm.ckEnableBaselineTrackingClick(Sender: TObject);
+// -------------------------------------------------------------------
+// Enabled/disable baseline tracking in threshold event detection mode
+// -------------------------------------------------------------------
+begin
+     Settings.EventDetector.EnableBaselineTracking := ckEnableBaselineTracking.Checked ;
+     DisplayRecord ;
+end;
+
 
 procedure TEventDetFrm.ckSubtractBaselineClick(Sender: TObject);
 // --------------------------------------
@@ -5165,6 +5192,17 @@ begin
         EventRangePan.Visible := True ;
         end ;
 
+     end;
+
+
+procedure TEventDetFrm.cbReviewChannelChange(Sender: TObject);
+// -----------------------------
+// Change channel to be reviewed
+// -----------------------------
+begin
+     Settings.EventDetector.Channel := cbReviewChannel.ItemIndex ;
+     NewFile ;
+     DisplayEvent ;
      end;
 
 

@@ -209,7 +209,7 @@ object SealTestFrm: TSealTestFrm
     Left = 160
     Top = 402
     Width = 118
-    Height = 223
+    Height = 240
     Caption = ' Voltage '
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clBlack
@@ -275,7 +275,7 @@ object SealTestFrm: TSealTestFrm
     Left = 285
     Top = 402
     Width = 118
-    Height = 223
+    Height = 240
     Caption = ' Current '
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clBlack
@@ -341,7 +341,7 @@ object SealTestFrm: TSealTestFrm
     Left = 410
     Top = 402
     Width = 159
-    Height = 223
+    Height = 240
     Font.Charset = DEFAULT_CHARSET
     Font.Color = clBlack
     Font.Height = -12
@@ -350,8 +350,8 @@ object SealTestFrm: TSealTestFrm
     ParentFont = False
     TabOrder = 3
     object Label22: TLabel
-      Left = 17
-      Top = 190
+      Left = 8
+      Top = 191
       Width = 91
       Height = 14
       Alignment = taRightJustify
@@ -384,6 +384,10 @@ object SealTestFrm: TSealTestFrm
         Font.Name = 'Arial'
         Font.Style = [fsBold]
         ParentFont = False
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
         object Label9: TLabel
           Left = 4
           Top = 16
@@ -686,13 +690,13 @@ object SealTestFrm: TSealTestFrm
         OnClick = rbGaFromExpClick
       end
     end
-    object edSmoothingFactor: TValidatedEdit
+    object edNumAverages: TValidatedEdit
       Left = 112
       Top = 190
       Width = 41
       Height = 23
       Hint = 'Readout smoothing factor (1=minimum, 10=maximum)'
-      OnKeyPress = edSmoothingFactorKeyPress
+      OnKeyPress = edNumAveragesKeyPress
       ShowHint = True
       Text = '   5 '
       Value = 5.000000000000000000
@@ -700,6 +704,24 @@ object SealTestFrm: TSealTestFrm
       NumberFormat = '%3g'
       LoLimit = 1.000000000000000000
       HiLimit = 10.000000000000000000
+    end
+    object bResetAverage: TButton
+      Left = 8
+      Top = 208
+      Width = 81
+      Height = 17
+      Hint = 'Reset calculated pipette resistance/capacity averaging counter'
+      Caption = 'Reset Avg.'
+      Font.Charset = DEFAULT_CHARSET
+      Font.Color = clBlack
+      Font.Height = -12
+      Font.Name = 'Arial'
+      Font.Style = [fsBold]
+      ParentFont = False
+      ParentShowHint = False
+      ShowHint = True
+      TabOrder = 4
+      OnClick = bResetAverageClick
     end
   end
   object PulseGrp: TGroupBox
@@ -1147,7 +1169,7 @@ object SealTestFrm: TSealTestFrm
     Left = 575
     Top = 402
     Width = 89
-    Height = 223
+    Height = 240
     Caption = ' Zap '
     TabOrder = 9
     object Label23: TLabel

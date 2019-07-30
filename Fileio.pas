@@ -61,6 +61,9 @@ unit Fileio;
   9.1.17 ....  'FLIONNAME=', Settings.Fluorescence.IonName and 'FLIONUNITS=', Settings.Fluorescence.IonUnits
                added to INI file
   24.04.18 ..  'STARTSTIMREC=', Settings.StartStimulusOnRecord added
+  17.06.19 ..  Settings.Sea;Test settings copied from WinWCP
+  07.07.19 ... FORMTOP= FORMLEFT=, FORMWIDTH=, FORMHEIGHT= added to INI file saving location of main form on screen
+               'DETEBT=', Settings.EventDetector.EnableBaselineTracking added to EDR and INI files
   }
 
 
@@ -226,6 +229,7 @@ begin
      AppendFloat( Header, 'DETTDECP=', Settings.EventDetector.TDecayPercent ) ;
      AppendInt( Header, 'DETDECFR=', Settings.EventDetector.TDecayFrom ) ;
      AppendInt( Header, 'DETREW=', Settings.EventDetector.RisingEdgeWindow ) ;
+     AppendLogical( Header, 'DETEBT=', Settings.EventDetector.EnableBaselineTracking ) ;
 
      AppendInt( Header, 'VARRS=', Settings.Variance.RecordSize ) ;
      AppendInt( Header, 'VAROV=', Settings.Variance.RecordOverlap ) ;
@@ -396,6 +400,7 @@ begin
           ReadFloat( Header, 'DETTDECP=', Settings.EventDetector.TDecayPercent ) ;
           ReadInt( Header, 'DETDECFR=', Settings.EventDetector.TDecayFrom ) ;
           ReadInt( Header, 'DETREW=', Settings.EventDetector.RisingEdgeWindow ) ;
+          ReadLogical( Header, 'DETEBT=', Settings.EventDetector.EnableBaselineTracking ) ;
 
           ReadInt( Header, 'VARRS=', Settings.Variance.RecordSize ) ;
           ReadInt( Header, 'VAROV=', Settings.Variance.RecordOverlap ) ;
@@ -527,10 +532,6 @@ begin
      // Read file
      FileRead(IniFileHandle,Header,Sizeof(Header)) ;
 
-     { Last raw data file used }
-     //ReadString( Header, 'FILE=', CdrFH.FileName ) ;
-     //CdrFH.FileName := '' ;
-
      // Record duration
      ReadFloat( Header, 'RECDUR=', Settings.RecordDuration ) ;
 
@@ -550,26 +551,6 @@ begin
      ReadInt( Header, 'CEDDCO=', Amplifier.CED1902.DCOffset ) ;
      ReadInt( Header, 'CEDNF=', Amplifier.CED1902.NotchFilter ) ;
      ReadInt( Header, 'CEDPO=', Amplifier.CED1902.ComPort ) ;
-
-     // Patch clamp amplifier data (old keys)
-   {  ReadInt( Header, 'AMP=',iValue ) ;
-     Amplifier.AmplifierType[0] := iValue ;
-     ReadInt( Header, 'AMPCH=',iValue ) ;
-     Amplifier.GainTelegraphChannel[0] := iValue ;
-     ReadInt( Header, 'AMPGAINCH=',iValue ) ;
-     Amplifier.GainTelegraphChannel[0] := iValue ;
-     ReadInt( Header, 'AMPMODECH=',iValue ) ;
-     Amplifier.ModeTelegraphChannel[0] := iValue ;
-
-     // Patch clamp amplifier data
-     for ch := 1 to 2 do begin
-         ReadInt( Header, format('AMP%d=',[ch]),iValue ) ;
-         Amplifier.AmplifierType[ch] := iValue ;
-         ReadInt( Header, format('AMPGAINCH%d=',[ch]), iValue ) ;
-         Amplifier.GainTelegraphChannel[ch] := iValue ;
-         ReadInt( Header, format('AMPMODECH%d=',[ch]), iValue ) ;
-         Amplifier.ModeTelegraphChannel[ch] := iValue ;
-         end ;}
 
      ReadInt( Header, 'VARRS=', Settings.Variance.RecordSize ) ;
      ReadInt( Header, 'VAROV=', Settings.Variance.RecordOverlap ) ;
@@ -597,23 +578,12 @@ begin
      ReadFloat( Header, 'DETAW=', Settings.EventDetector.AnalysisWindow ) ;
      ReadInt( Header, 'DETREW=', Settings.EventDetector.RisingEdgeWindow ) ;
      ReadFloat( Header, 'DETAVFI=', Settings.EventDetector.AvgFrequencyInterval ) ;
+     ReadLogical( Header, 'DETEBT=', Settings.EventDetector.EnableBaselineTracking ) ;
 
      { Number of records required (in free run/ext. trigger modes}
      ReadInt( Header, 'NRQ=', Settings.NumTriggerSweeps ) ;
-     { Voltage clamp command voltage division factor }
-//     ReadFloat( Header, 'VCDIV=', Settings.VCommand[0].DivideFactor ) ;
-     { Default voltage clamp holding potential setting }
-//     ReadFloat( Header, 'VCHOLD=', Settings.VCommand[0].HoldingVoltage ) ;
-//     ReadFloat( Header, 'VCHOLD2=', Settings.VCommand[0].HoldingVoltageAlt ) ;
-
-//     for i := 0 to High(Settings.VCommand) do begin
-//         ReadFloat( Header, format('VCDIV%d=',[i]), Settings.VCommand[i].DivideFactor ) ;
-//         ReadFloat( Header, format('VCHOLD%d=',[i]), Settings.VCommand[i].HoldingVoltage ) ;
-//         ReadFloat( Header, format('VCHOLD%d2=',[i]), Settings.VCommand[i].HoldingVoltageAlt ) ;
-//         end ;
 
      { Default digital control port output byte setting }
-//     ReadInt( Header, 'DIGPORT=', Settings.DigitalOutputs ) ;
      Settings.UpdateOutputs := True ;
 
      ReadFloat( Header, 'DTMINDAC=', Settings.MinDACInterval ) ;
@@ -630,24 +600,25 @@ begin
         Settings.TUnScale := MsToSecs ;
         end ;
 
-     { Seal test pulse settings }
-     ReadFloat( Header, 'STPH=', Settings.SealTest.PulseHeight ) ;
-     ReadFloat( Header, 'STPH1=', Settings.SealTest.PulseHeight1 ) ;
-     ReadFloat( Header, 'STPH2=', Settings.SealTest.PulseHeight2 ) ;
-     ReadFloat( Header, 'STPH3=', Settings.SealTest.PulseHeight3 ) ;
-     ReadFloat( Header, 'STHV1=', Settings.SealTest.HoldingVoltage1 ) ;
-     ReadFloat( Header, 'STHV2=', Settings.SealTest.HoldingVoltage2 ) ;
-     ReadFloat( Header, 'STHV3=', Settings.SealTest.HoldingVoltage3 ) ;
-     ReadFloat( Header, 'STPW=', Settings.SealTest.PulseWidth ) ;
-     ReadInt( Header, 'STCCH=', Settings.SealTest.CurrentChannel ) ;
-     ReadInt( Header, 'STVCH=', Settings.SealTest.VoltageChannel ) ;
-     ReadInt( Header, 'STUSE=', Settings.SealTest.Use ) ;
-     ReadLogical( Header, 'STASC=', Settings.SealTest.AutoScale ) ;
-     ReadFloat( Header, 'STZAPA=', Settings.SealTest.ZapAmplitude ) ;
-     ReadFloat( Header, 'STZAPD=', Settings.SealTest.ZapDuration ) ;
-
-     //Settings.ADCVoltageRangeIndex := 0 ;
-     //ReadInt( Header, 'ADVRI=', Settings.ADCVoltageRangeIndex ) ;
+      { Seal test pulse settings }
+      ReadFloat( Header, 'STPH=', Settings.SealTest.PulseHeight ) ;
+      ReadFloat( Header, 'STPH1=', Settings.SealTest.PulseHeight1 ) ;
+      ReadFloat( Header, 'STPH2=', Settings.SealTest.PulseHeight2 ) ;
+      ReadFloat( Header, 'STPH3=', Settings.SealTest.PulseHeight3 ) ;
+      ReadFloat( Header, 'STHV1=', Settings.SealTest.HoldingVoltage1 ) ;
+      ReadFloat( Header, 'STHV2=', Settings.SealTest.HoldingVoltage2 ) ;
+      ReadFloat( Header, 'STHV3=', Settings.SealTest.HoldingVoltage3 ) ;
+      ReadFloat( Header, 'STPW=', Settings.SealTest.PulseWidth ) ;
+      ReadInt( Header, 'STCCH=', Settings.SealTest.CurrentChannel ) ;
+      ReadInt( Header, 'STVCH=', Settings.SealTest.VoltageChannel ) ;
+      ReadInt( Header, 'STUSE=', Settings.SealTest.Use ) ;
+      ReadInt( Header, 'STDSC=', Settings.SealTest.DisplayScale ) ;
+      ReadLogical( Header, 'STASC=', Settings.SealTest.AutoScale ) ;
+      ReadLogical( Header, 'STFRU=', Settings.SealTest.FreeRun ) ;
+      ReadInt( Header, 'STNAV=', Settings.SealTest.NumAverages ) ;
+      ReadFloat( Header, 'STZAPA=', Settings.SealTest.ZapAmplitude ) ;
+      ReadFloat( Header, 'STZAPD=', Settings.SealTest.ZapDuration ) ;
+      ReadLogical( Header, 'STGAP=', Settings.SealTest.GaFromPeak ) ;
 
      ReadFloat( Header, 'DT=', Settings.ADCSamplingInterval );
 
@@ -771,6 +742,23 @@ begin
      ReadFloat( Header, 'EPCDEP=', Settings.SimEPC.Depression) ;
      ReadFloat( Header, 'EPCTAUDEP=', Settings.SimEPC.TauDepression) ;
 
+     // Load main form size and position
+     i := Main.Width ;
+     ReadInt( Header, 'FORMWIDTH=', i ) ;
+     Main.Width := i ;
+
+     i := Main.Height ;
+     ReadInt( Header, 'FORMHEIGHT=', i ) ;
+     Main.Height := i ;
+
+     i := Main.Top ;
+     ReadInt( Header, 'FORMTOP=',i ) ;
+     Main.Top := i ;
+
+     i := Main.Left ;
+     ReadInt( Header, 'FORMLEFT=', i ) ;
+     Main.Left := i ;
+
      FileClose( IniFileHandle ) ;
 
      end ;
@@ -832,6 +820,7 @@ begin
      AppendFloat( Header, 'DETAW=', Settings.EventDetector.AnalysisWindow ) ;
      AppendInt( Header, 'DETREW=', Settings.EventDetector.RisingEdgeWindow ) ;
      AppendFloat( Header, 'DETAVFI=', Settings.EventDetector.AvgFrequencyInterval ) ;
+     AppendLogical( Header, 'DETEBT=', Settings.EventDetector.EnableBaselineTracking ) ;
 
      AppendInt( Header, 'VARRS=', Settings.Variance.RecordSize ) ;
      AppendInt( Header, 'VAROV=', Settings.Variance.RecordOverlap ) ;
@@ -869,9 +858,13 @@ begin
      AppendInt( Header, 'STCCH=', Settings.SealTest.CurrentChannel ) ;
      AppendInt( Header, 'STVCH=', Settings.SealTest.VoltageChannel ) ;
      AppendInt( Header, 'STUSE=', Settings.SealTest.Use ) ;
+     AppendInt( Header, 'STDSC=', Settings.SealTest.DisplayScale ) ;
      AppendLogical( Header, 'STASC=', Settings.SealTest.AutoScale ) ;
+     AppendLogical( Header, 'STFRU=', Settings.SealTest.FreeRun ) ;
+     AppendInt( Header, 'STNAV=', Settings.SealTest.NumAverages ) ;
      AppendFloat( Header, 'STZAPA=', Settings.SealTest.ZapAmplitude ) ;
      AppendFloat( Header, 'STZAPD=', Settings.SealTest.ZapDuration ) ;
+     AppendLogical( Header, 'STGAP=', Settings.SealTest.GaFromPeak ) ;
 
      AppendInt( Header, 'NC=', Settings.NumChannels ) ;
      //AppendInt( Header, 'ADVRI=', Settings.ADCVoltageRangeIndex ) ;
@@ -988,6 +981,12 @@ begin
      AppendFloat( Header, 'EPCPOOL=', Settings.SimEPC.ReleasablePool) ;
      AppendFloat( Header, 'EPCDEP=', Settings.SimEPC.Depression) ;
      AppendFloat( Header, 'EPCTAUDEP=', Settings.SimEPC.TauDepression) ;
+
+     // Save main form size and position
+     AppendInt( Header, 'FORMTOP=',Main.Top ) ;
+     AppendInt( Header, 'FORMLEFT=',Main.Left ) ;
+     AppendInt( Header, 'FORMWIDTH=',Main.Width ) ;
+     AppendInt( Header, 'FORMHEIGHT=',Main.Height ) ;
 
      if FileWrite( IniFileHandle, Header, Sizeof(Header) ) <> Sizeof(Header) then
         ShowMessage( IniFileName + ' Write - Failed ' ) ;

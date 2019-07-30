@@ -35,6 +35,9 @@ unit NoiseAnal;
                  Record time added to Records panel
                  Absolute time now show on display
                  Display no longer goes into loop setting zero levels AC=DC channel
+    30.07.19 ... Power spectrum now only computed in Variance plot when median frequency selected
+                 to improve efficiency. Progress now updated every 100 records to increase speed.
+                 and power spectrum results not updated in variance plot
     }
 
 
@@ -184,6 +187,7 @@ type
     ckFixedZeroLevels: TCheckBox;
     Label5: TLabel;
     EdTime: TEdit;
+    bStopVariance: TButton;
     procedure FormShow(Sender: TObject);
     procedure edRecordSizeKeyPress(Sender: TObject; var Key: Char);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -227,6 +231,7 @@ type
     procedure scDisplayMouseUp(Sender: TObject; Button: TMouseButton;
       Shift: TShiftState; X, Y: Integer);
     procedure edRecordOverlapKeyPress(Sender: TObject; var Key: Char);
+    procedure bStopVarianceClick(Sender: TObject);
   private
     { Private declarations }
     procedure HeapBuffers( Operation : THeapBufferOp ) ;
@@ -247,7 +252,8 @@ type
 
     procedure ComputePowerSpectrum( RecType : TRecType ;
                                     StartAt,EndAt : Integer ;
-                                    var Spectrum : TSpectrum ) ;
+                                    var Spectrum : TSpectrum ;
+                                    ShowResults : Boolean ) ;
     procedure AverageFrequencies( var Spectrum : TSpectrum ) ;
     procedure SubtractLinearTrend( var Y : Array of single ;
                                    iStart,iEnd : Integer ) ;
@@ -282,7 +288,7 @@ var
 
 implementation
 
-uses mdiform,setaxes, MEPCFreq, Printgra, Printrec , Zero, ViewSig;
+uses mdiform,setaxes, MEPCFreq, Printgra, Printrec , Zero, ViewSig, system.UITypes ;
 
 const
      RecordLimit = 16383 ;
@@ -913,6 +919,9 @@ var
    SumMean,SumVar,AvgBackgroundMean,AvgBackgroundVar : single ;
 begin
 
+     bDoVariance.Enabled := False ;
+     bStopVariance.Enabled := True ;
+
      if rbVarAllRecords.Checked then begin
         { Use all records }
         Variance.StartAt := 0 ;
@@ -927,61 +936,73 @@ begin
      Variance.Available := False ;
      { Initialise progress bar }
 
-     for Rec := Variance.StartAt to Variance.EndAt do
-         if RecordStatus^[Rec].Valid then begin
+     Rec := Variance.StartAt ;
+     while (Rec < Variance.EndAt) and bStopVariance.Enabled do
+         begin
 
-         { Read record from file }
-         ReadRecord(Rec, ADC^, xMin, xMax ) ;
+         if RecordStatus^[Rec].Valid then
+            begin
 
-         { Calculate mean signal level of DC Channel }
-         Sum := 0.0 ;
-         j := Channel[DCChan].ChannelOffset ;
-         for i := 0 to Data.RecordSize-1 do begin
-             Sum := Sum + (ADC^[j] - Channel[DCChan].ADCZero) ;
-             j := j + CdrFH.NumChannels ;
-             end ;
-         DCMean^[Rec] := (Sum/Data.RecordSize) * Channel[DCChan].ADCScale ;
+            { Read record from file }
+            ReadRecord(Rec, ADC^, xMin, xMax ) ;
 
-         { Calculate signal variance of AC Channel }
-         { First, calculate mean level }
-         Sum := 0.0 ;
-         j := Channel[ACChan].ChannelOffset ;
-         for i := 0 to Data.RecordSize-1 do begin
-             Sum := Sum + (ADC^[j]) ;
-             j := j + CdrFH.NumChannels ;
-             end ;
-         MeanAC := Sum / Data.RecordSize ;
+            { Calculate mean signal level of DC Channel }
+            Sum := 0.0 ;
+            j := Channel[DCChan].ChannelOffset ;
+            for i := 0 to Data.RecordSize-1 do begin
+                Sum := Sum + (ADC^[j] - Channel[DCChan].ADCZero) ;
+                j := j + CdrFH.NumChannels ;
+                end ;
+            DCMean^[Rec] := (Sum/Data.RecordSize) * Channel[DCChan].ADCScale ;
 
-         // Update AC channel zero level (if AC channel is different from DC)
-         if DCChan <> ACChan then Channel[ACChan].ADCZero := Round(MeanAC) ;
+            { Calculate signal variance of AC Channel }
+            { First, calculate mean level }
+            Sum := 0.0 ;
+            j := Channel[ACChan].ChannelOffset ;
+            for i := 0 to Data.RecordSize-1 do begin
+                Sum := Sum + (ADC^[j]) ;
+                j := j + CdrFH.NumChannels ;
+                end ;
+            MeanAC := Sum / Data.RecordSize ;
 
-         { Next, calculate variance and skew }
-         Sum2 := 0.0 ;
-         Sum3 := 0.0 ;
-         j := Channel[ACChan].ChannelOffset ;
-         for i := 0 to Data.RecordSize-1 do begin
-             y := (ADC^[j] - MeanAC) ;
-             Sum2 := Sum2 + y*y ;
-             Sum3 := Sum3 + y*y*y ;
-             j := j + CdrFH.NumChannels ;
-             end ;
-         ACVariance^[Rec] :=
-         (Sum2/Data.RecordSize)*Channel[ACChan].ADCScale*Channel[ACChan].ADCScale ;
-         ACSkew^[Rec] := (Sum3/Data.RecordSize)*Channel[ACChan].ADCScale
-                          *Channel[ACChan].ADCScale*Channel[ACChan].ADCScale ;
+            // Update AC channel zero level (if AC channel is different from DC)
+            if DCChan <> ACChan then Channel[ACChan].ADCZero := Round(MeanAC) ;
 
-         { Compute the median power frequency of the fluctuations }
-         ComputePowerSpectrum( Test, Rec, Rec, TempSpectrum^ ) ;
-         MedFreq^[Rec] := TempSpectrum^.MedianFrequency ;
+            { Next, calculate variance and skew }
+            Sum2 := 0.0 ;
+            Sum3 := 0.0 ;
+            j := Channel[ACChan].ChannelOffset ;
+            for i := 0 to Data.RecordSize-1 do begin
+                y := (ADC^[j] - MeanAC) ;
+                Sum2 := Sum2 + y*y ;
+                Sum3 := Sum3 + y*y*y ;
+                j := j + CdrFH.NumChannels ;
+                end ;
+            ACVariance^[Rec] := (Sum2/Data.RecordSize)*Channel[ACChan].ADCScale*Channel[ACChan].ADCScale ;
+            ACSkew^[Rec] := (Sum3/Data.RecordSize)*Channel[ACChan].ADCScale
+                            *Channel[ACChan].ADCScale*Channel[ACChan].ADCScale ;
 
-         Main.StatusBar.SimpleText := format(
-         ' Noise Analysis (Variance Analysis) : %d/%d',
-         [Rec+1,Data.MaxRecord+1]) ;
+            { Compute the median power frequency of the fluctuations }
+            if (cbVarXAxis.ItemIndex = vMedianFrequency) or
+               (cbVarYAxis.ItemIndex = vMedianFrequency) then
+               begin
+               ComputePowerSpectrum( Test, Rec, Rec, TempSpectrum^,False ) ;
+               MedFreq^[Rec] := TempSpectrum^.MedianFrequency ;
+               end
+            else MedFreq^[Rec] := 0.0 ;
 
-         application.ProcessMessages ;
 
-         Variance.Available := True ;
-         end ;
+            application.ProcessMessages ;
+
+            Variance.Available := True ;
+
+            end ;
+
+         if (Rec mod 100) = 0 then
+            Main.StatusBar.SimpleText := format( ' Noise Analysis (Variance Analysis) : %d/%d',
+                                                [Rec+1,Variance.EndAt+1]) ;
+         Inc(Rec) ;
+         end;
 
      { Compute and subtract background AC variance & DC mean signals }
 
@@ -1062,6 +1083,8 @@ begin
      Main.CopyAndPrintMenus( True, True ) ;
      bVarSetAxes.Enabled := plVarPlot.Available ;
 
+     bDoVariance.Enabled := True ;
+     bStopVariance.Enabled := False ;
 
      end;
 
@@ -1525,11 +1548,11 @@ begin
         EndAt :=   Round(edSpecRange.HiValue)-1 ;
         end ;
 
-    ComputePowerSpectrum( Test, StartAt, EndAt, PowerSpectrum^ ) ;
+    ComputePowerSpectrum( Test, StartAt, EndAt, PowerSpectrum^, True ) ;
 
     { Subtract background spectrum, if required }
     if ckSpecSubtractBackground.checked then begin
-       ComputePowerSpectrum( Background, 0, Data.MaxRecord, BackgroundSpectrum^ ) ;
+       ComputePowerSpectrum( Background, 0, Data.MaxRecord, BackgroundSpectrum^, True ) ;
        for i := 0 to PowerSpectrum^.NumPoints-1 do
            PowerSpectrum^.Power[i] := PowerSpectrum^.Power[i] -
                                       BackgroundSpectrum^.Power[i] ;
@@ -1602,12 +1625,15 @@ begin
 procedure TNoiseAnalFrm.ComputePowerSpectrum(
           RecType : TRecType ;             { Type record to be used (LEAK/TEST) }
           StartAt,EndAt : Integer ;        { Start/end of range of records }
-          var Spectrum : TSpectrum ) ;     { Spectrum record to hold result }
+          var Spectrum : TSpectrum ;       { Spectrum record to hold result }
+          ShowResults : Boolean            { TRUE = update results and progress boxes }
+          ) ;
 var
    Rec,i,j,n,npFFT : Integer ;
    Sum,MeanAC,xMin,xMax,Denom,YReal,YImag,dFreq : single ;
    FFT : ^TSingleArray ;
    VarianceCorrection : single ;
+   s : string ;
 begin
 
      New(FFT) ;
@@ -1695,16 +1721,13 @@ begin
                end ;
 
             // Report progress
-            if RecType = Test then begin
+            if ShowResults  and ((Rec mod 100) = 0) then
+               begin
+               if RecType = Test then s := 'Test'
+                                  else s := 'Background' ;
                Main.StatusBar.SimpleText := format(
-               ' Noise Analysis (Spectral Analysis) : %d/%d (Test)',
-               [Rec+1,Endat+1]) ;
-               end
-            else begin
-               Main.StatusBar.SimpleText := format(
-               ' Noise Analysis (Spectral Analysis) : %d/%d (Background)',
-               [Rec+1,Endat+1]) ;
-               end ;
+               ' Noise Analysis (Spectral Analysis) : %d/%d (%s)',[Rec+1,Endat+1,s]) ;
+               end;
 
             end ;
 
@@ -1729,26 +1752,26 @@ begin
              (used for unitary current calculation)}
            Spectrum.AvgDCMean := Spectrum.AvgDCMean / Spectrum.NumAveraged ;
 
-           { Display spectrum results }
-           SpecResults.Clear ;
-           SpecResults.Add( format(' Median power frequency = %.4g Hz',
-                                    [PowerSpectrum^.MedianFrequency]) ) ;
 
-           SpecResults.Add( format(' Total variance = %.4g %s^2',
-                                    [PowerSpectrum^.Variance,
-                                     Channel[ACChan].ADCUnits]) ) ;
-           SpecFunc.CopyResultsToRichEdit( SpecResults, erSpecResults ) ;
+           if ShowResults then
+               begin
 
-           if RecType = Test then begin
+              { Display spectrum results }
+              SpecResults.Clear ;
+              SpecResults.Add( format(' Median power frequency = %.4g Hz',
+                                      [PowerSpectrum^.MedianFrequency]) ) ;
+
+              SpecResults.Add( format(' Total variance = %.4g %s^2',
+                                      [PowerSpectrum^.Variance,
+                                      Channel[ACChan].ADCUnits]) ) ;
+              SpecFunc.CopyResultsToRichEdit( SpecResults, erSpecResults ) ;
+
+              if RecType = Test then s := 'Test'
+                                 else s := 'Background' ;
               Main.StatusBar.SimpleText := format(
-              ' Noise Analysis (Spectral Analysis) : %d-%d (%d Test records averaged)',
-               [StartAt+1,EndAt+1,Spectrum.NumAveraged]) ;
-               end
-            else begin
-              Main.StatusBar.SimpleText := format(
-              ' Noise Analysis (Spectral Analysis) : %d-%d (%d Background records averaged)',
-               [StartAt+1,EndAt+1,Spectrum.NumAveraged]) ;
-               end ;
+              ' Noise Analysis (Spectral Analysis) : %d-%d (%d %s records averaged)',
+              [StartAt+1,EndAt+1,Spectrum.NumAveraged,s]) ;
+              end ;
 
            end ;
 
@@ -2074,6 +2097,11 @@ begin
      SetAxesFrm.ShowModal ;
      end;
 
+
+procedure TNoiseAnalFrm.bStopVarianceClick(Sender: TObject);
+begin
+    bStopVariance.Enabled := False ;
+end;
 
 procedure TNoiseAnalFrm.bFitLorentzianClick(Sender: TObject);
 { -------------------------------------------

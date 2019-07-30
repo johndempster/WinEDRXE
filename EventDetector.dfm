@@ -2,7 +2,7 @@ object EventDetFrm: TEventDetFrm
   Left = 855
   Top = 131
   Caption = 'Event Detection'
-  ClientHeight = 680
+  ClientHeight = 735
   ClientWidth = 862
   Color = clBtnFace
   Font.Charset = ANSI_CHARSET
@@ -27,7 +27,7 @@ object EventDetFrm: TEventDetFrm
     Left = 2
     Top = 0
     Width = 839
-    Height = 657
+    Height = 727
     ActivePage = DetectEventsPage
     TabOrder = 0
     OnChange = PageChange
@@ -70,6 +70,7 @@ object EventDetFrm: TEventDetFrm
         MaxADCValue = 2047
         MinADCValue = -2048
         NumBytesPerSample = 2
+        FloatingPointSamples = False
         FixZeroLevels = False
         DisplaySelected = False
         FontSize = 8
@@ -111,6 +112,7 @@ object EventDetFrm: TEventDetFrm
         MaxADCValue = 2047
         MinADCValue = -2048
         NumBytesPerSample = 2
+        FloatingPointSamples = False
         FixZeroLevels = False
         DisplaySelected = False
         FontSize = 8
@@ -250,16 +252,16 @@ object EventDetFrm: TEventDetFrm
         end
         object CriteriaGrp: TGroupBox
           Left = 8
-          Top = 144
+          Top = 151
           Width = 193
-          Height = 337
+          Height = 362
           Caption = ' Detector '
           TabOrder = 3
           object GroupBox1: TGroupBox
             Left = 8
             Top = 16
             Width = 177
-            Height = 65
+            Height = 70
             Caption = ' Mode '
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
@@ -329,9 +331,9 @@ object EventDetFrm: TEventDetFrm
           end
           object GroupBox2: TGroupBox
             Left = 8
-            Top = 80
+            Top = 86
             Width = 177
-            Height = 89
+            Height = 95
             Caption = ' Thresholds '
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
@@ -342,7 +344,7 @@ object EventDetFrm: TEventDetFrm
             TabOrder = 1
             object Label8: TLabel
               Left = 8
-              Top = 14
+              Top = 18
               Width = 76
               Height = 19
               Alignment = taRightJustify
@@ -358,7 +360,7 @@ object EventDetFrm: TEventDetFrm
             end
             object lbTimeThreshold: TLabel
               Left = 8
-              Top = 38
+              Top = 44
               Width = 76
               Height = 19
               Alignment = taRightJustify
@@ -374,7 +376,7 @@ object EventDetFrm: TEventDetFrm
             end
             object edThreshold: TValidatedEdit
               Left = 88
-              Top = 13
+              Top = 18
               Width = 81
               Height = 21
               Hint = 'Detection threshold level'
@@ -390,7 +392,7 @@ object EventDetFrm: TEventDetFrm
             end
             object edTimeThreshold: TValidatedEdit
               Left = 88
-              Top = 39
+              Top = 44
               Width = 81
               Height = 21
               Hint = 
@@ -406,7 +408,7 @@ object EventDetFrm: TEventDetFrm
             end
             object bSetThresholdTo4SD: TButton
               Left = 10
-              Top = 64
+              Top = 70
               Width = 159
               Height = 17
               Hint = 'Set threshold to 4x standard deviation of detection criterion'
@@ -425,7 +427,7 @@ object EventDetFrm: TEventDetFrm
           end
           object ModePage: TNotebook
             Left = 4
-            Top = 170
+            Top = 186
             Width = 183
             Height = 73
             TabOrder = 2
@@ -435,10 +437,10 @@ object EventDetFrm: TEventDetFrm
               Caption = 'Threshold'
               object GroupBox7: TGroupBox
                 Left = 4
-                Top = 8
+                Top = 4
                 Width = 177
-                Height = 49
-                Caption = ' Baseline Tracking Time '
+                Height = 64
+                Caption = ' Baseline Tracking '
                 Font.Charset = DEFAULT_CHARSET
                 Font.Color = clBlack
                 Font.Height = -12
@@ -446,10 +448,18 @@ object EventDetFrm: TEventDetFrm
                 Font.Style = []
                 ParentFont = False
                 TabOrder = 0
+                object Label25: TLabel
+                  Left = 20
+                  Top = 18
+                  Width = 64
+                  Height = 15
+                  Alignment = taRightJustify
+                  Caption = 'Avg. Interval'
+                end
                 object edRunningMeanDuration: TValidatedEdit
-                  Left = 8
-                  Top = 16
-                  Width = 97
+                  Left = 90
+                  Top = 18
+                  Width = 80
                   Height = 21
                   Hint = 'Averaging interval for running mean  baseline tracking'
                   OnKeyPress = edRunningMeanDurationKeyPress
@@ -463,14 +473,33 @@ object EventDetFrm: TEventDetFrm
                   LoLimit = -1.000000015047466E30
                   HiLimit = 1000000.000000000000000000
                 end
+                object ckEnableBaselineTracking: TCheckBox
+                  Left = 59
+                  Top = 39
+                  Width = 110
+                  Height = 22
+                  Hint = 'Enable baseline tracking'
+                  Alignment = taLeftJustify
+                  Caption = 'Enable Tracking'
+                  Checked = True
+                  Font.Charset = DEFAULT_CHARSET
+                  Font.Color = clBlack
+                  Font.Height = -12
+                  Font.Name = 'Arial'
+                  Font.Style = [fsBold]
+                  ParentFont = False
+                  ParentShowHint = False
+                  ShowHint = True
+                  State = cbChecked
+                  TabOrder = 1
+                  OnClick = ckEnableBaselineTrackingClick
+                end
               end
             end
             object TPage
               Left = 0
               Top = 0
               Caption = 'RateOfRise'
-              ExplicitWidth = 0
-              ExplicitHeight = 0
               object GroupBox11: TGroupBox
                 Left = 4
                 Top = 0
@@ -483,8 +512,6 @@ object EventDetFrm: TEventDetFrm
               Left = 0
               Top = 0
               Caption = 'Template'
-              ExplicitWidth = 0
-              ExplicitHeight = 0
               object GroupBox9: TGroupBox
                 Left = 4
                 Top = 0
@@ -565,9 +592,9 @@ object EventDetFrm: TEventDetFrm
           end
           object GroupBox10: TGroupBox
             Left = 8
-            Top = 242
+            Top = 262
             Width = 177
-            Height = 87
+            Height = 70
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
             Font.Height = -12
@@ -577,7 +604,7 @@ object EventDetFrm: TEventDetFrm
             TabOrder = 3
             object Label23: TLabel
               Left = 22
-              Top = 16
+              Top = 8
               Width = 61
               Height = 15
               Alignment = taRightJustify
@@ -591,7 +618,7 @@ object EventDetFrm: TEventDetFrm
             end
             object Label24: TLabel
               Left = 12
-              Top = 42
+              Top = 34
               Width = 71
               Height = 30
               Alignment = taRightJustify
@@ -606,7 +633,7 @@ object EventDetFrm: TEventDetFrm
             end
             object edDeadTime: TValidatedEdit
               Left = 88
-              Top = 16
+              Top = 8
               Width = 81
               Height = 21
               Hint = 
@@ -625,7 +652,7 @@ object EventDetFrm: TEventDetFrm
             end
             object edRisingEdgeWindow: TValidatedEdit
               Left = 88
-              Top = 42
+              Top = 34
               Width = 81
               Height = 23
               Hint = 
@@ -716,10 +743,6 @@ object EventDetFrm: TEventDetFrm
     object EditEventsPage: TTabSheet
       Caption = 'Review/Edit Events'
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object scMarkDisplay: TScopeDisplay
         Left = 224
         Top = 118
@@ -757,6 +780,7 @@ object EventDetFrm: TEventDetFrm
         MaxADCValue = 2047
         MinADCValue = -2048
         NumBytesPerSample = 2
+        FloatingPointSamples = False
         FixZeroLevels = False
         DisplaySelected = False
         FontSize = 8
@@ -799,6 +823,7 @@ object EventDetFrm: TEventDetFrm
         MaxADCValue = 2047
         MinADCValue = -2048
         NumBytesPerSample = 2
+        FloatingPointSamples = False
         FixZeroLevels = False
         DisplaySelected = False
         FontSize = 8
@@ -886,7 +911,7 @@ object EventDetFrm: TEventDetFrm
         Left = 8
         Top = 2
         Width = 209
-        Height = 623
+        Height = 687
         TabOrder = 0
         object Label14: TLabel
           Left = 8
@@ -921,7 +946,7 @@ object EventDetFrm: TEventDetFrm
         end
         object editGrp: TGroupBox
           Left = 8
-          Top = 402
+          Top = 470
           Width = 193
           Height = 63
           Caption = ' Edit Events '
@@ -978,7 +1003,7 @@ object EventDetFrm: TEventDetFrm
         end
         object ExportGrp: TGroupBox
           Left = 8
-          Top = 472
+          Top = 540
           Width = 193
           Height = 89
           Caption = ' Export Events '
@@ -1064,17 +1089,31 @@ object EventDetFrm: TEventDetFrm
           end
         end
         object AnalysisGrp: TGroupBox
-          Left = 8
-          Top = 56
+          Left = 13
+          Top = 64
           Width = 193
-          Height = 345
+          Height = 400
           Caption = ' Event Analysis '
           TabOrder = 4
+          object Label11: TLabel
+            Left = 27
+            Top = 20
+            Width = 47
+            Height = 15
+            Alignment = taRightJustify
+            Caption = 'Channel'
+            Font.Charset = DEFAULT_CHARSET
+            Font.Color = clBlack
+            Font.Height = -12
+            Font.Name = 'Arial'
+            Font.Style = []
+            ParentFont = False
+          end
           object meResults: TMemo
             Left = 8
-            Top = 18
+            Top = 52
             Width = 177
-            Height = 127
+            Height = 136
             Font.Charset = ANSI_CHARSET
             Font.Color = clWindowText
             Font.Height = -12
@@ -1092,7 +1131,7 @@ object EventDetFrm: TEventDetFrm
           end
           object GroupBox3: TGroupBox
             Left = 8
-            Top = 152
+            Top = 198
             Width = 177
             Height = 35
             Caption = ' Event polarity '
@@ -1138,7 +1177,7 @@ object EventDetFrm: TEventDetFrm
           end
           object GroupBox23: TGroupBox
             Left = 8
-            Top = 272
+            Top = 326
             Width = 177
             Height = 65
             Caption = ' T(X%) decay time'
@@ -1211,7 +1250,7 @@ object EventDetFrm: TEventDetFrm
           end
           object GroupBox21: TGroupBox
             Left = 8
-            Top = 188
+            Top = 238
             Width = 177
             Height = 83
             Caption = ' Zero level  '
@@ -1323,10 +1362,22 @@ object EventDetFrm: TEventDetFrm
               HiLimit = 99.000000000000000000
             end
           end
+          object cbReviewChannel: TComboBox
+            Left = 80
+            Top = 23
+            Width = 105
+            Height = 23
+            Hint = 'Channel containing events to be detected'
+            Style = csDropDownList
+            ParentShowHint = False
+            ShowHint = True
+            TabOrder = 4
+            OnClick = cbReviewChannelChange
+          end
         end
         object EventListGrp: TGroupBox
           Left = 8
-          Top = 566
+          Top = 630
           Width = 193
           Height = 49
           Caption = ' Event List '
@@ -1590,10 +1641,6 @@ object EventDetFrm: TEventDetFrm
     object XYPlotPage: TTabSheet
       Caption = 'X-Y Plot'
       ImageIndex = 2
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object plPlot: TXYPlotDisplay
         Left = 224
         Top = 8
@@ -1899,10 +1946,6 @@ object EventDetFrm: TEventDetFrm
     object HistPage: TTabSheet
       Caption = 'Histogram'
       ImageIndex = 3
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object plHist: TXYPlotDisplay
         Left = 224
         Top = 16
@@ -2294,10 +2337,6 @@ object EventDetFrm: TEventDetFrm
     object AveragePage: TTabSheet
       Caption = 'Average'
       ImageIndex = 4
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object scAverageDisplay: TScopeDisplay
         Left = 224
         Top = 8
@@ -2336,6 +2375,7 @@ object EventDetFrm: TEventDetFrm
         MaxADCValue = 2047
         MinADCValue = -2048
         NumBytesPerSample = 2
+        FloatingPointSamples = False
         FixZeroLevels = False
         DisplaySelected = False
         FontSize = 8
@@ -2604,6 +2644,7 @@ object EventDetFrm: TEventDetFrm
     ASCIITimeUnits = 's'
     ASCIITitleLines = 2
     ASCIIFixedRecordSize = False
+    ASCIISaveRecordsinColumns = False
     Left = 294
     Top = 522
   end
