@@ -82,6 +82,7 @@ unit EventDetector;
 // 16.07.14 ... SaveEventList() now executed from .timer() every time Insert/Delete events pressed
 //              to avoid events insertions/deletions being lost when NewFile() function called
 // 30.07.19 ... Baseline tracking in Threshold detection mode can now be disabled.
+// 27.08.19 ... Detection criterion display Y range no longer drifts off scale when signal zero level adjusted by user
 
 interface
 
@@ -883,11 +884,12 @@ begin
      { Set display scaling information }
      scDetDisplay.ChanUnits[0] := Channel[cbChannel.ItemIndex].ADCUnits ;
      scDetDisplay.ChanName[0] := 'Det. Criterion' ;
-     scDetDisplay.yMin[0] := Channel[cbChannel.ItemIndex].yMin ;
-     scDetDisplay.yMax[0] := Channel[cbChannel.ItemIndex].yMax ;
+     scDetDisplay.yMin[0] := -Round((scDisplay.yMax[cbChannel.ItemIndex] - scDisplay.yMin[cbChannel.ItemIndex])*0.5) ;
+     scDetDisplay.yMax[0] := Round((scDisplay.yMax[cbChannel.ItemIndex] - scDisplay.yMin[cbChannel.ItemIndex])*0.5) ;
+
      scDetDisplay.ChanScale[0] := Channel[cbChannel.ItemIndex].ADCScale ;
      scDetDisplay.ChanUnits[0] := Channel[cbChannel.ItemIndex].ADCUnits ;
-     scDetDisplay.ChanZero[0] := Channel[cbChannel.ItemIndex].ADCZero ;
+     scDetDisplay.ChanZero[0] := 0 ;
      scDetDisplay.ChanOffsets[0] := 0 ;
      scDetDisplay.ChanColor[0] := clBlue ;
      scDetDisplay.ChanVisible[0] := True ;

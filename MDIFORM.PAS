@@ -389,6 +389,8 @@ unit Mdiform;
                    Baseline tracking can now be disabled in event detector
                    Variance plot and power spectrum calculation now faster by maing progress reporting more efficient
                    Application window size and location now preserved in INI file.
+   V3.9.0 28.08.19 Digidata 1440-1550B Axoscope program folder on 64 bit systems searched for DLLs now correct
+                   Detect Events: detection criterion display vertical scaling no longer shifts trace off scale when zero level adjusted by user.
   =======================================================================}
 
 interface
@@ -626,7 +628,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.8.9' ;
+     Version := 'V3.9.0' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }

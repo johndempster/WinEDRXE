@@ -76,8 +76,8 @@ object EventDetFrm: TEventDetFrm
         FontSize = 8
       end
       object scDetDisplay: TScopeDisplay
-        Left = 224
-        Top = 182
+        Left = 221
+        Top = 185
         Width = 401
         Height = 107
         OnCursorChange = scDetDisplayCursorChange
