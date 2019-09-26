@@ -398,7 +398,9 @@ object EventDetFrm: TEventDetFrm
               Hint = 
                 'Duration of time that threshold has to be exceeded before detect' +
                 'ion is accepted'
+              OnKeyPress = edTimeThresholdKeyPress
               AutoSize = False
+              ShowHint = True
               Text = ' 0 ms'
               Scale = 1000.000000000000000000
               Units = 'ms'
@@ -456,13 +458,13 @@ object EventDetFrm: TEventDetFrm
                   Alignment = taRightJustify
                   Caption = 'Avg. Interval'
                 end
-                object edRunningMeanDuration: TValidatedEdit
+                object edBaselineAveragingInterval: TValidatedEdit
                   Left = 90
-                  Top = 18
+                  Top = 12
                   Width = 80
                   Height = 21
                   Hint = 'Averaging interval for running mean  baseline tracking'
-                  OnKeyPress = edRunningMeanDurationKeyPress
+                  OnKeyPress = edBaselineAveragingIntervalKeyPress
                   AutoSize = False
                   ShowHint = True
                   Text = ' 1000 ms'

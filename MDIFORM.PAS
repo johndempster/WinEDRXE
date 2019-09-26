@@ -391,6 +391,9 @@ unit Mdiform;
                    Application window size and location now preserved in INI file.
    V3.9.0 28.08.19 Digidata 1440-1550B Axoscope program folder on 64 bit systems searched for DLLs now correct
                    Detect Events: detection criterion display vertical scaling no longer shifts trace off scale when zero level adjusted by user.
+   V3.9.1 26.09.19 Event Detector: Baseline tracking enabled/disabled option now works correctly
+                   Detection mode,thresholds and other settings now preserved in EDR data file header
+
   =======================================================================}
 
 interface
@@ -628,7 +631,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.9.0' ;
+     Version := 'V3.9.1' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
@@ -693,9 +696,10 @@ begin
      Settings.TriggerMode := 'F' ;
      Settings.ExternalTriggerActiveHigh := False ;
      Settings.EventDetector.Channel := 0 ;
+     Settings.EventDetector.DetectionMode := 0 ;
      Settings.EventDetector.yThreshold := 0. ;
      Settings.EventDetector.tThreshold := CdrFH.dt*10.0 ;
-     Settings.EventDetector.BaselineAverage := 100 ;
+     Settings.EventDetector.BaselineAveragingInterval := 1.0 ;
      Settings.EventDetector.PreTriggerFraction := 0.1 ;
      Settings.EventDetector.AnalysisWindow := 512 ;
      Settings.EventDetector.RecordSize := 512 ;

@@ -229,10 +229,11 @@ TVCommand = record
 
 TEventDetector = record
                Channel : Integer ;
+               DetectionMode : Integer ;
                yThreshold : single ;
                tThreshold : single ;
                DeadTime : single ;
-               BaselineAverage : single ;
+               BaselineAveragingInterval : single ;
                RecordSize : Integer ;
                PreTriggerFraction : single ;
                AnalysisWindow : Single ;

@@ -83,6 +83,8 @@ unit EventDetector;
 //              to avoid events insertions/deletions being lost when NewFile() function called
 // 30.07.19 ... Baseline tracking in Threshold detection mode can now be disabled.
 // 27.08.19 ... Detection criterion display Y range no longer drifts off scale when signal zero level adjusted by user
+// 26.09.19 ... Baseline tracking enabled/disabled option now works correctly
+//              Detection mode,thresholds and other settings now preserved in EDR data file header
 
 interface
 
@@ -90,13 +92,16 @@ uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
   StdCtrls, ValEdit, RangeEdit, ScopeDisplay, ComCtrls, global, maths, fileio,
   XYPlotDisplay, ExtCtrls, ValidatedEdit, CursorLabel, HTMLLabel,
-  ADCDataFile, math, CurveFitter, StrUtils, seslabio ;
+  ADCDataFile, math, CurveFitter, StrUtils, seslabio, System.UITypes ;
 
 const
     EventFileExtension = '.EVF' ;
     WCPFileExtension = '.WCP' ;
     MaxExportSamples = 1048576 ;
     MaxEvents = 1000000 ;
+    mdThreshold = 0 ;
+    mdRateOfRise = 1 ;
+    mdPatternMatch = 3 ;
     vEventNum = 0 ;
     vTime = 1 ;
     vInterval = 2 ;
@@ -186,7 +191,7 @@ type
     ModePage: TNotebook;
     rbThreshold: TRadioButton;
     GroupBox7: TGroupBox;
-    edRunningMeanDuration: TValidatedEdit;
+    edBaselineAveragingInterval: TValidatedEdit;
     GroupBox9: TGroupBox;
     Label10: TLabel;
     edTauRise: TValidatedEdit;
@@ -357,7 +362,7 @@ type
       Shift: TShiftState);
     procedure edAnalysisWindowKeyPress(Sender: TObject; var Key: Char);
     procedure edDeadTimeKeyPress(Sender: TObject; var Key: Char);
-    procedure edRunningMeanDurationKeyPress(Sender: TObject;
+    procedure edBaselineAveragingIntervalKeyPress(Sender: TObject;
       var Key: Char);
     procedure rbANDClick(Sender: TObject);
     procedure rbPositiveClick(Sender: TObject);
@@ -404,6 +409,7 @@ type
     procedure TimerTimer(Sender: TObject);
     procedure cbReviewChannelChange(Sender: TObject);
     procedure ckEnableBaselineTrackingClick(Sender: TObject);
+    procedure edTimeThresholdKeyPress(Sender: TObject; var Key: Char);
   private
     { Private declarations }
 
@@ -788,8 +794,17 @@ begin
 
      edPreTrigger.Value := Settings.EventDetector.PreTriggerFraction ;
 
+     case Settings.EventDetector.DetectionMode of
+          mdPatternMatch : rbPatternMatch.Checked := True ;
+          mdRateOfRise : rbRateOfRise.Checked := True ;
+          else rbThreshold.Checked := True ;
+          end ;
+
      // Dead time
      edDeadTime.Value := Settings.EventDetector.DeadTime ;
+
+     // Time threshold
+     EdTimeThreshold.Value := Settings.EventDetector.tThreshold ;
 
      // Rising edge window
      edRisingEdgeWindow.Scale := 1000.0*CDRFH.dt ; // Scale from samples -> ms
@@ -802,6 +817,7 @@ begin
 
      // Threshold detection mode baseline traccking
      ckEnableBaselineTracking.Checked := Settings.EventDetector.EnableBaselineTracking ;
+     edBaselineAveragingInterval.Value := Settings.EventDetector.BaselineAveragingInterval ;
 
      // Analysis polarity
      rbPositive.Checked := Settings.EventDetector.PositivePeaks ;
@@ -899,6 +915,9 @@ begin
      { Create detection threshold cursor }
      scDetDisplay.ClearHorizontalCursors ;
      ThresholdCursor := scDetDisplay.AddHorizontalCursor( 0,clgray,True,'threshold' ) ;
+     // Set threshold
+     edTHreshold.Value := Settings.EventDetector.yThreshold ;
+     scDetDisplay.HorizontalCursors[ThresholdCursor] := Round(edThreshold.Value) ;
 
      scDetDisplay.ClearVerticalCursors ;
      DisplayCursor := scDetDisplay.AddVerticalCursor( -1, clGReen, '?y?t' ) ;
@@ -1111,6 +1130,8 @@ begin
    scDetDisplay.NumPoints := scDisplay.NumPoints ;
    scDetDisplay.Invalidate ;
 
+
+
    end;
 
 
@@ -1172,7 +1193,8 @@ var
    i,j : Integer ;
 begin
 
-   NumSamplesInRunningMean := edRunningMeanDuration.Value / CdrFH.dt ;
+   NumSamplesInRunningMean := edBaselineAveragingInterval.Value / CdrFH.dt ;
+   Settings.EventDetector.BaselineAveragingInterval := edBaselineAveragingInterval.Value ;
 
    // Read A/D sample data from file
    Result := ReadCDRBuffer(CdrFH,StartAtSample,ADC^,NumPoints) ;
@@ -1192,9 +1214,10 @@ begin
        OutBuf[i] := Round(Min(Max( (ADC^[j] - RunningMean),
                     -Channel[0].ADCMaxValue-1),Channel[0].ADCMaxValue)) ;
 
-       // Update running mean baseline
-       RunningMean := ((NumSamplesInRunningMean*RunningMean)+ ADC^[j])
-                               /(NumSamplesInRunningMean + 1.0 ) ;
+       // Update running mean baseline average
+       if ckEnableBaselineTracking.checked then
+          RunningMean := ((NumSamplesInRunningMean*RunningMean)+ ADC^[j])
+                         /(NumSamplesInRunningMean + 1.0 ) ;
 
        j := j + CdrFH.NumChannels ;
 
@@ -1592,6 +1615,8 @@ begin
     if  ThresholdLevel > 0 then Polarity := 1
                            else Polarity := -1 ;
     OverThresholdCount := 0 ;
+
+    Settings.EventDetector.tThreshold := EdTimeThreshold.Value ;
     if rbThreshold.Checked then begin
        TimeThreshold := Round( edTimeThreshold.Value/CdrFH.dt ) ;
        InitialiseRunningMean := True ;
@@ -1725,6 +1750,8 @@ begin
     edAverageRange.HiValue := NumEvents ;
 
     sbEvent.Position := 1 ;
+
+    scDetDisplay.ClearLines ;
 
     end ;
 
@@ -1900,13 +1927,13 @@ procedure TEventDetFrm.scDetDisplayCursorChange(Sender: TObject);
 // -------------------------------------------------
 begin
      edThreshold.Value := scDetDisplay.HorizontalCursors[ThresholdCursor] ;
+     Settings.EventDetector.yThreshold := edThreshold.Value ;
 
      // Align detection display cursor
      if scDetDisplay.VerticalCursors[DisplayCursor]
         <> scDisplay.VerticalCursors[DisplayCursor] then
         scDisplay.VerticalCursors[DisplayCursor] :=
           scDetDisplay.VerticalCursors[DisplayCursor] ;
-
 
      end;
 
@@ -3379,6 +3406,7 @@ begin
 
     // Set threshold cursor
     edThreshold.Value := SD*4.0 ;
+    Settings.EventDetector.yThreshold := edThreshold.Value ;
     scDetDisplay.HorizontalCursors[0] := Round(edThreshold.Value) ;
 
     end;
@@ -3408,6 +3436,7 @@ begin
         edTimeThreshold.Visible := True ;
         lbTimeThreshold.Visible := True ;
         ModePage.ActivePage := 'Threshold' ;
+        Settings.EventDetector.DetectionMode := mdThreshold ;
         end
      else if rbRateOfRise.Checked then begin
         // Rate of rise detection
@@ -3418,6 +3447,7 @@ begin
         edTimeThreshold.Visible := False ;
         lbTimeThreshold.Visible := False ;
         ModePage.ActivePage := 'RateOfRise' ;
+        Settings.EventDetector.DetectionMode := mdRateOfRise ;
 
         end
      else if rbPatternMatch.Checked then begin
@@ -3427,6 +3457,7 @@ begin
         edTimeThreshold.Visible := False ;
         lbTimeThreshold.Visible := False ;
         ModePage.ActivePage := 'Template' ;
+        Settings.EventDetector.DetectionMode := mdPatternMatch ;
         end ;
 
      DisplayRecord ;
@@ -3458,9 +3489,18 @@ procedure TEventDetFrm.edThresholdKeyPress(Sender: TObject; var Key: Char);
 begin
      if key = #13 then begin
         scDetDisplay.HorizontalCursors[ThresholdCursor] := Round(edThreshold.Value) ;
+        Settings.EventDetector.yThreshold := edThreshold.Value ;
         end ;
      end;
 
+
+procedure TEventDetFrm.edTimeThresholdKeyPress(Sender: TObject; var Key: Char);
+// ----------------------
+// Time threshold changed
+// ----------------------
+begin
+      if Key = #13 then Settings.EventDetector.tThreshold := EdTimeThreshold.Value ;
+end;
 
 procedure TEventDetFrm.bExportNonEventsClick(Sender: TObject);
 // -------------------------------------------------------
@@ -4144,16 +4184,18 @@ begin
      end;
 
      
-procedure TEventDetFrm.edRunningMeanDurationKeyPress(Sender: TObject;
+procedure TEventDetFrm.edBaselineAveragingIntervalKeyPress(Sender: TObject;
   var Key: Char);
-// --------------------------------------------------
-// Update display when running mean has been changed
-// --------------------------------------------------
+// ----------------------------------------------------------------
+// Update display when baseline averaging interval has been changed
+// ----------------------------------------------------------------
 begin
      if Key = #13 then begin
+        Settings.EventDetector.BaselineAveragingInterval := edBaselineAveragingInterval.Value ;
         DisplayRecord ;
         end ;
      end;
+
 
 procedure TEventDetFrm.rbANDClick(Sender: TObject);
 begin

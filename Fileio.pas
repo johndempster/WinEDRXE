@@ -64,6 +64,7 @@ unit Fileio;
   17.06.19 ..  Settings.Sea;Test settings copied from WinWCP
   07.07.19 ... FORMTOP= FORMLEFT=, FORMWIDTH=, FORMHEIGHT= added to INI file saving location of main form on screen
                'DETEBT=', Settings.EventDetector.EnableBaselineTracking added to EDR and INI files
+  26.09.18 ... 'DETDM=', Settings.EventDetector.DetectionMode ) added to EDR file
   }
 
 
@@ -218,7 +219,7 @@ begin
      AppendFloat( Header, 'DETYT=', Settings.EventDetector.yThreshold ) ;
      AppendFloat( Header, 'DETTT=', Settings.EventDetector.tThreshold ) ;
      AppendFloat( Header, 'DETDD=', Settings.EventDetector.DeadTime ) ;
-     AppendFloat( Header, 'DETBA=', Settings.EventDetector.BaselineAverage ) ;
+     AppendFloat( Header, 'DETBAI=', Settings.EventDetector.BaselineAveragIngInterval ) ;
      AppendFloat( Header, 'DETPF=', Settings.EventDetector.PreTriggerFraction ) ;
      AppendFloat( Header, 'DETAW=', Settings.EventDetector.AnalysisWindow ) ;
      AppendLogical( Header, 'DETPOSPK=', Settings.EventDetector.PositivePeaks ) ;
@@ -389,7 +390,7 @@ begin
           ReadFloat( Header, 'DETYT=', Settings.EventDetector.yThreshold ) ;
           ReadFloat( Header, 'DETTT=', Settings.EventDetector.tThreshold ) ;
           ReadFloat( Header, 'DETDD=', Settings.EventDetector.DeadTime ) ;
-          ReadFloat( Header, 'DETBA=', Settings.EventDetector.BaselineAverage ) ;
+          ReadFloat( Header, 'DETBAI=', Settings.EventDetector.BaselineAveragingInterval ) ;
           ReadFloat( Header, 'DETPF=', Settings.EventDetector.PreTriggerFraction ) ;
           ReadFloat( Header, 'DETAW=', Settings.EventDetector.AnalysisWindow ) ;
           ReadLogical( Header, 'DETPOSPK=', Settings.EventDetector.PositivePeaks ) ;
@@ -569,11 +570,12 @@ begin
 
      { Event detector parameters }
      ReadInt( Header, 'DETCH=', Settings.EventDetector.Channel ) ;
+     ReadInt( Header, 'DETDM=', Settings.EventDetector.DetectionMode ) ;
      ReadInt( Header, 'DETRS=', Settings.EventDetector.RecordSize ) ;
      ReadFloat( Header, 'DETYT=', Settings.EventDetector.yThreshold ) ;
      ReadFloat( Header, 'DETTT=', Settings.EventDetector.tThreshold ) ;
      ReadFloat( Header, 'DETDD=', Settings.EventDetector.DeadTime ) ;
-     ReadFloat( Header, 'DETBA=', Settings.EventDetector.BaselineAverage ) ;
+     ReadFloat( Header, 'DETBAI=', Settings.EventDetector.BaselineAveragingInterval ) ;
      ReadFloat( Header, 'DETPF=', Settings.EventDetector.PreTriggerFraction ) ;
      ReadFloat( Header, 'DETAW=', Settings.EventDetector.AnalysisWindow ) ;
      ReadInt( Header, 'DETREW=', Settings.EventDetector.RisingEdgeWindow ) ;
@@ -811,11 +813,12 @@ begin
 
      { Event detector parameters }
      AppendInt( Header, 'DETCH=', Settings.EventDetector.Channel ) ;
+     AppendInt( Header, 'DETDM=', Settings.EventDetector.DetectionMode ) ;
      AppendInt( Header, 'DETRS=', Settings.EventDetector.RecordSize ) ;
      AppendFloat( Header, 'DETYT=', Settings.EventDetector.yThreshold ) ;
      AppendFloat( Header, 'DETTT=', Settings.EventDetector.tThreshold ) ;
      AppendFloat( Header, 'DETDD=', Settings.EventDetector.DeadTime ) ;
-     AppendFloat( Header, 'DETBA=', Settings.EventDetector.BaselineAverage ) ;
+     AppendFloat( Header, 'DETBAI=', Settings.EventDetector.BaselineAveragingInterval ) ;
      AppendFloat( Header, 'DETPTF=', Settings.EventDetector.PreTriggerFraction ) ;
      AppendFloat( Header, 'DETAW=', Settings.EventDetector.AnalysisWindow ) ;
      AppendInt( Header, 'DETREW=', Settings.EventDetector.RisingEdgeWindow ) ;
