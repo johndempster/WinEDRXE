@@ -85,6 +85,9 @@ unit EventDetector;
 // 27.08.19 ... Detection criterion display Y range no longer drifts off scale when signal zero level adjusted by user
 // 26.09.19 ... Baseline tracking enabled/disabled option now works correctly
 //              Detection mode,thresholds and other settings now preserved in EDR data file header
+// 12.03.21 ... Detected events aligned by mid-point of rising, irrespective of detection method used
+//              First window of signal now fully displayed when detection window opened
+//              Template match tau rise and decay times now preserved in EDR file
 
 interface
 
@@ -305,8 +308,6 @@ type
     bDoubleEditDisplayWidth: TButton;
     bEditDisplayWidthHalve: TButton;
     Label23: TLabel;
-    edRisingEdgeWindow: TValidatedEdit;
-    Label24: TLabel;
     cktCursorAtDetectionPoint: TCheckBox;
     FrequencyAvgPan: TPanel;
     edAverageInterval: TValidatedEdit;
@@ -402,7 +403,6 @@ type
     procedure edBinWidthKeyPress(Sender: TObject; var Key: Char);
     procedure edBinsLowerKeyPress(Sender: TObject; var Key: Char);
     procedure edBinsUpperKeyPress(Sender: TObject; var Key: Char);
-    procedure edRisingEdgeWindowKeyPress(Sender: TObject; var Key: Char);
     procedure cbPlotXVarChange(Sender: TObject);
     procedure cbPlotYVarChange(Sender: TObject);
     procedure edAverageIntervalKeyPress(Sender: TObject; var Key: Char);
@@ -414,13 +414,14 @@ type
     { Private declarations }
 
 
-    ADC : PSmallIntArrayDyn ;      // A/D sample buffer
-    DetBuf : PSmallIntArrayDyn ;   // Detection criterion buffer
-    EditBuf : PSmallIntArrayDyn ;   // Edit display buffer
-    AvgBuf : PSmallIntArrayDyn ;   // Averaged event buffer
+    ADC : PSmallIntArray ;      // A/D sample buffer
+    DetBuf : PSmallIntArray ;   // Detection criterion buffer
+    EditBuf : PSmallIntArray ;   // Edit display buffer
+    AvgBuf : PSmallIntArray ;   // Averaged event buffer
     NumEventsAveraged : Integer ;
     BaselineCursor : Integer ;
     ThresholdCursor : Integer ;
+    DetZeroCursor : Integer ;
     DisplayCursor : Integer ;
     EditCursor : Integer ;
     EditC0Cursor : Integer ;
@@ -471,29 +472,34 @@ type
     procedure HeapBuffers( Operation : THeapBufferOp ) ;
     procedure SetupDetector ;
     function RateofRise(
-              var InBuf : Array of SmallInt ;
-              StartAtSample : Integer ;
-              NumPoints : Integer ;
-              var OutBuf : Array of SmallInt
-              ) : Integer ;
+             StartAtSample : Integer ;        // Sample in file to start at
+             NumPoints : Integer ;            // Number of A/D sample points
+             YBuf : PSmallIntArray ;          // Signal data buffer
+             YDet : PSmallIntArray            // Detection criterion buffer
+             ) : Integer ;
 
     function Threshold(
-              var InBuf : Array of SmallInt ;
-              StartAtSample : Integer ;
-              NumPoints : Integer ;
+              StartAtSample : Integer ;         // Sample in file to start at
+              NumPoints : Integer ;             // Number of A/D sample points
               var InitialiseRunningMean : Boolean ;
-              var OutBuf : Array of SmallInt ) : Integer ;
+              YBuf : PSmallIntArray ;          // Signal data buffer
+              YDet : PSmallIntArray            // Detection criterion buffer
+              ) : Integer ;
 
     function  MatchTemplate(
-              var InBuf : Array of SmallInt ;
-              StartAtSample : Integer ;
-              NumPoints : Integer ;
-              var OutBuf : Array of SmallInt
+              StartAtSample : Integer ;        // Sample in file to start at
+              NumPoints : Integer ;            // Number of A/D sample points
+              YBuf : PSmallIntArray ;          // Signal data buffer
+              YDet : PSmallIntArray            // Detection criterion buffer
               ) : Integer ;
 
-    function  FindMidPointOfRise(
-              iSample : Integer
-              ) : Integer ;
+    function  FindPeakTemplateMatch(
+              iDetectedAtSample : Integer          // (IN) Point threshold crossed
+              ) : Integer ;                        // (RET) Point of peak templatre match
+
+   function  FindMidPointOfRise(
+             iDetectedAtSample : Integer          // (IN) Point threshold crossed
+             ) : Integer ;                        // (RET) Point of peak rate of rise
 
     procedure DisplayEvent;
     procedure LoadEventList ;
@@ -806,11 +812,6 @@ begin
      // Time threshold
      EdTimeThreshold.Value := Settings.EventDetector.tThreshold ;
 
-     // Rising edge window
-     edRisingEdgeWindow.Scale := 1000.0*CDRFH.dt ; // Scale from samples -> ms
-     edRisingEdgeWindow.Units := 'ms' ;
-     edRisingEdgeWindow.Value := Settings.EventDetector.RisingEdgeWindow ;
-
      // Detection channel
      cbChannel.ItemIndex := Max(Min(Settings.EventDetector.Channel,CDRFH.NumChannels-1),0) ;
      cbReviewChannel.ItemIndex := Max(Min(Settings.EventDetector.Channel,CDRFH.NumChannels-1),0) ;
@@ -915,9 +916,12 @@ begin
      { Create detection threshold cursor }
      scDetDisplay.ClearHorizontalCursors ;
      ThresholdCursor := scDetDisplay.AddHorizontalCursor( 0,clgray,True,'threshold' ) ;
+     DetZeroCursor := scDetDisplay.AddHorizontalCursor( 0,clgray,True,'z' ) ;
+
      // Set threshold
      edTHreshold.Value := Settings.EventDetector.yThreshold ;
      scDetDisplay.HorizontalCursors[ThresholdCursor] := Round(edThreshold.Value) ;
+     scDetDisplay.HorizontalCursors[DetZeroCursor] := 0 ;
 
      scDetDisplay.ClearVerticalCursors ;
      DisplayCursor := scDetDisplay.AddVerticalCursor( -1, clGReen, '?y?t' ) ;
@@ -1104,23 +1108,24 @@ begin
 
    if rbThreshold.Checked then begin
       InitialiseRunningMean := True ;
-      scDisplay.NumPoints := Threshold( ADC^,
-                                        sbDisplay.Position,
+      scDisplay.NumPoints := Threshold( sbDisplay.Position,
                                         scDisplay.MaxPoints,
                                         InitialiseRunningMean,
-                                        DetBuf^ )
+                                        ADC,
+                                        DetBuf )
       end
    else if rbRateOfRise.Checked then begin
-      scDisplay.NumPoints := RateOfRise( ADC^,
-                  sbDisplay.Position,
-                  scDisplay.MaxPoints,
-                  DetBuf^ ) ;
+      scDisplay.NumPoints := RateOfRise( sbDisplay.Position,
+                                         scDisplay.MaxPoints,
+                                         ADC,
+                                         DetBuf ) ;
       end
    else begin
-      scDisplay.NumPoints := MatchTemplate( ADC^,
-                                            sbDisplay.Position,
+      scDisplay.NumPoints := MatchTemplate( sbDisplay.Position,
                                             scDisplay.MaxPoints,
-                                            DetBuf^ ) ;
+                                            ADC,
+                                            DetBuf ) ;
+
       end ;
 
    scDisplay.SetDataBuf( ADC ) ;
@@ -1130,16 +1135,14 @@ begin
    scDetDisplay.NumPoints := scDisplay.NumPoints ;
    scDetDisplay.Invalidate ;
 
-
-
    end;
 
 
 function  TEventDetFrm.RateofRise(
-          var InBuf : Array of SmallInt ;  // Input buffer
           StartAtSample : Integer ;        // Sample to start at
           NumPoints : Integer ;            // Number of A/D sample points
-          var OutBuf : Array of SmallInt   // Rate
+          YBuf : PSmallIntArray ;          // Signal data buffer
+          YDet :  PSmallIntArray          // Rate of change data buffer (out)
           ) : Integer ;
 { ---------------------------------
   Calculate rate of rise of signal
@@ -1152,76 +1155,96 @@ var
    A : Array[jLow..jHigh] of Single ;
    Diff : Single ;
    ChannelOffset : Integer ;
+   NPBuf : Integer ;
+   Buf : PSmallIntArray ;
 begin
+
+   Result := NumPoints ;
+   if NumPoints <= 0 then Exit ;
 
    // Read A/D sample data from file (with pre-start samples)
    PreStartAtSample := Max( StartAtSample + jLow,0 ) ;
-   ReadCDRBuffer(CdrFH,PreStartAtSample,InBuf,NumPoints-jLow+jHigh) ;
+   NPBuf := (NumPoints-jLow+jHigh)*CDRFH.NumChannels ;
+   GetMem( Buf, NPBuf*CDRFH.NumChannels*SizeOf(SmallInt));
+   ReadCDRBuffer(CdrFH,PreStartAtSample,Buf^,NPBuf) ;
 
    for j := jLow to jHigh do A[j] := j ;
 
    iOffset := (StartAtSample - PreStartAtSample) ;
    ChannelOffset := Channel[cbChannel.ItemIndex].ChannelOffset ;
-   for i := iOffset to iOffset + (NumPoints-1) do begin
+   for i := iOffset to iOffset + (NumPoints-1) do
+       begin
        Diff := 0.0 ;
-       for j := jLow to jHigh do begin
+       for j := jLow to jHigh do
+           begin
            k := Min(Max(i+j,0),iOffset+NumPoints-1+jHigh)*CdrFH.NumChannels +
                 ChannelOffset ;
-           Diff := Diff + A[j]*InBuf[k] ;
+           Diff := Diff + A[j]*Buf[k] ;
            end ;
-       OutBuf[i-iOffset] := Round(Min(Max(
-                                  Diff,-Channel[0].ADCMaxValue-1),Channel[0].ADCMaxValue)) ;
+       YDet[i-iOffset] := Round(Min(Max(Diff,-Channel[0].ADCMaxValue-1),Channel[0].ADCMaxValue)) ;
        end ;
 
-   // Read A/D sample data to be displayed
-   Result := ReadCDRBuffer(CdrFH,StartAtSample,InBuf,NumPoints) ;
+   // Load signal buffer Starting at StartAtSample
+   if YBuf <> Nil then ReadCDRBuffer(CdrFH,StartAtSample,YBuf^,NumPoints) ;
+
+   FreeMem(Buf) ;
 
    end ;
 
 
 function  TEventDetFrm.Threshold(
-          var InBuf : Array of SmallInt ;  // Input buffer
           StartAtSample : Integer ;        // Sample to start at
           NumPoints : Integer ;            // Number of A/D sample points
           var InitialiseRunningMean : Boolean ;//
-          var OutBuf : Array of SmallInt   // Rate
+          YBuf : PSmallIntArray ;          // Signal data buffer (out)
+          YDet : PSmallIntArray            // Detection criterion buffer (out)
           ) : Integer ;
 { ------------------------------
   Calculate detection threshold
   ------------------------------}
 var
    i,j : Integer ;
+   NumSamplesInRunningMean : single ;
 begin
+
+   Result := NumPoints ;
+   if NumPoints <= 0 then Exit ;
 
    NumSamplesInRunningMean := edBaselineAveragingInterval.Value / CdrFH.dt ;
    Settings.EventDetector.BaselineAveragingInterval := edBaselineAveragingInterval.Value ;
 
    // Read A/D sample data from file
-   Result := ReadCDRBuffer(CdrFH,StartAtSample,ADC^,NumPoints) ;
+   Result := ReadCDRBuffer(CdrFH,StartAtSample,YBuf^,NumPoints) ;
 
    // Initialise running mean (if required)
-   if InitialiseRunningMean then begin
-      RunningMean := ADC^[Channel[cbChannel.ItemIndex].ChannelOffset] ;
+   if InitialiseRunningMean and ckEnableBaselineTracking.checked then
+      begin
+      j := Channel[cbChannel.ItemIndex].ChannelOffset ;
+      i := ROund(RunningMean) ;
+      RunningMean := YBuf[j] ;
       InitialiseRunningMean := False ;
       end ;
 
    j := Channel[cbChannel.ItemIndex].ChannelOffset ;
    if not ckEnableBaselineTracking.checked then RunningMean := 0 ;
 
-   for i := 0 to NumPoints-1 do begin
+   for i := 0 to NumPoints-1 do
+       begin
 
        // Difference between signal and running mean zero level
-       OutBuf[i] := Round(Min(Max( (ADC^[j] - RunningMean),
+       YDet[i] := Round(Min(Max( (YBuf[j] - RunningMean),
                     -Channel[0].ADCMaxValue-1),Channel[0].ADCMaxValue)) ;
 
        // Update running mean baseline average
        if ckEnableBaselineTracking.checked then
-          RunningMean := ((NumSamplesInRunningMean*RunningMean)+ ADC^[j])
+          RunningMean := ((NumSamplesInRunningMean*RunningMean)+ YBuf[j])
                          /(NumSamplesInRunningMean + 1.0 ) ;
 
        j := j + CdrFH.NumChannels ;
 
        end ;
+
+
    end ;
 
 
@@ -1233,11 +1256,12 @@ begin
     if SaveEventListRequested then SaveEventList ;
     end;
 
+
 function  TEventDetFrm.MatchTemplate(
-          var InBuf : Array of SmallInt ;  // Input buffer
           StartAtSample : Integer ;        // Sample to start at
           NumPoints : Integer ;            // Number of A/D sample points
-          var OutBuf : Array of SmallInt   // Rate
+          YBuf : PSmallIntArray ;          // Signal data buffer (out)
+          YDet : PSmallIntArray            // Detection criterion buffer (out)
           ) : Integer ;
 { ------------------------------------------------
   Calculate template matching detection criterion
@@ -1248,22 +1272,27 @@ var
    t : Double ;
    NumRead : Integer ;
    Y,SumY,SumYSq,SumTemplate,SumTemplateSq,SumYxTemplate : Double ;
-   TauRise,TauDecay,Amplitude,Scale,Offset,SSE,StandardError : Double ;
+   Amplitude,Scale,Offset,SSE,StandardError : Double ;
    InitialiseTemplate : Boolean ;
    Template : Array[-1024..2048] of Single ;
    NumScansPerTau : Integer ;
    ChannelOffset : Integer ;
    iIn,iOut : Integer ;
    Denom : Double ;
+   NPBuf,iEndSample : Integer ;
+   Buf : PSmallIntArray ;
 begin
 
-   // Rise and decay time constants of EPSC template
-   TauRise := edTauRise.Value ;
-   TauDecay := edTauDecay.Value ;
+   Result := NumPoints ;
+   if NumPoints <= 0 then Exit ;
 
-   // Set last 75% of template to be 3 x decay time constant
-   NumScansPerTau := Max( Round(TauDecay/CdrFH.dt),1 ) ;
-   LastTemplateSample := Min( NumScansPerTau*3,High(Template)) ;
+   // Rise and decay time constants of EPSC template
+   Settings.EventDetector.TauRise := edTauRise.Value ;
+   Settings.EventDetector.TauDecay := edTauDecay.Value ;
+
+   // Set last 75% of template to be a decay time constant
+   NumScansPerTau := Max( Round(Settings.EventDetector.TauDecay/CdrFH.dt),1 ) ;
+   LastTemplateSample := Min( NumScansPerTau,High(Template)) ;
    // Set first 25% of template as pre-event baseline
    FirstTemplateSample := Max(-NumScansPerTau,Low(Template)) ;
    // If insufficient sample data for pre-trigger set it to zero
@@ -1275,10 +1304,12 @@ begin
    // Create template
    SumTemplate := 0.0 ;
    SumTemplateSq := 0.0 ;
-   for i := FirstTemplateSample to LastTemplateSample do begin
-       if i >= 0 then begin
+   for i := FirstTemplateSample to LastTemplateSample do
+       begin
+       if i >= 0 then
+          begin
           t := i*CdrFH.dt ;
-          Template[i] := (1.0 - exp(-t/TauRise))*exp(-t/TauDecay) ;
+          Template[i] := (1.0 - exp(-t/Settings.EventDetector.TauRise))*exp(-t/Settings.EventDetector.TauDecay) ;
           end
        else Template[i] := 0.0 ;
        SumTemplate := SumTemplate + Template[i] ;
@@ -1286,21 +1317,28 @@ begin
        end ;
 
    // Read A/D sample buffer to be scanned
+   NPBuf := NumPoints*2 ;
+
    PreStartAtSample := Max( StartAtSample+FirstTemplateSample,0 ) ;
-   for iIn := 0 to ((NumPoints*2)*CDRFH.NumChannels)-1 do InBuf[iIn] := 0 ;
-   NumRead := ReadCDRBuffer(CdrFH,PreStartAtSample,InBuf,NumPoints*2) ;
+   iEndSample := Min( PreStartAtSample + NumPoints*2, CDRFH.NumSamplesInFile -1);
+   NPBuf := iEndSample - PreStartAtSample + 1 ;
+   GetMem( Buf, NPBuf*CDRFH.NumChannels*SizeOf(SmallInt));
+   for iIn := 0 to (NPBuf*CDRFH.NumChannels)-1 do Buf[iIn] := 0 ;
+   NumRead := ReadCDRBuffer(CdrFH,PreStartAtSample,Buf^,NPBuf) ;
 
    iOut := 0 ;
-   for iIn := -FirstTemplateSample to -FirstTemplateSample + NumPoints-1 do begin
+   for iIn := -FirstTemplateSample to -FirstTemplateSample + NumPoints-1 do
+      begin
 
       // Compute sums
       SumY := 0.0 ;
       SumYSq := 0.0 ;
       SumYxTemplate := 0.0 ;
       ChannelOffset := Channel[cbChannel.ItemIndex].ChannelOffset ;
-      for k := FirstTemplateSample to LastTemplateSample do begin
+      for k := FirstTemplateSample to LastTemplateSample do
+          begin
           j := (iIn+k)*CdrFH.NumChannels + ChannelOffset ;
-          Y := InBuf[j] ;
+          Y := Buf[j] ;
           SumY := SumY + Y ;
           SumYSq := SumYSq + Y*Y ;
           SumYxTemplate := SumYxTemplate + (Y*Template[k]) ;
@@ -1309,7 +1347,7 @@ begin
        // Calculate best fit template amplitude
        Denom := (SumTemplateSq - ((SumTemplate*SumTemplate)/NumTemplateSamples)) ;
        if Denom <> 0.0 then
-          Amplitude := (SumYxTemplate - ((SumTemplate*SumY)/NumTemplateSamples)) / Denom 
+          Amplitude := (SumYxTemplate - ((SumTemplate*SumY)/NumTemplateSamples)) / Denom
        else Amplitude := 0.0 ;
 
        // Calculate best fit template offset
@@ -1327,105 +1365,186 @@ begin
        StandardError := Sqrt(Abs(SSE)/(NumTemplateSamples-1)) ;
 
        // Detection criterion
-       if StandardError > 0.0 then begin
-          OutBuf[iOut] := Round(Min(Max( (Scale*Amplitude)/StandardError,
-                    -Channel[0].ADCMaxValue-1),Channel[0].ADCMaxValue)) ;
+       if StandardError > 0.0 then
+          begin
+          YDet[iOut] := Round( Min(Max( (Scale*Amplitude)/StandardError,
+                                 -Channel[0].ADCMaxValue-1),Channel[0].ADCMaxValue)) ;
           end
-       else OutBuf[iOut] := 0 ;
+       else YDet[iOut] := 0 ;
        Inc(iOut) ;
 
-       end ;
+      end ;
 
-   // Read A/D samples to be displayed (without pre-start samples)
-   Result := ReadCDRBuffer(CdrFH,StartAtSample,InBuf,NumPoints) ;
+   // Load signal buffer Starting at StartAtSample
+   if YBuf <> Nil then ReadCDRBuffer(CdrFH,StartAtSample,YBuf^,NumPoints) ;
+
+   FreeMem(Buf) ;
 
    end ;
 
 
-function  TEventDetFrm.FindMidPointOfRise(
-          iSample : Integer
-          ) : Integer ;
-// ------------------------------------------------
-// Find mid-point of rising edge of detected event
-// -----------------------------------------------
+function  TEventDetFrm.FindPeakTemplateMatch(
+          iDetectedAtSample : Integer                    // (IN) Point threshold crossed
+          ) : Integer ;                        // (RET) Point of peak templatre match
+// -------------------------------------------------
+// Find point at which templates best matches signal
+// -------------------------------------------------
 var
-    i,j,NPBuf,iEnd,iStart,iDetectedAt,iMidPointAt : Integer ;
-    yMin,yMax,yMid,yMinAt,yMaxAt : Integer ;
+    i,NPBuf,NPHalf,iPeakAt,iEventAt : Integer ;
+    yMax,yMin,y,Polarity : Integer ;
     Buf : PSmallIntArray ;
+    DBuf : PSmallIntArray ;
+    DescentCount,MaxDescentCount : Integer ;
+    iStartSample,iEndSample : Integer ;
 begin
 
-   NPBuf := Round(edRisingEdgeWindow.Value) ;
+   // Get a signal buffer post detection point
+   NPBuf := 500 ;
+   NPHalf := NPBuf div 2 ;
+   iStartSample := Max(iDetectedAtSample - NPHalf,0) ;
+   iEventAt := iDetectedAtSample - iStartSample ;
+   iEndSample := Min(iStartSample + NPBuf - 1, CDRFH.NumSamplesInFile - 1);
+   NPBuf := iEndSample - iStartSample + 1 ;
 
-   // Exit if no window
-   if NPBuf <= 0 then begin
-      Result := iSample ;
-      Exit ;
-      end ;
+   // Allocate buffers
+   GetMem( Buf, NPBuf*CDRFH.NumChannels*SizeOf(SmallInt) ) ;
+   GetMem( DBuf, NPBuf*CDRFH.NumChannels*SizeOf(SmallInt) ) ;
 
-   // Ensure buffer contains odd number of samples
-   if (NPBuf mod 2) = 0 then Inc(NPBuf) ;
-   // Initial detection point in buffer
-   iDetectedAt := NPBuf div 2 ;
+   // Calculate template match
+   MatchTemplate( iStartSample,NPBuf,Nil,DBuf ) ;
 
-   // Get signal around detection point
-   iStart := Max(iSample - iDetectedAt,0) ;
-   iDetectedAt := iSample - iStart ;
-   iEnd := Min(iStart + NPBuf -1,CDRFH.NumSamplesInFile-1) ;
-   NPBuf := iEnd - iStart + 1 ;
+   // Determine positive/negative-going polarity of signal
+   YMin := High(y) ;
+   YMax := Low(y) ;
+   for i := 0 to NPBuf-1 do
+       begin
+       y := DBuf^[i] ;
+       if y > YMax then YMax := y ;
+       if y < YMin then YMin := y ;
+       end;
+   if Abs(YMax) >= Abs(YMin) then Polarity := 1
+                             else Polarity := -1 ;
 
-   // Allocate buffer
-   GetMem( Buf, NPBuf*CDRFH.NumChannels*2 ) ;
-   // Read data
-   ReadCDRBuffer(CdrFH,iStart,Buf^,NPBuf) ;
+   // Find peak
+   yMax := Low(y) ;
+   i := Max(iEventAt - 1,0);
+   DescentCount := 0 ;
+   MaxDescentCount := 10 ;
+   iPeakAt := i ;
+   repeat
+       Inc(i) ;
+       y := Polarity*DBuf^[i] ;
+       if y >= YMax then
+          begin
+          YMax := y ;
+          iPeakAt := i ;
+          DescentCount := 0 ;
+          end
+       else Inc(DescentCount) ;
+       until (DescentCount > MaxDescentCount) or (i >= NPBuf) ;
 
-   // Determine upper and lower limits
+    Result := iStartSample + iPeakAt ;
 
-   yMin := High(yMax) ;
-   yMax := Low(yMax) ;
-   yMinAt := 0 ;
-   yMaxat := NPBuf ;
-   for i := 0 to NPBuf-1 do begin
-      j := i*CDRFH.NumChannels + Channel[cbChannel.ItemIndex].ChannelOffset ;
-      if yMax < Buf^[j] then begin
-         yMax := Buf^[j] ;
-         yMaxAt := i ;
-         end ;
-      if yMin > Buf^[j] then begin
-         yMin := Buf^[j] ;
-         yMinAt := i ;
-         end ;
-      end ;
-
-   // Mid-point
-   yMid := Round((yMax + yMin)*0.5) ;
-
-   // Find near sample to mid-point
-
-   iMidPointAt := iDetectedAt ;
-   if yMinAt <= yMaxAt then begin
-      // Rising edge
-      for i := yMinAt to yMaxAt do begin
-          j := i*CDRFH.NumChannels + Channel[cbChannel.ItemIndex].ChannelOffset ;
-          if Buf^[j] >= YMid then begin
-             iMidPointAt := i ;
-             Break
-             end ;
-          end ;
-      end
-   else begin
-      // Falling edge
-      for i := yMaxAt to yMinAt do begin
-          j := i*CDRFH.NumChannels + Channel[cbChannel.ItemIndex].ChannelOffset ;
-          if Buf^[j] <= YMid then begin
-             iMidPointAt := i ;
-             Break
-             end ;
-          end ;
-      end ;
-
-    Result := iSample + iMidPointAt - iDetectedAt ;
-
+    FreeMem(DBuf) ;
     FreeMem(Buf) ;
+
+    end ;
+
+
+function  TEventDetFrm.FindMidPointOfRise(
+          iDetectedAtSample : Integer          // (IN) Point threshold crossed
+          ) : Integer ;                        // (RET) Point of peak rate of rise
+// -----------------------------------------------------------
+// Find point on signal rising edge with greatest rate of rise
+// -----------------------------------------------------------
+var
+    iStartSample,iEndSample : Integer ;
+    i,NPBuf,NPHalf,iStart,iEnd,iDetectedAt : Integer ;
+    yMax,yMin,y,yMid,Polarity,iYMaxAt,iYMinAt : Integer ;
+    Buf : PSmallIntArray ;
+    DBuf : PSmallIntArray ;
+    ZeroCrossingCount,iPeakRateOfRise : Integer ;
+begin
+
+   // Get a signal buffer post detection point
+   NPBuf := 200 ;
+   NPHalf := NPBuf div 2 ;
+   iStartSample := Max(iDetectedAtSample - NPHalf,0) ;
+   iEndSample := Min(iStartSample + NPBuf - 1, CDRFH.NumSamplesInFile - 1);
+   NPBuf := iEndSample - iStartSample + 1 ;
+
+   // Allocate buffers
+   GetMem( Buf, NPBuf*CDRFH.NumChannels*SizeOf(SmallInt) ) ;
+   GetMem( DBuf, NPBuf*CDRFH.NumChannels*SizeOf(SmallInt) ) ;
+
+   // Calculate rate of rise
+   RateOfRise( iStartSample,NPBuf,Buf,DBuf ) ;
+
+   // Determine positive/negative-going polarity of signal
+   YMin := High(y) ;
+   YMax := Low(y) ;
+   for i := 0 to NPBuf-1 do
+       begin
+       y := DBuf^[i] ;
+       if y > YMax then YMax := y ;
+       if y < YMin then YMin := y ;
+       end;
+   if Abs(YMax) >= Abs(YMin) then Polarity := 1
+                             else Polarity := -1 ;
+
+   // Find peak rate of rise
+   YMax := Low(y) ;
+   iPeakRateOfRise := 0 ;
+   for i := 0 to NPBuf-1 do
+       begin
+       y := DBuf^[i]*Polarity ;
+       if y >= YMax then
+          begin
+          YMax := y ;
+          iPeakRateOfRise := i ;
+          end;
+       end;
+
+   // Find start of signal rising edge
+   iStart := iPeakRateOfRise + 1 ;
+   ZeroCrossingCount := 0 ;
+   repeat
+       Dec(iStart) ;
+       y := DBuf^[i]*Polarity ;
+       if y <= 0 then Inc(ZeroCrossingCount) ;
+   until (ZeroCrossingCount > 10) or (iStart < 0) ;
+
+   // Find end of signal rising edge
+   iEnd := iPeakRateOfRise - 1 ;
+   ZeroCrossingCount := 0 ;
+   repeat
+       Inc(iEnd) ;
+       y := DBuf^[iEnd]*Polarity ;
+       if y <= 0 then Inc(ZeroCrossingCount) ;
+   until (ZeroCrossingCount > 10) or (iEnd >= NPBuf) ;
+
+   // Find Min./Max. of signal rising edge
+   yMin := High(y) ;
+   yMax := Low(y) ;
+   for i := iStart to iEnd do
+       begin
+       y := Buf^[i]*Polarity ;
+       if y >= yMax then YMax := y ;
+       if y <= yMin then YMin := y ;
+       end;
+
+   // Find mid-point of rising edge
+   yMid := (YMax + YMin) div 2 ;
+   iDetectedAt := iStart - 1 ;
+   repeat
+        Inc(iDetectedAt) ;
+        y := Buf^[iDetectedAt]*Polarity ;
+   until (y >= YMid) or (iDetectedAt >= iEnd) ;
+
+   Result := iStartSample + iDetectedAt ;
+
+   FreeMem(Buf) ;
+   FreeMem(DBuf) ;
 
     end ;
 
@@ -1460,6 +1579,7 @@ begin
      Action := caFree ;
 
      end;
+
 
 procedure TEventDetFrm.FormResize(Sender: TObject);
 // ----------------------------------------
@@ -1565,10 +1685,12 @@ var
     DeadSamples : Integer ;
     i,OverThresholdCount,TimeThreshold,ThresholdLevel, Polarity : Integer ;
     Done,NewBufferNeeded, UpdateStatusBar, InitialiseRunningMean : Boolean ;
+
 begin
 
      { Let user clear event list }
-     if NumEvents > 0 then begin
+     if NumEvents > 0 then
+        begin
         if MessageDlg('Clear existing events in list',mtConfirmation,
            [mbYes,mbNo], 0 ) = mrYes then
            begin
@@ -1591,15 +1713,14 @@ begin
      DeadSamples := Round( edDeadTime.Value / CdrFH.dt ) ;
      Settings.EventDetector.DeadTime := edDeadTime.Value ;
 
-     // Rising edge window
-     Settings.EventDetector.RisingEdgeWindow := Round(edRisingEdgeWindow.Value) ;
-
      { Range of samples to be scanned for events }
-     if rbAllRecords.Checked then begin
+     if rbAllRecords.Checked then
+        begin
         StartAtSample := 0 ;
         EndAtSample := CdrFH.NumSamplesInFile div CdrFH.NumChannels ;
         end
-     else begin
+     else
+        begin
         StartAtSample := Round( edRange.LoValue/CdrFH.dt ) ;
         EndAtSample :=   Round( edRange.HiValue/CdrFH.dt ) ;
         end ;
@@ -1617,7 +1738,8 @@ begin
     OverThresholdCount := 0 ;
 
     Settings.EventDetector.tThreshold := EdTimeThreshold.Value ;
-    if rbThreshold.Checked then begin
+    if rbThreshold.Checked then
+       begin
        TimeThreshold := Round( edTimeThreshold.Value/CdrFH.dt ) ;
        InitialiseRunningMean := True ;
        end
@@ -1634,64 +1756,67 @@ begin
            // ------------------------------------------
            sbDisplay.Position := iSample ;
 
+           // Display record and load ADC and DetBuf buffers
+           DisplayRecord ;
+
            // Start/end of ADC buffer indices
            iEnd := scDisplay.MaxPoints - 1 ;
 
-           if rbRateOfRise.Checked then begin
-              // Detect using initial rate of rise of signal
-              RateOfRise( ADC^,iSample,scDisplay.MaxPoints,DetBuf^ )
-              end
-           else if rbThreshold.Checked then begin
-              // Detect using amplitude threshold
-              Threshold( ADC^,iSample,scDisplay.MaxPoints,InitialiseRunningMean,DetBuf^ ) ;
-              end
-           else if rbPatternMatch.Checked then begin
-              // Detect by matching EPSC template
-              MatchTemplate( ADC^,iSample,scDisplay.MaxPoints,DetBuf^ ) ;
-              end ;
-
            // Display it
            scDisplay.xOffset := sbDisplay.Position ;
-           scDisplay.SetDataBuf( ADC ) ;
            scDisplay.Invalidate ;
 
            scDetDisplay.xOffset := 0 ;
-           scDetDisplay.SetDataBuf( DetBuf ) ;
            scDetDisplay.Invalidate ;
 
            { Initialise detected event line }
-           scDetDisplay.ClearLines ;
-           iLine := scDetDisplay.CreateLine( 0, clRed, psSolid, 1 ) ;
-           scDetDisplay.AddPointToLine( iLine, 0, 0 ) ;
+//           scDetDisplay.ClearLines ;
+//           iLine := scDetDisplay.CreateLine( 0, clRed, psSolid, 1 ) ;
+//           scDetDisplay.AddPointToLine( iLine, 0, 0 ) ;
 
            NewBufferNeeded := False ;
            i := 0 ;
 
            UpdateStatusBar := True ;
            Application.ProcessMessages ;
+
            end ;
 
-        scDetDisplay.AddPointToLine( iLine, i, 0 ) ;
+//        scDetDisplay.AddPointToLine( iLine, i, 0 ) ;
         // Does detection criterion exceed threshold?
-        if (Polarity*DetBuf^[i]) > (Polarity*ThresholdLevel) then begin
+        if (Polarity*DetBuf^[i]) > (Polarity*ThresholdLevel) then
+           begin
 
            // Increment threshold exceeded counter
            Inc(OverThresholdCount) ;
 
            // If threshold has been exceeded for a sufficiently long time accept detection
-           if OverThresholdCount >= TimeThreshold then begin
+           if OverThresholdCount >= TimeThreshold then
+              begin
               y := Round(edThreshold.Value)*2 ;
 
               // Save location in event in event list
-              if NumEvents <= High(Events) then begin
+              if NumEvents <= High(Events) then
+                 begin
+                 // Find point of peak match between template and signal
+                 iSample := Max(iSample - TimeThreshold,0) ;
+                 i := i - TimeThreshold ;
+                 if rbPatternMatch.Checked then iSample := FindPeakTemplateMatch(iSample)
+                 else if rbThreshold.Checked then
+                      begin
+                      iSample := Max(iSample - TimeThreshold,0) ;
+                      InitialiseRunningMean := True ;
+                      end;
+                 // Find mid-point of signal rising edge
                  iEventSample := FindMidPointOfRise(iSample) ;
-                 Events[NumEvents] := Max(iEventSample - TimeThreshold,0) ;
+                 Events[NumEvents] := Max(iEventSample,0) ;
                  Inc(NumEvents) ;
                  end ;
 
               { Draw detected event marker }
-              scDetDisplay.AddPointToLine( iLine, i, y ) ;
-              scDetDisplay.AddPointToLine( iLine, i, 0 ) ;
+//              scDetDisplay.AddPointToLine( iLine, i, y ) ;
+//              scDetDisplay.AddPointToLine( iLine, i, 0 ) ;
+//              scDetDisplay.Invalidate ;
               iSample := iSample + DeadSamples ;
               i := i + DeadSamples ;
               OverThresholdCount := 0 ;
@@ -1928,6 +2053,10 @@ procedure TEventDetFrm.scDetDisplayCursorChange(Sender: TObject);
 begin
      edThreshold.Value := scDetDisplay.HorizontalCursors[ThresholdCursor] ;
      Settings.EventDetector.yThreshold := edThreshold.Value ;
+
+     // Keep zero cursot at zero
+ //    if scDetDisplay.HorizontalCursors[DetZeroCursor] <> 0 then
+ //       scDetDisplay.HorizontalCursors[DetZeroCursor] := 0 ;
 
      // Align detection display cursor
      if scDetDisplay.VerticalCursors[DisplayCursor]
@@ -3365,7 +3494,8 @@ begin
      if Round(scDetDisplay.VerticalCursors[DisplayCursor]) <> iCursorPos then
         scDetDisplay.VerticalCursors[DisplayCursor] := iCursorPos ;
 
-     for ch := 0 to scDisplay.NumChannels-1 do if scDisplay.ChanVisible[ch] then begin
+     for ch := 0 to scDisplay.NumChannels-1 do if scDisplay.ChanVisible[ch] then
+         begin
          { Get signal baseline cursor }
          Channel[ch].ADCZero := Round(scDisplay.HorizontalCursors[BaseLineCursor]) ;
          Channel[ch].yMin := scDisplay.yMin[ch] ;
@@ -3453,7 +3583,9 @@ begin
      else if rbPatternMatch.Checked then begin
         // Pattern match detection
         edThreshold.Units := ' ' ;
-        edThreshold.Scale := 0.01 ;
+        edThreshold.Scale := 0.001 ;
+        edTauRise.Value := Settings.EventDetector.TauRise ;
+        edTauDecay.Value := Settings.EventDetector.TauDecay ;
         edTimeThreshold.Visible := False ;
         lbTimeThreshold.Visible := False ;
         ModePage.ActivePage := 'Template' ;
@@ -5191,18 +5323,6 @@ begin
         end;
       end;
 
-procedure TEventDetFrm.edRisingEdgeWindowKeyPress(Sender: TObject;
-  var Key: Char);
-// ---------------------------------------------
-// Rising edge detection window duration changed
-// ---------------------------------------------
-begin
-     if Key = #13 then begin
-        Settings.EventDetector.RisingEdgeWindow := Round(edRisingEdgeWindow.Value) ;
-        DisplayRecord ;
-        end ;
-
-     end;
 
 procedure TEventDetFrm.cbPlotXVarChange(Sender: TObject);
 // -----------------------

@@ -393,6 +393,11 @@ unit Mdiform;
                    Detect Events: detection criterion display vertical scaling no longer shifts trace off scale when zero level adjusted by user.
    V3.9.1 26.09.19 Event Detector: Baseline tracking enabled/disabled option now works correctly
                    Detection mode,thresholds and other settings now preserved in EDR data file header
+   V3.9.2 16.03.21 EventDetector:
+                   Detected events aligned by mid-point of rising, irrespective of detection method used
+                   First window of signal now fully displayed when detection window opened
+                   Template match tau rise and decay times now preserved in EDR file
+                   Rising edge window field removed, no longer required
 
   =======================================================================}
 
@@ -631,7 +636,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.9.1' ;
+     Version := 'V3.9.2' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
@@ -704,6 +709,8 @@ begin
      Settings.EventDetector.AnalysisWindow := 512 ;
      Settings.EventDetector.RecordSize := 512 ;
      Settings.EventDetector.DeadTime := CdrFH.dt*Settings.EventDetector.RecordSize ;
+     Settings.EventDetector.TauRise := CdrFH.dt*2 ;
+     Settings.EventDetector.TauDecay := CdrFH.dt*100.0 ;
      Settings.EventDetector.PositivePeaks := True ;
      Settings.EventDetector.BaselineAtStart := True ;
      Settings.EventDetector.SubtractBaseline := False ;

@@ -10,7 +10,8 @@ unit Global;
 
   20.04.11 ... THistogram size increased to 4000
   14.08.14 ... ProgDirectory etc. moved to Main.
-  09.01.16 ... IonName and Ion Units added to TFluorescenceSettings   }
+  09.01.16 ... IonName and Ion Units added to TFluorescenceSettings
+  15.03.21 ... TEventDetector TauRise and TauDecay settings added  }
 
 interface
 
@@ -234,6 +235,8 @@ TEventDetector = record
                tThreshold : single ;
                DeadTime : single ;
                BaselineAveragingInterval : single ;
+               TauRise : single ;
+               TauDecay : single ;
                RecordSize : Integer ;
                PreTriggerFraction : single ;
                AnalysisWindow : Single ;

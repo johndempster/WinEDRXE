@@ -130,8 +130,8 @@ object EventDetFrm: TEventDetFrm
         ParentFont = False
         TabOrder = 0
         object bDetect: TButton
-          Left = 8
-          Top = 16
+          Left = 9
+          Top = 13
           Width = 145
           Height = 21
           Hint = 'Start scanning for events'
@@ -386,7 +386,7 @@ object EventDetFrm: TEventDetFrm
               Text = ' 0 %'
               Scale = 1.000000000000000000
               Units = '%'
-              NumberFormat = '%.6g'
+              NumberFormat = '%.5g'
               LoLimit = -1.000000015047466E30
               HiLimit = 1.000000015047466E30
             end
@@ -404,7 +404,7 @@ object EventDetFrm: TEventDetFrm
               Text = ' 0 ms'
               Scale = 1000.000000000000000000
               Units = 'ms'
-              NumberFormat = '%.6g'
+              NumberFormat = '%.5g'
               LoLimit = -1.000000015047466E30
               HiLimit = 1.000000015047466E30
             end
@@ -432,6 +432,7 @@ object EventDetFrm: TEventDetFrm
             Top = 186
             Width = 183
             Height = 73
+            PageIndex = 2
             TabOrder = 2
             object TPage
               Left = 0
@@ -460,7 +461,7 @@ object EventDetFrm: TEventDetFrm
                 end
                 object edBaselineAveragingInterval: TValidatedEdit
                   Left = 90
-                  Top = 12
+                  Top = 18
                   Width = 80
                   Height = 21
                   Hint = 'Averaging interval for running mean  baseline tracking'
@@ -618,21 +619,6 @@ object EventDetFrm: TEventDetFrm
               Font.Style = []
               ParentFont = False
             end
-            object Label24: TLabel
-              Left = 12
-              Top = 34
-              Width = 71
-              Height = 30
-              Alignment = taRightJustify
-              Caption = 'Rising Edge Window'
-              Font.Charset = DEFAULT_CHARSET
-              Font.Color = clBlack
-              Font.Height = -12
-              Font.Name = 'Arial'
-              Font.Style = []
-              ParentFont = False
-              WordWrap = True
-            end
             object edDeadTime: TValidatedEdit
               Left = 88
               Top = 8
@@ -652,27 +638,11 @@ object EventDetFrm: TEventDetFrm
               LoLimit = -1.000000015047466E30
               HiLimit = 1000000.000000000000000000
             end
-            object edRisingEdgeWindow: TValidatedEdit
-              Left = 88
-              Top = 34
-              Width = 81
-              Height = 23
-              Hint = 
-                'Size of search window for detecting mid-point of event rising ed' +
-                'ge'
-              OnKeyPress = edRisingEdgeWindowKeyPress
-              ShowHint = True
-              Text = ' 0 '
-              Scale = 1.000000000000000000
-              NumberFormat = '%.4g'
-              LoLimit = -1.000000015047466E30
-              HiLimit = 10000.000000000000000000
-            end
           end
         end
       end
       object sbDisplay: TScrollBar
-        Left = 224
+        Left = 221
         Top = 298
         Width = 409
         Height = 17

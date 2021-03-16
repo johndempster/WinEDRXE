@@ -65,6 +65,7 @@ unit Fileio;
   07.07.19 ... FORMTOP= FORMLEFT=, FORMWIDTH=, FORMHEIGHT= added to INI file saving location of main form on screen
                'DETEBT=', Settings.EventDetector.EnableBaselineTracking added to EDR and INI files
   26.09.18 ... 'DETDM=', Settings.EventDetector.DetectionMode ) added to EDR file
+  15.03.21 ... 'DETTAUR=' Settings.EventDetector.TauRise and 'DETTAUD=' Settings.EventDetector.TauDecay added to EDR file
   }
 
 
@@ -576,6 +577,8 @@ begin
      ReadFloat( Header, 'DETTT=', Settings.EventDetector.tThreshold ) ;
      ReadFloat( Header, 'DETDD=', Settings.EventDetector.DeadTime ) ;
      ReadFloat( Header, 'DETBAI=', Settings.EventDetector.BaselineAveragingInterval ) ;
+     ReadFloat( Header, 'DETTAUR=', Settings.EventDetector.TauRise ) ;
+     ReadFloat( Header, 'DETTAUD=', Settings.EventDetector.TauDecay ) ;
      ReadFloat( Header, 'DETPF=', Settings.EventDetector.PreTriggerFraction ) ;
      ReadFloat( Header, 'DETAW=', Settings.EventDetector.AnalysisWindow ) ;
      ReadInt( Header, 'DETREW=', Settings.EventDetector.RisingEdgeWindow ) ;
@@ -819,6 +822,8 @@ begin
      AppendFloat( Header, 'DETTT=', Settings.EventDetector.tThreshold ) ;
      AppendFloat( Header, 'DETDD=', Settings.EventDetector.DeadTime ) ;
      AppendFloat( Header, 'DETBAI=', Settings.EventDetector.BaselineAveragingInterval ) ;
+     AppendFloat( Header, 'DETTAUR=', Settings.EventDetector.TauRise ) ;
+     AppendFloat( Header, 'DETTAUD=', Settings.EventDetector.TauDecay ) ;
      AppendFloat( Header, 'DETPTF=', Settings.EventDetector.PreTriggerFraction ) ;
      AppendFloat( Header, 'DETAW=', Settings.EventDetector.AnalysisWindow ) ;
      AppendInt( Header, 'DETREW=', Settings.EventDetector.RisingEdgeWindow ) ;
