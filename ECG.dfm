@@ -29,10 +29,6 @@ object ECGFrm: TECGFrm
     OnChange = PageControlChange
     object ECGPage: TTabSheet
       Caption = 'ECG'
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object ECGControlGrp: TGroupBox
         Left = 8
         Top = 0
@@ -431,6 +427,7 @@ object ECGFrm: TECGFrm
           MaxADCValue = 2047
           MinADCValue = -2048
           NumBytesPerSample = 2
+          FloatingPointSamples = False
           FixZeroLevels = False
           DisplaySelected = False
           FontSize = 8
@@ -545,6 +542,7 @@ object ECGFrm: TECGFrm
           MaxADCValue = 2047
           MinADCValue = -2048
           NumBytesPerSample = 2
+          FloatingPointSamples = False
           FixZeroLevels = False
           DisplaySelected = False
           FontSize = 8
@@ -688,6 +686,7 @@ object ECGFrm: TECGFrm
           MaxADCValue = 2047
           MinADCValue = -2048
           NumBytesPerSample = 2
+          FloatingPointSamples = False
           FixZeroLevels = False
           DisplaySelected = False
           FontSize = 8
@@ -861,10 +860,10 @@ object ECGFrm: TECGFrm
           PrinterFontName = 'Arial'
           PrinterLineWidth = 1
           PrinterMarkerSize = 5
-          PrinterLeftMargin = 15
-          PrinterRightMargin = 15
-          PrinterTopMargin = 9
-          PrinterBottomMargin = 9
+          PrinterLeftMargin = 14
+          PrinterRightMargin = 14
+          PrinterTopMargin = 8
+          PrinterBottomMargin = 8
           PrinterDisableColor = False
           MetafileWidth = 500
           MetafileHeight = 400
@@ -984,10 +983,6 @@ object ECGFrm: TECGFrm
     object PlotPage: TTabSheet
       Caption = 'Graph Plots'
       ImageIndex = 2
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object PlotControlsGrp: TGroupBox
         Left = 8
         Top = 0
@@ -1193,10 +1188,10 @@ object ECGFrm: TECGFrm
           PrinterFontName = 'Arial'
           PrinterLineWidth = 1
           PrinterMarkerSize = 5
-          PrinterLeftMargin = 15
-          PrinterRightMargin = 15
-          PrinterTopMargin = 9
-          PrinterBottomMargin = 9
+          PrinterLeftMargin = 14
+          PrinterRightMargin = 14
+          PrinterTopMargin = 8
+          PrinterBottomMargin = 8
           PrinterDisableColor = False
           MetafileWidth = 500
           MetafileHeight = 400
@@ -1239,6 +1234,7 @@ object ECGFrm: TECGFrm
     ASCIITimeUnits = 's'
     ASCIITitleLines = 2
     ASCIIFixedRecordSize = False
+    ASCIISaveRecordsinColumns = False
     Top = 560
   end
   object Timer: TTimer

@@ -2,7 +2,7 @@ object EventDetFrm: TEventDetFrm
   Left = 855
   Top = 131
   Caption = 'Event Detection'
-  ClientHeight = 735
+  ClientHeight = 790
   ClientWidth = 862
   Color = clBtnFace
   Font.Charset = ANSI_CHARSET
@@ -27,8 +27,8 @@ object EventDetFrm: TEventDetFrm
     Left = 2
     Top = 0
     Width = 839
-    Height = 727
-    ActivePage = DetectEventsPage
+    Height = 753
+    ActivePage = EditEventsPage
     TabOrder = 0
     OnChange = PageChange
     object DetectEventsPage: TTabSheet
@@ -883,7 +883,7 @@ object EventDetFrm: TEventDetFrm
         Left = 8
         Top = 2
         Width = 209
-        Height = 687
+        Height = 718
         TabOrder = 0
         object Label14: TLabel
           Left = 8
@@ -977,12 +977,12 @@ object EventDetFrm: TEventDetFrm
           Left = 8
           Top = 540
           Width = 193
-          Height = 89
+          Height = 120
           Caption = ' Export Events '
           TabOrder = 3
           object Label20: TLabel
-            Left = 4
-            Top = 58
+            Left = 8
+            Top = 85
             Width = 37
             Height = 15
             Alignment = taRightJustify
@@ -995,8 +995,8 @@ object EventDetFrm: TEventDetFrm
             ParentFont = False
           end
           object bExportToWCPFile: TButton
-            Left = 8
-            Top = 16
+            Left = 9
+            Top = 14
             Width = 129
             Height = 17
             Hint = 'Export detected events as a WinWCP data file'
@@ -1014,7 +1014,7 @@ object EventDetFrm: TEventDetFrm
           end
           object bExportNonEvents: TButton
             Left = 8
-            Top = 37
+            Top = 36
             Width = 129
             Height = 17
             Hint = 'Export gaps between events as a  WinEDR data file.'
@@ -1032,7 +1032,7 @@ object EventDetFrm: TEventDetFrm
           end
           object edExportRange: TRangeEdit
             Left = 48
-            Top = 58
+            Top = 85
             Width = 137
             Height = 20
             AutoSize = False
@@ -1058,6 +1058,24 @@ object EventDetFrm: TEventDetFrm
             ParentFont = False
             TabOrder = 3
             OnClick = bAbortExportClick
+          end
+          object bExportAnalysis: TButton
+            Left = 8
+            Top = 59
+            Width = 129
+            Height = 17
+            Hint = 'Export event waveform measurements as a .csv file'
+            Caption = 'Export Analysis'
+            Font.Charset = DEFAULT_CHARSET
+            Font.Color = clWindowText
+            Font.Height = -12
+            Font.Name = 'MS Sans Serif'
+            Font.Style = [fsBold]
+            ParentFont = False
+            ParentShowHint = False
+            ShowHint = True
+            TabOrder = 4
+            OnClick = bExportAnalysisClick
           end
         end
         object AnalysisGrp: TGroupBox
@@ -1349,7 +1367,7 @@ object EventDetFrm: TEventDetFrm
         end
         object EventListGrp: TGroupBox
           Left = 8
-          Top = 630
+          Top = 666
           Width = 193
           Height = 49
           Caption = ' Event List '

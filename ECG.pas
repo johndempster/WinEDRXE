@@ -359,15 +359,11 @@ var
     SelCh : Integer ;
     i,jIn,jOut,ch : Integer ;
     Done : Boolean ;
-    StartScan : Integer ;
-    EndScan : Integer ;
     InScan : Integer ;
     OutScan : Integer ;
     NumScansToCopy : Integer ;
     NumScansToRead : Integer ;
     NumScansRead : Integer ;
-    NumScansToWrite : Integer ;
-    NumSamples : Integer ;
     NumScansInFile  : Integer ;
     NyquistFreq : Single ;
     InBuf : Array[0..NumScansPerBuf*(EDRChannelLimit+1)-1] of SmallInt ;
@@ -488,7 +484,7 @@ procedure TECGFrm.InitialiseECGDisplay ;
   Initialise ECG display window settings
   --------------------------------------}
 var
-   i,ch : Integer ;
+   ch : Integer ;
    SelCh : Integer ;
 begin
 
@@ -595,7 +591,7 @@ procedure TECGFrm.InitialiseSpecDisplay ;
   Initialise power spectrum source record display
   -----------------------------------------------}
 var
-   i,ch : Integer ;
+   ch : Integer ;
 begin
 
      scSpecDisplay.SetDataBuf( @SpecBuf ) ;
@@ -1142,9 +1138,8 @@ const
             13.65107068678909,  -3.84213174594256, 0.48704975384833 ) ;
 
 var
-    i,iEnd,j,ch,iCoeff : Integer ;
+    i,j : Integer ;
     Done : Boolean ;
-    FirstSample : Boolean ;
     StartScan : Integer ;
     EndScan : Integer ;
     InScan : Integer ;

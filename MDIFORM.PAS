@@ -398,6 +398,8 @@ unit Mdiform;
                    First window of signal now fully displayed when detection window opened
                    Template match tau rise and decay times now preserved in EDR file
                    Rising edge window field removed, no longer required
+  V3.9.3  26.04.21 Amplifiers: WPI EVC-4000 epithelial tissue voltage clamp added
+                   Event Detector: Export Analysis button which exports measurements to csv files added
 
   =======================================================================}
 
@@ -636,7 +638,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.9.2' ;
+     Version := 'V3.9.3' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }

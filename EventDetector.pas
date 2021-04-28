@@ -324,6 +324,7 @@ type
     Label11: TLabel;
     Label25: TLabel;
     ckEnableBaselineTracking: TCheckBox;
+    bExportAnalysis: TButton;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormResize(Sender: TObject);
@@ -410,6 +411,7 @@ type
     procedure cbReviewChannelChange(Sender: TObject);
     procedure ckEnableBaselineTrackingClick(Sender: TObject);
     procedure edTimeThresholdKeyPress(Sender: TObject; var Key: Char);
+    procedure bExportAnalysisClick(Sender: TObject);
   private
     { Private declarations }
 
@@ -463,7 +465,6 @@ type
     Filters : Array[0..MaxVar] of TFilter ;
 
     // Running mean variables used by "threshold" detection method
-    NumSamplesInRunningMean : Single ;
     RunningMean : Single ;
     AbortFlag : Boolean ;
     ComputationInProgress : Boolean ;
@@ -1460,7 +1461,7 @@ function  TEventDetFrm.FindMidPointOfRise(
 var
     iStartSample,iEndSample : Integer ;
     i,NPBuf,NPHalf,iStart,iEnd,iDetectedAt : Integer ;
-    yMax,yMin,y,yMid,Polarity,iYMaxAt,iYMinAt : Integer ;
+    yMax,yMin,y,yMid,Polarity : Integer ;
     Buf : PSmallIntArray ;
     DBuf : PSmallIntArray ;
     ZeroCrossingCount,iPeakRateOfRise : Integer ;
@@ -1510,7 +1511,7 @@ begin
    ZeroCrossingCount := 0 ;
    repeat
        Dec(iStart) ;
-       y := DBuf^[i]*Polarity ;
+       y := DBuf^[iStart]*Polarity ;
        if y <= 0 then Inc(ZeroCrossingCount) ;
    until (ZeroCrossingCount > 10) or (iStart < 0) ;
 
@@ -1681,7 +1682,7 @@ procedure TEventDetFrm.bDetectClick(Sender: TObject);
 // Detect events
 // -------------
 var
-    iEnd,iSample,y,StartAtSample,EndAtSample,iEventSample,iLine : Integer ;
+    iEnd,iSample,y,StartAtSample,EndAtSample,iEventSample : Integer ;
     DeadSamples : Integer ;
     i,OverThresholdCount,TimeThreshold,ThresholdLevel, Polarity : Integer ;
     Done,NewBufferNeeded, UpdateStatusBar, InitialiseRunningMean : Boolean ;
@@ -3134,7 +3135,6 @@ begin
      Event.TauDecay  := 0 ;
      Event.Duration := 0 ;
 
-
      Time := (StartOfInterval + EndOfInterval)*0.5*CDRFH.dt ;
      TInterval := (EndOfInterval - StartOfInterval)*CDRFH.dt ;
      NumEventsInInterval := 0 ;
@@ -3633,6 +3633,110 @@ procedure TEventDetFrm.edTimeThresholdKeyPress(Sender: TObject; var Key: Char);
 begin
       if Key = #13 then Settings.EventDetector.tThreshold := EdTimeThreshold.Value ;
 end;
+
+
+procedure TEventDetFrm.bExportAnalysisClick(Sender: TObject);
+// ----------------------------------------------------
+// Export event waveform measuerments to .csv data file
+// ----------------------------------------------------
+var
+     iStart, iEnd : Integer ;
+     iEvent: Integer;
+     Event : TEventAnalysis ;
+     TInterval : Single ;
+     s : string ;
+     YTable : TStringList ;
+
+begin
+
+     // Present user with standard Save File dialog box
+     Main.SaveDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofPathMustExist] ;
+     Main.SaveDialog.DefaultExt := WCPFileExtension ;
+
+     Main.SaveDialog.FileName := AnsiReplaceText(
+                                 LowerCase(ExtractFileName(CdrFH.FileName)),
+                                 '.edr',
+                                 format('-events %d-%d.wfm.csv',
+                                         [Round(edExportRange.LoValue),
+                                          Round(edExportRange.HiValue)] ))
+                                           ;
+     Main.SaveDialog.Filter := ' CSV Files (*.csv)|*.csv' ;
+     Main.SaveDialog.Title := 'Export to CSV File' ;
+
+     { Create new data file }
+     if not Main.SaveDialog.execute then Exit ;
+
+     // Create string list
+     YTable := TStringList.Create ;
+
+     // Column labels
+     s := '"Event",'; ;
+     s := s + '"Time",';
+     s := s + '"Interval",';
+     s := s + '"Frequency",';
+     s := s + '"Peak",';
+     s := s + '"Area",';
+     s := s + '"TRise",';
+     s := s + '"TDecay",';
+     s := s + '"TauDecay",';
+     s := s + '"Duration"';
+     YTable.Add(s) ;
+
+     // Update event measurements files
+     UpdateEventAnalysisFile ;
+
+     iStart := Round(edExportRange.LoValue)-1 ;
+     iEnd := Round(edExportRange.HiValue)-1 ;
+
+     for iEvent := iStart to iEnd do
+         begin
+
+         // Read event measurements from file
+         FileSeek( EventAnalysisFile, iEvent*SizeOf(Event), 0 ) ;
+         FileRead( EventAnalysisFile, Event, SizeOf(Event)) ;
+
+         // Write to CSV table
+         s := format('"%d",',[iEvent]) ;
+         s := s + format('"%.6g",',[Events[iEvent]*CDRFH.dt]) ;
+
+         // Inter-event interval and frequency
+         TInterval := (Events[iEvent]-Events[Max(iEvent-1,0)])*CDRFH.dt ;
+         if TInterval > 0.0 then
+            begin
+            s := s + format('"%.6g",',[TInterval]) ;
+            s := s + format('"%.6g",',[1.0/TInterval]) ;
+            end
+         else
+            begin
+            s := s + '" ",' ;
+            s := s + '" ",' ;
+            end ;
+
+         s := s + format('"%.6g",',[Event.Peak]) ;
+         s := s + format('"%.6g",',[Event.Area]) ;
+         s := s + format('"%.6g",',[Event.TRise]) ;
+         s := s + format('"%.6g",',[Event.TDecay]) ;
+         s := s + format('"%.6g",',[Event.TauDecay]) ;
+         s := s + format('"%.6g"',[Event.Duration]) ;
+         YTable.Add(s) ;
+
+
+         if (iEvent mod 20) = 0 then Application.ProcessMessages ;
+         if AbortFlag then Break ;
+
+         end ;
+
+     // Report completion
+     Main.StatusBar.SimpleText := format(
+     ' Event Detector : Waveform measurements events (%d-%d) saved to %s',
+     [iStart+1,iEnd+1,Main.SaveDialog.FileName]) ;
+
+     // Write to CSV file
+     YTable.SaveToFile( Main.SaveDialog.FileName ) ;
+     YTable.Free
+
+     end;
+
 
 procedure TEventDetFrm.bExportNonEventsClick(Sender: TObject);
 // -------------------------------------------------------
