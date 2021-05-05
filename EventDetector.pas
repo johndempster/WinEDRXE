@@ -88,6 +88,7 @@ unit EventDetector;
 // 12.03.21 ... Detected events aligned by mid-point of rising, irrespective of detection method used
 //              First window of signal now fully displayed when detection window opened
 //              Template match tau rise and decay times now preserved in EDR file
+// 04.05.21 ... Shift in detection point when TimeThreshold <> 0 fixed
 
 interface
 
@@ -916,8 +917,8 @@ begin
 
      { Create detection threshold cursor }
      scDetDisplay.ClearHorizontalCursors ;
-     ThresholdCursor := scDetDisplay.AddHorizontalCursor( 0,clgray,True,'threshold' ) ;
      DetZeroCursor := scDetDisplay.AddHorizontalCursor( 0,clgray,True,'z' ) ;
+     ThresholdCursor := scDetDisplay.AddHorizontalCursor( 0,clgray,True,'threshold' ) ;
 
      // Set threshold
      edTHreshold.Value := Settings.EventDetector.yThreshold ;
@@ -1397,6 +1398,7 @@ var
     DBuf : PSmallIntArray ;
     DescentCount,MaxDescentCount : Integer ;
     iStartSample,iEndSample : Integer ;
+    DOne : Boolean ;
 begin
 
    // Get a signal buffer post detection point
@@ -1415,8 +1417,8 @@ begin
    MatchTemplate( iStartSample,NPBuf,Nil,DBuf ) ;
 
    // Determine positive/negative-going polarity of signal
-   YMin := High(y) ;
-   YMax := Low(y) ;
+   YMin := High(Integer) ;
+   YMax := Low(Integer) ;
    for i := 0 to NPBuf-1 do
        begin
        y := DBuf^[i] ;
@@ -1427,7 +1429,7 @@ begin
                              else Polarity := -1 ;
 
    // Find peak
-   yMax := Low(y) ;
+   yMax := Low(Integer) ;
    i := Max(iEventAt - 1,0);
    DescentCount := 0 ;
    MaxDescentCount := 10 ;
@@ -1460,11 +1462,12 @@ function  TEventDetFrm.FindMidPointOfRise(
 // -----------------------------------------------------------
 var
     iStartSample,iEndSample : Integer ;
-    i,NPBuf,NPHalf,iStart,iEnd,iDetectedAt : Integer ;
-    yMax,yMin,y,yMid,Polarity : Integer ;
+    i,j,NPBuf,NPHalf,iStart,iEnd,iDetectedAt : Integer ;
+    yMax,yMin,y,yMid,Polarity,yMaxAt,yMinAt : Integer ;
     Buf : PSmallIntArray ;
     DBuf : PSmallIntArray ;
     ZeroCrossingCount,iPeakRateOfRise : Integer ;
+    Done : Boolean ;
 begin
 
    // Get a signal buffer post detection point
@@ -1480,10 +1483,16 @@ begin
 
    // Calculate rate of rise
    RateOfRise( iStartSample,NPBuf,Buf,DBuf ) ;
+   // Extract detection channel
+   for i := 0 to NPBuf-1 do
+       begin
+       j := i*CDRFH.NumChannels + cbChannel.ItemIndex ;
+       Buf^[i] := Buf^[j] ;
+       end;
 
    // Determine positive/negative-going polarity of signal
-   YMin := High(y) ;
-   YMax := Low(y) ;
+   YMin := High(Integer) ;
+   YMax := Low(Integer) ;
    for i := 0 to NPBuf-1 do
        begin
        y := DBuf^[i] ;
@@ -1494,7 +1503,7 @@ begin
                              else Polarity := -1 ;
 
    // Find peak rate of rise
-   YMax := Low(y) ;
+   YMax := Low(Integer) ;
    iPeakRateOfRise := 0 ;
    for i := 0 to NPBuf-1 do
        begin
@@ -1525,22 +1534,39 @@ begin
    until (ZeroCrossingCount > 10) or (iEnd >= NPBuf) ;
 
    // Find Min./Max. of signal rising edge
-   yMin := High(y) ;
-   yMax := Low(y) ;
+   yMin := High(Integer) ;
+   yMax := Low(Integer) ;
    for i := iStart to iEnd do
        begin
-       y := Buf^[i]*Polarity ;
-       if y >= yMax then YMax := y ;
-       if y <= yMin then YMin := y ;
+       y := Buf^[i];
+       if y >= yMax then
+          begin
+          YMax := y ;
+          YMaxAt := i ;
+          end;
+       if y <= yMin then
+          begin
+          YMin := y ;
+          YMinAt := i ;
+          end;
        end;
 
    // Find mid-point of rising edge
-   yMid := (YMax + YMin) div 2 ;
+    yMid := (YMax + YMin) div 2 ;
    iDetectedAt := iStart - 1 ;
+   Done := False ;
    repeat
         Inc(iDetectedAt) ;
-        y := Buf^[iDetectedAt]*Polarity ;
-   until (y >= YMid) or (iDetectedAt >= iEnd) ;
+        y := Buf^[iDetectedAt] ;
+        if YMaxAt >= YMinAt then
+           begin
+           if y >= YMid then Done := True ;
+           end
+        else
+           begin
+           if y < YMid then Done := True ;
+           end ;
+   until Done or (iDetectedAt >= iEnd) ;
 
    Result := iStartSample + iDetectedAt ;
 
@@ -1794,30 +1820,27 @@ begin
            // If threshold has been exceeded for a sufficiently long time accept detection
            if OverThresholdCount >= TimeThreshold then
               begin
-              y := Round(edThreshold.Value)*2 ;
+//              y := Round(edThreshold.Value)*2 ;
 
               // Save location in event in event list
               if NumEvents <= High(Events) then
                  begin
                  // Find point of peak match between template and signal
-                 iSample := Max(iSample - TimeThreshold,0) ;
-                 i := i - TimeThreshold ;
                  if rbPatternMatch.Checked then iSample := FindPeakTemplateMatch(iSample)
                  else if rbThreshold.Checked then
                       begin
+                      // Subtract TimeThreshold samples to find detection point
                       iSample := Max(iSample - TimeThreshold,0) ;
+                      i := i - TimeThreshold ;
                       InitialiseRunningMean := True ;
                       end;
                  // Find mid-point of signal rising edge
-                 iEventSample := FindMidPointOfRise(iSample) ;
+                iEventSample := FindMidPointOfRise(iSample) ;
+ //               iEventSample := iSample ;
                  Events[NumEvents] := Max(iEventSample,0) ;
                  Inc(NumEvents) ;
                  end ;
 
-              { Draw detected event marker }
-//              scDetDisplay.AddPointToLine( iLine, i, y ) ;
-//              scDetDisplay.AddPointToLine( iLine, i, 0 ) ;
-//              scDetDisplay.Invalidate ;
               iSample := iSample + DeadSamples ;
               i := i + DeadSamples ;
               OverThresholdCount := 0 ;
@@ -2056,8 +2079,8 @@ begin
      Settings.EventDetector.yThreshold := edThreshold.Value ;
 
      // Keep zero cursot at zero
- //    if scDetDisplay.HorizontalCursors[DetZeroCursor] <> 0 then
- //       scDetDisplay.HorizontalCursors[DetZeroCursor] := 0 ;
+     if scDetDisplay.HorizontalCursors[DetZeroCursor] <> 0 then
+        scDetDisplay.HorizontalCursors[DetZeroCursor] := 0 ;
 
      // Align detection display cursor
      if scDetDisplay.VerticalCursors[DisplayCursor]
@@ -2136,8 +2159,8 @@ begin
         // Update controls on histogram page
         edHistRange.HiLimit := NumEvents ;
         if edHistRange.HiValue = 1 then edHistRange.HiValue := edHistRange.HiLimit ;
-        edHistRange.LoValue := MinFlt( [edHistRange.LoValue, NumEvents] ) ;
-        edHistRange.HiValue := MinFlt( [edHistRange.HiValue, NumEvents] ) ;
+        edHistRange.LoValue := Min( edHistRange.LoValue, NumEvents ) ;
+        edHistRange.HiValue := Min( edHistRange.HiValue, NumEvents ) ;
         bSetHistAxes.Enabled := HistAvailable ;
         i := cbPlotXVar.Items.IndexOfObject(TObject(vTDecay)) ;
         cbHistVar.Items.Strings[i] := format(
@@ -3708,8 +3731,8 @@ begin
             end
          else
             begin
-            s := s + '" ",' ;
-            s := s + '" ",' ;
+            s := s + '"",' ;
+            s := s + '"",' ;
             end ;
 
          s := s + format('"%.6g",',[Event.Peak]) ;

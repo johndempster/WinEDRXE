@@ -400,6 +400,8 @@ unit Mdiform;
                    Rising edge window field removed, no longer required
   V3.9.3  26.04.21 Amplifiers: WPI EVC-4000 epithelial tissue voltage clamp added
                    Event Detector: Export Analysis button which exports measurements to csv files added
+  V3.9.4  05.05.21 Evebt Detector: Bug which caused event detection point to be slightly misaligned from mid-point of rise for multi-channel recordings fixed
+
 
   =======================================================================}
 
@@ -638,7 +640,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.9.3' ;
+     Version := 'V3.9.4' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }

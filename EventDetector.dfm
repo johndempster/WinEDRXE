@@ -28,7 +28,7 @@ object EventDetFrm: TEventDetFrm
     Top = 0
     Width = 839
     Height = 753
-    ActivePage = EditEventsPage
+    ActivePage = DetectEventsPage
     TabOrder = 0
     OnChange = PageChange
     object DetectEventsPage: TTabSheet
