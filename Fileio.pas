@@ -224,7 +224,8 @@ begin
      AppendFloat( Header, 'DETPF=', Settings.EventDetector.PreTriggerFraction ) ;
      AppendFloat( Header, 'DETAW=', Settings.EventDetector.AnalysisWindow ) ;
      AppendLogical( Header, 'DETPOSPK=', Settings.EventDetector.PositivePeaks ) ;
-     AppendLogical( Header, 'DETBASST=', Settings.EventDetector.BaselineAtStart ) ;
+     AppendInt( Header, 'DETBASE=', Settings.EventDetector.Baseline ) ;
+     AppendInt( Header, 'DETALIGN=', Settings.EventDetector.Alignment ) ;
      AppendLogical( Header, 'DETBASSUB=', Settings.EventDetector.SubtractBaseline ) ;
      AppendInt( Header, 'DETBASPTS=', Settings.EventDetector.NumBaselinePoints ) ;
      AppendInt( Header, 'DETBASGAP=', Settings.EventDetector.NumBaselineGap ) ;
@@ -395,7 +396,8 @@ begin
           ReadFloat( Header, 'DETPF=', Settings.EventDetector.PreTriggerFraction ) ;
           ReadFloat( Header, 'DETAW=', Settings.EventDetector.AnalysisWindow ) ;
           ReadLogical( Header, 'DETPOSPK=', Settings.EventDetector.PositivePeaks ) ;
-          ReadLogical( Header, 'DETBASST=', Settings.EventDetector.BaselineAtStart ) ;
+          ReadInt( Header, 'DETBASE=', Settings.EventDetector.Baseline ) ;
+          ReadInt( Header, 'DETALIGN=', Settings.EventDetector.Alignment ) ;
           ReadLogical( Header, 'DETBASSUB=', Settings.EventDetector.SubtractBaseline ) ;
           ReadInt( Header, 'DETBASPTS=', Settings.EventDetector.NumBaselinePoints ) ;
           ReadInt( Header, 'DETBASGAP=', Settings.EventDetector.NumBaselineGap ) ;

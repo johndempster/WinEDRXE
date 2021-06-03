@@ -48,7 +48,7 @@ uses
   Forms, Dialogs, ExtCtrls, StdCtrls, Spin, TabNotBk, ClipBrd,
   global, shared, maths, Grids, setfitpa, printers, fileio,
   setblock, ComCtrls, RangeEdit, ValEdit, ScopeDisplay, XYPlotDisplay,
-  ValidatedEdit, math  ;
+  ValidatedEdit, math, system.strutils  ;
 
 const
      MaxRecordSize = 8192 ;
@@ -276,7 +276,8 @@ type
     procedure PrintDisplay ;
     procedure CopyDataToClipboard ;
     procedure CopyImageToClipboard ;
-    procedure SetCopyAndPrintMenus ;
+    procedure SaveDataToFile ;
+    function IsClipboardDataAvailable : Boolean ;
     procedure ZoomOutAll ;
     procedure ZoomIn( Chan : Integer ) ;
     procedure ZoomOut( Chan : Integer ) ;
@@ -1326,10 +1327,10 @@ begin
            nFit := 0 ;
            Rec := Variance.StartAt ;
            { Lower and upper x data limit set by display cursors }
-           xLoLimit := MinFlt([plVarPlot.VerticalCursors[VarCursors.Fit0],
-                               plVarPlot.VerticalCursors[VarCursors.Fit1]]) ;
-           xHiLimit := MaxFlt([plVarPlot.VerticalCursors[VarCursors.Fit0],
-                               plVarPlot.VerticalCursors[VarCursors.Fit1]]) ;
+           xLoLimit := Min(plVarPlot.VerticalCursors[VarCursors.Fit0],
+                           plVarPlot.VerticalCursors[VarCursors.Fit1]) ;
+           xHiLimit := Max(plVarPlot.VerticalCursors[VarCursors.Fit0],
+                           plVarPlot.VerticalCursors[VarCursors.Fit1]) ;
            { If an exponential function is being fitted, measure X relative
              to xLoLimit set by display cursor }
            if VarFunc.Equation = Exponential then xOffset := xLoLimit
@@ -2125,10 +2126,10 @@ begin
         if OK then begin
 
            { Get range of points to be fitted }
-           FreqLo := MinFlt([plSpecPlot.VerticalCursors[SpecCursors.Fit0],
-                             plSpecPlot.VerticalCursors[SpecCursors.Fit1] ]) ;
-           FreqHi := MaxFlt([plSpecPlot.VerticalCursors[SpecCursors.Fit0],
-                             plSpecPlot.VerticalCursors[SpecCursors.Fit1] ]) ;
+           FreqLo := Min(plSpecPlot.VerticalCursors[SpecCursors.Fit0],
+                         plSpecPlot.VerticalCursors[SpecCursors.Fit1]) ;
+           FreqHi := Max(plSpecPlot.VerticalCursors[SpecCursors.Fit0],
+                         plSpecPlot.VerticalCursors[SpecCursors.Fit1]) ;
            nFit := 0 ;
            for i := 0 to PowerSpectrum^.NumPoints-1 do
                if (FreqLo <= PowerSpectrum^.Frequency[i]) and
@@ -2421,6 +2422,21 @@ begin
      end;
 
 
+function TNoiseAnalFrm.IsClipboardDataAvailable : Boolean ;
+// ----------------------------------------------------------
+// Is data (data or image) available for copying to clipboard?
+// ----------------------------------------------------------
+begin
+     Result := False ;
+     if Page.ActivePage = DataTab then Result := True
+     else if Page.ActivePage = AmpHistTab then Result := plAMpHist.Available
+     else if Page.ActivePage = VarianceTab then Result := plVarPlot.Available
+     else if Page.ActivePage = SpectrumTab then Result := plSpecPlot.Available ;
+
+     end ;
+
+
+
 procedure TNoiseAnalFrm.PrintDisplay ;
 { -----------------------------------------------
   Print currently displayed plot or signal record
@@ -2534,6 +2550,63 @@ begin
 
      end ;
 
+
+procedure TNoiseAnalFrm.SaveDataToFile ;
+// -------------------------------------
+// Save data on display to CSV text file
+// -------------------------------------
+begin
+
+     // Check available ability
+     if (Page.ActivePage = AmpHistTab) and (not plAmpHist.Available) then Exit ;
+     if (Page.ActivePage = VarianceTab) and (not plVarPlot.Available) then Exit ;
+     if (Page.ActivePage = SpectrumTab) and (not plSpecPlot.Available) then Exit ;
+
+     // Present user with standard Save File dialog box
+     Main.SaveDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofPathMustExist] ;
+     Main.SaveDialog.DefaultExt := 'csv' ;
+     Main.SaveDialog.Filter := ' CSV Files (*.csv)|*.csv' ;
+     Main.SaveDialog.Title := 'Export to CSV File' ;
+
+     { Create default data file name }
+     if Page.ActivePage = DataTab then
+        Main.SaveDialog.FileName := AnsiReplaceText(
+                                    LowerCase(ExtractFileName(CdrFH.FileName)),
+                                   '.edr',
+                                   format('.%d.csv',
+                                  [sbRecord.Position+1] ));
+
+      if Page.ActivePage = AmpHistTab then
+          Main.SaveDialog.FileName := AnsiReplaceText(
+                                      LowerCase(ExtractFileName(CdrFH.FileName)),
+                                      '.edr',
+                                     '.amphist.csv');
+
+      if Page.ActivePage = VarianceTab then
+         Main.SaveDialog.FileName := AnsiReplaceText(
+                                     LowerCase(ExtractFileName(CdrFH.FileName)),
+                                     '.edr',
+                                    format('.event.%s.%s.csv',
+                                    [plVarPlot.XAxisLabel,plVarPlot.YAxisLabel])) ;
+
+      if Page.ActivePage = SpectrumTab then
+         Main.SaveDialog.FileName := AnsiReplaceText(
+                                     LowerCase(ExtractFileName(CdrFH.FileName)),
+                                     '.edr',
+                                     '.spectrum.csv');
+
+     // Save data to file
+     if Main.SaveDialog.execute then
+        begin
+        if Page.ActivePage = DataTab then scDisplay.SaveDataToFile(Main.SaveDialog.FileName) ;
+        if Page.ActivePage = AmpHistTab then plAmpHist.SaveDataToFile(Main.SaveDialog.FileName);
+        if Page.ActivePage = VarianceTab then plVarPlot.SaveDataToFile(Main.SaveDialog.FileName);
+        if Page.ActivePage = SpectrumTab then plSpecPlot.SaveDataToFile(Main.SaveDialog.FileName);
+        end;
+
+     end ;
+
+
 procedure TNoiseAnalFrm.plSpecPlotCursorChange(Sender: TObject);
 { -----------------------------------------------
   Update labels when spectrum plot cursors change
@@ -2564,10 +2637,10 @@ begin
 
      { Calculate variance as integral of power spectrum }
      Variance := 0.0 ;
-     FreqLo := MinFlt( [plSpecPlot.VerticalCursors[SpecCursors.Fit0],
-                        plSpecPlot.VerticalCursors[SpecCursors.Fit1]] ) ;
-     FreqHi := MaxFlt( [plSpecPlot.VerticalCursors[SpecCursors.Fit0],
-                        plSpecPlot.VerticalCursors[SpecCursors.Fit1]] ) ;
+     FreqLo := Min( plSpecPlot.VerticalCursors[SpecCursors.Fit0],
+                    plSpecPlot.VerticalCursors[SpecCursors.Fit1]) ;
+     FreqHi := Max( plSpecPlot.VerticalCursors[SpecCursors.Fit0],
+                    plSpecPlot.VerticalCursors[SpecCursors.Fit1] ) ;
      for i := 0 to plSpecPlot.GetNumPointsInLine(SpecDataLine)-2 do begin
          plSpecPlot.GetPoint( SpecDataLine,i,Freq0,y0) ;
          plSpecPlot.GetPoint( SpecDataLine,i+1,Freq1,y1) ;
@@ -2596,7 +2669,7 @@ procedure TNoiseAnalFrm.PageChange(Sender: TObject);
   Updates when page is changed
   ----------------------------}
 begin
-     SetCopyAndPrintMenus ;
+
      if Page.ActivePage = DataTab then begin
         // Variance record data editing page
         Data.RecordNum := sbRecord.Position ;
@@ -2635,31 +2708,8 @@ begin
      end;
 
 
-procedure TNoiseAnalFrm.SetCopyAndPrintMenus ;
-{ --------------------------------
-  Update copy and print menu items
-  -------------------------------- }
-begin
-     if Page.ActivePage = VarianceTab then begin
-        if plVarPlot.Available then Main.CopyAndPrintMenus( True, True )
-                               else Main.CopyAndPrintMenus( False, False ) ;
-        end
-     else if Page.ActivePage = AmpHistTab then begin
-        if plAmpHist.Available then Main.CopyAndPrintMenus( True, True )
-                               else Main.CopyAndPrintMenus( False, False ) ;
-        end
-     else if Page.ActivePage = SpectrumTab then begin
-        if plSpecPlot.Available then Main.CopyAndPrintMenus( True, True )
-                                else Main.CopyAndPrintMenus( False, False ) ;
-        end
-     else begin
-        Main.CopyAndPrintMenus( True, True ) ;
-        end ;
-     end ;
-
 procedure TNoiseAnalFrm.FormActivate(Sender: TObject);
 begin
-     SetCopyAndPrintMenus ;
      ckFixedZeroLevels.Checked := Settings.FixedZeroLevels ;
      end;
 

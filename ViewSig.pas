@@ -22,6 +22,7 @@ unit ViewSig;
   28.08.12 ... Zero Level form updated.
                Fixed Zero level tick box added, fixes zero levels in place
   07.08.15 ... Min/Max compression of large array signal arrays now handled by ScopeDisplay.pas
+  27.05.21 ... SaveToDataFile public procedure added. Saves displayed data to CSV file.
   ========================================================}
 
 interface
@@ -30,7 +31,7 @@ uses
   SysUtils, WinTypes, WinProcs, Messages, Classes, Graphics, Controls,
   Forms, Dialogs, StdCtrls, ExtCtrls, global, printers, ClipBrd, fileio,
   Grids, CDRZero, RangeEdit, ScopeDisplay,
-  ValidatedEdit, maths, seslabio, math ;
+  ValidatedEdit, maths, seslabio, math, system.strutils ;
 
 type
 
@@ -104,6 +105,7 @@ type
     { Public declarations }
     procedure PrintDisplay  ;
     procedure CopyImageToClipboard ;
+    procedure SaveDataToFile ;
     procedure ZoomOutAll ;
     procedure NewData ;
     procedure ChangeDisplayGrid ;
@@ -336,7 +338,7 @@ begin
 
      sbStartTime.Min := 0 ;
      sbStartTime.Max := (CdrFH.NumSamplesInFile div CdrFH.NumChannels) - 1 ;
-     
+
 
      // Number of chart markers still available
      edNumMarkers.text := format('%d',[MaxMarkers-MarkerList.Count]);
@@ -347,6 +349,34 @@ begin
      ChangeDisplayGrid ;
 
      DisplayFromFile ;
+
+     end ;
+
+
+procedure TViewSigFrm.SaveDataToFile ;
+// -------------------------------------
+// Save data on display to CSV text file
+// -------------------------------------
+var
+    TStart,TEnd : single ;
+begin
+
+     // Present user with standard Save File dialog box
+     Main.SaveDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofPathMustExist] ;
+     Main.SaveDialog.DefaultExt := 'csv' ;
+     Main.SaveDialog.Filter := ' CSV Files (*.csv)|*.csv' ;
+     Main.SaveDialog.Title := 'Export to CSV File' ;
+
+     // Create default file name
+     TStart := sbStartTime.Position*scDisplay.TScale ;
+     TEnd := TStart + scDisplay.NumPoints*scDisplay.TScale ;
+     Main.SaveDialog.FileName := AnsiReplaceText(
+                                 LowerCase(ExtractFileName(CdrFH.FileName)),
+                                 '.edr',
+                                 format('.%.3f-%.3fs.csv',
+                                 [TStart,TEnd] ));
+
+     if Main.SaveDialog.execute then scDisplay.SaveDataToFile(Main.SaveDialog.FileName) ;
 
      end ;
 

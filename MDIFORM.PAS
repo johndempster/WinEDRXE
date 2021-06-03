@@ -400,7 +400,9 @@ unit Mdiform;
                    Rising edge window field removed, no longer required
   V3.9.3  26.04.21 Amplifiers: WPI EVC-4000 epithelial tissue voltage clamp added
                    Event Detector: Export Analysis button which exports measurements to csv files added
-  V3.9.4  05.05.21 Evebt Detector: Bug which caused event detection point to be slightly misaligned from mid-point of rise for multi-channel recordings fixed
+  V3.9.4  05.05.21 Event Detector: Bug which caused event detection point to be slightly misaligned from mid-point of rise for multi-channel recordings fixed
+  V3.9.5  03.06.21 Event Detector: Events can now be aligned by either max. rate of rise or mid-point of rise.
+                   Save to File added to Edit menu, allowed displayed signals/plots to be saved to as CSV file
 
 
   =======================================================================}
@@ -511,6 +513,7 @@ type
     mnEPC9Panel: TMenuItem;
     mnResetMulticlamp: TMenuItem;
     mnDClamp: TMenuItem;
+    mnSaveDataToFile: TMenuItem;
     procedure mnOpenClick(Sender: TObject);
     procedure mnZoomInClick(Sender: TObject);
     procedure Exit1Click(Sender: TObject);
@@ -570,6 +573,7 @@ type
     procedure mnEPC9Click(Sender: TObject);
     procedure mnResetMulticlampClick(Sender: TObject);
     procedure mnDClampClick(Sender: TObject);
+    procedure mnSaveDataToFileClick(Sender: TObject);
   private
     { Private declarations }
 
@@ -640,7 +644,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.9.4' ;
+     Version := 'V3.9.5' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
@@ -716,7 +720,7 @@ begin
      Settings.EventDetector.TauRise := CdrFH.dt*2 ;
      Settings.EventDetector.TauDecay := CdrFH.dt*100.0 ;
      Settings.EventDetector.PositivePeaks := True ;
-     Settings.EventDetector.BaselineAtStart := True ;
+     Settings.EventDetector.Baseline := 0 ;
      Settings.EventDetector.SubtractBaseline := False ;
      Settings.EventDetector.NumBaselinePoints := 20 ;
      Settings.EventDetector.NumBaselineGap := 0 ;
@@ -725,6 +729,7 @@ begin
      Settings.EventDetector.RisingEdgeWindow := 20 ;
      Settings.EventDetector.AvgFrequencyInterval := 1.0 ;
      Settings.EventDetector.EnableBaselineTracking := True ;
+     Settings.EventDetector.Alignment := 0 ;
 
      Settings.DwellTimes.ChanNum := 0 ;
      Settings.DwellTimes.RecordSize := 512 ;
@@ -1482,6 +1487,26 @@ begin
      end ;
 
 
+procedure TMain.mnSaveDataToFileClick(Sender: TObject);
+{ -----------------------------
+  Copy data values to clipboard
+  -----------------------------}
+begin
+
+
+//     if ActiveMDIChild.Name = 'SingleChanAnalFrm' then
+//        TSingleChanAnalFrm(ActiveMDIChild).SaveDataToFile(FileName) ;
+     if ActiveMDIChild.Name = 'ViewSigFrm' then TViewSigFrm(ActiveMDIChild).SaveDataToFile
+      else if (ActiveMDIChild.Name = 'EventDetFrm') then TEventDetFrm(ActiveMDIChild).SaveDataToFile
+      else if (ActiveMDIChild.Name = 'NoiseAnalFrm') then TNoiseAnalFrm(ActiveMDIChild).SaveDataToFile ;
+//     if ActiveMDIChild.Name = 'ECGFrm' then
+//        TECGFrm(ActiveMDIChild).SaveDataToFile(FileName) ;
+//     if ActiveMDIChild.Name = 'RecPlotFrm' then
+//        TRecPlotFrm(ActiveMDIChild).SaveDataToFile(FileName) ;
+
+     end ;
+
+
 procedure TMain.mnSealTestClick(Sender: TObject);
 { ----------------------------
   Menu - Open seal test module
@@ -2057,16 +2082,19 @@ begin
 
      CopyData.Enabled := False ;
      CopyImage.Enabled := False ;
+     mnSaveDataToFile.Enabled := False ;
 
      if MDIChildCount <= 0 then Exit ;
 
      if (ActiveMDIChild.Name = 'ViewSigFrm') then begin
         CopyData.Enabled := True ;
         CopyImage.Enabled := True ;
+        mnSaveDataToFile.Enabled := True ;
         end
      else if (ActiveMDIChild.Name = 'NoiseAnalFrm') then begin
-        CopyData.Enabled := True ;
-        CopyImage.Enabled := True ;
+        CopyData.Enabled :=NoiseAnalFrm.IsClipboardDataAvailable ;
+        CopyImage.Enabled := NoiseAnalFrm.IsClipboardDataAvailable ;
+        mnSaveDataToFile.Enabled := NoiseAnalFrm.IsClipboardDataAvailable ;
         end
      else if (ActiveMDIChild.Name = 'SingleChanAnalFrm') then begin
         CopyData.Enabled := True ;
@@ -2075,6 +2103,7 @@ begin
      else if (ActiveMDIChild.Name = 'EventDetFrm') then begin
         CopyData.Enabled := EventDetFrm.IsClipboardDataAvailable ;
         CopyImage.Enabled := EventDetFrm.IsClipboardDataAvailable ;
+        mnSaveDataToFile.Enabled := EventDetFrm.IsClipboardDataAvailable ;
         end
      else if (ActiveMDIChild.Name = 'ECGFrm') then begin
         CopyData.Enabled := ECGFrm.IsClipboardDataAvailable ;

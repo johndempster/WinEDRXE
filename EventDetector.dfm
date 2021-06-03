@@ -2,7 +2,7 @@ object EventDetFrm: TEventDetFrm
   Left = 855
   Top = 131
   Caption = 'Event Detection'
-  ClientHeight = 790
+  ClientHeight = 865
   ClientWidth = 862
   Color = clBtnFace
   Font.Charset = ANSI_CHARSET
@@ -24,10 +24,10 @@ object EventDetFrm: TEventDetFrm
   PixelsPerInch = 96
   TextHeight = 15
   object Page: TPageControl
-    Left = 2
+    Left = 8
     Top = 0
     Width = 839
-    Height = 753
+    Height = 817
     ActivePage = DetectEventsPage
     TabOrder = 0
     OnChange = PageChange
@@ -121,7 +121,7 @@ object EventDetFrm: TEventDetFrm
         Left = 6
         Top = 0
         Width = 209
-        Height = 529
+        Height = 593
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clBlack
         Font.Height = -12
@@ -251,10 +251,10 @@ object EventDetFrm: TEventDetFrm
           end
         end
         object CriteriaGrp: TGroupBox
-          Left = 8
+          Left = 3
           Top = 151
           Width = 193
-          Height = 362
+          Height = 410
           Caption = ' Detector '
           TabOrder = 3
           object GroupBox1: TGroupBox
@@ -428,8 +428,8 @@ object EventDetFrm: TEventDetFrm
             end
           end
           object ModePage: TNotebook
-            Left = 4
-            Top = 186
+            Left = 7
+            Top = 187
             Width = 183
             Height = 73
             PageIndex = 2
@@ -438,6 +438,8 @@ object EventDetFrm: TEventDetFrm
               Left = 0
               Top = 0
               Caption = 'Threshold'
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object GroupBox7: TGroupBox
                 Left = 4
                 Top = 4
@@ -503,6 +505,8 @@ object EventDetFrm: TEventDetFrm
               Left = 0
               Top = 0
               Caption = 'RateOfRise'
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object GroupBox11: TGroupBox
                 Left = 4
                 Top = 0
@@ -516,8 +520,8 @@ object EventDetFrm: TEventDetFrm
               Top = 0
               Caption = 'Template'
               object GroupBox9: TGroupBox
-                Left = 4
-                Top = 0
+                Left = 1
+                Top = 3
                 Width = 177
                 Height = 70
                 Caption = ' Template '
@@ -595,9 +599,9 @@ object EventDetFrm: TEventDetFrm
           end
           object GroupBox10: TGroupBox
             Left = 8
-            Top = 262
+            Top = 326
             Width = 177
-            Height = 70
+            Height = 43
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
             Font.Height = -12
@@ -637,6 +641,26 @@ object EventDetFrm: TEventDetFrm
               NumberFormat = '%.6g'
               LoLimit = -1.000000015047466E30
               HiLimit = 1000000.000000000000000000
+            end
+          end
+          object gpEventAlignment: TGroupBox
+            Left = 8
+            Top = 266
+            Width = 177
+            Height = 52
+            Caption = ' Event Alignment '
+            TabOrder = 4
+            object cbEventAlignment: TComboBox
+              Left = 8
+              Top = 20
+              Width = 161
+              Height = 23
+              Hint = 'Event alignment point on rising edge of event waveform'
+              Style = csDropDownList
+              ParentShowHint = False
+              ShowHint = True
+              TabOrder = 0
+              OnChange = cbEventAlignmentChange
             end
           end
         end
@@ -715,6 +739,10 @@ object EventDetFrm: TEventDetFrm
     object EditEventsPage: TTabSheet
       Caption = 'Review/Edit Events'
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object scMarkDisplay: TScopeDisplay
         Left = 224
         Top = 118
@@ -883,7 +911,7 @@ object EventDetFrm: TEventDetFrm
         Left = 8
         Top = 2
         Width = 209
-        Height = 718
+        Height = 775
         TabOrder = 0
         object Label14: TLabel
           Left = 8
@@ -918,7 +946,7 @@ object EventDetFrm: TEventDetFrm
         end
         object editGrp: TGroupBox
           Left = 8
-          Top = 470
+          Top = 520
           Width = 193
           Height = 63
           Caption = ' Edit Events '
@@ -975,7 +1003,7 @@ object EventDetFrm: TEventDetFrm
         end
         object ExportGrp: TGroupBox
           Left = 8
-          Top = 540
+          Top = 588
           Width = 193
           Height = 120
           Caption = ' Export Events '
@@ -1079,10 +1107,10 @@ object EventDetFrm: TEventDetFrm
           end
         end
         object AnalysisGrp: TGroupBox
-          Left = 13
-          Top = 64
+          Left = 8
+          Top = 61
           Width = 193
-          Height = 400
+          Height = 455
           Caption = ' Event Analysis '
           TabOrder = 4
           object Label11: TLabel
@@ -1103,7 +1131,7 @@ object EventDetFrm: TEventDetFrm
             Left = 8
             Top = 52
             Width = 177
-            Height = 136
+            Height = 187
             Font.Charset = ANSI_CHARSET
             Font.Color = clWindowText
             Font.Height = -12
@@ -1119,12 +1147,12 @@ object EventDetFrm: TEventDetFrm
             ReadOnly = True
             TabOrder = 0
           end
-          object GroupBox3: TGroupBox
+          object gpEventPolarity: TGroupBox
             Left = 8
-            Top = 198
+            Top = 245
             Width = 177
             Height = 35
-            Caption = ' Event polarity '
+            Caption = ' Polarity '
             TabOrder = 1
             object rbPositive: TRadioButton
               Left = 8
@@ -1167,7 +1195,7 @@ object EventDetFrm: TEventDetFrm
           end
           object GroupBox23: TGroupBox
             Left = 8
-            Top = 326
+            Top = 382
             Width = 177
             Height = 65
             Caption = ' T(X%) decay time'
@@ -1238,16 +1266,16 @@ object EventDetFrm: TEventDetFrm
                 'a0 cursor')
             end
           end
-          object GroupBox21: TGroupBox
+          object gpZeroLevel: TGroupBox
             Left = 8
-            Top = 238
+            Top = 286
             Width = 177
-            Height = 83
+            Height = 94
             Caption = ' Zero level  '
             TabOrder = 3
             object Label3: TLabel
               Left = 11
-              Top = 52
+              Top = 65
               Width = 52
               Height = 15
               Alignment = taRightJustify
@@ -1261,7 +1289,7 @@ object EventDetFrm: TEventDetFrm
             end
             object Label5: TLabel
               Left = 110
-              Top = 52
+              Top = 65
               Width = 23
               Height = 15
               Alignment = taRightJustify
@@ -1275,7 +1303,7 @@ object EventDetFrm: TEventDetFrm
             end
             object ckSubtractBaseline: TCheckBox
               Left = 8
-              Top = 32
+              Top = 42
               Width = 137
               Height = 17
               Hint = 'Remove trends in signal baseline'
@@ -1291,41 +1319,9 @@ object EventDetFrm: TEventDetFrm
               TabOrder = 0
               OnClick = ckSubtractBaselineClick
             end
-            object rbBaselineAtStart: TRadioButton
-              Left = 8
-              Top = 16
-              Width = 65
-              Height = 17
-              Caption = 'At start'
-              Checked = True
-              Font.Charset = ANSI_CHARSET
-              Font.Color = clWindowText
-              Font.Height = -12
-              Font.Name = 'Arial'
-              Font.Style = [fsBold]
-              ParentFont = False
-              TabOrder = 1
-              TabStop = True
-              OnClick = rbBaselineAtStartClick
-            end
-            object rbBaselineAtEvent: TRadioButton
-              Left = 80
-              Top = 16
-              Width = 65
-              Height = 17
-              Caption = 'At event'
-              Font.Charset = ANSI_CHARSET
-              Font.Color = clWindowText
-              Font.Height = -12
-              Font.Name = 'Arial'
-              Font.Style = [fsBold]
-              ParentFont = False
-              TabOrder = 2
-              OnClick = rbBaselineAtEventClick
-            end
             object edZeroNumAvg: TValidatedEdit
               Left = 64
-              Top = 52
+              Top = 65
               Width = 33
               Height = 20
               OnKeyPress = edZeroNumAvgKeyPress
@@ -1339,7 +1335,7 @@ object EventDetFrm: TEventDetFrm
             end
             object edZeroGap: TValidatedEdit
               Left = 136
-              Top = 52
+              Top = 65
               Width = 33
               Height = 20
               OnKeyPress = edZeroGapKeyPress
@@ -1350,6 +1346,18 @@ object EventDetFrm: TEventDetFrm
               NumberFormat = '%.0f'
               LoLimit = 0.100000001490116100
               HiLimit = 99.000000000000000000
+            end
+            object cbBaseline: TComboBox
+              Left = 8
+              Top = 16
+              Width = 161
+              Height = 23
+              Hint = 'Zero level position'
+              ParentShowHint = False
+              ShowHint = True
+              TabOrder = 3
+              Text = 'cbBaseline'
+              OnChange = cbBaselineChange
             end
           end
           object cbReviewChannel: TComboBox
@@ -1367,7 +1375,7 @@ object EventDetFrm: TEventDetFrm
         end
         object EventListGrp: TGroupBox
           Left = 8
-          Top = 666
+          Top = 710
           Width = 193
           Height = 49
           Caption = ' Event List '
@@ -1631,6 +1639,10 @@ object EventDetFrm: TEventDetFrm
     object XYPlotPage: TTabSheet
       Caption = 'X-Y Plot'
       ImageIndex = 2
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object plPlot: TXYPlotDisplay
         Left = 224
         Top = 8
@@ -1936,6 +1948,10 @@ object EventDetFrm: TEventDetFrm
     object HistPage: TTabSheet
       Caption = 'Histogram'
       ImageIndex = 3
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object plHist: TXYPlotDisplay
         Left = 224
         Top = 16
@@ -2327,6 +2343,10 @@ object EventDetFrm: TEventDetFrm
     object AveragePage: TTabSheet
       Caption = 'Average'
       ImageIndex = 4
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object scAverageDisplay: TScopeDisplay
         Left = 224
         Top = 8
@@ -2609,8 +2629,8 @@ object EventDetFrm: TEventDetFrm
     Top = 528
   end
   object OpenDialog: TOpenDialog
-    Left = 182
-    Top = 528
+    Left = 318
+    Top = 560
   end
   object WCPFile: TADCDataFile
     NumChannelsPerScan = 1

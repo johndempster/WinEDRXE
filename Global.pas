@@ -240,8 +240,9 @@ TEventDetector = record
                RecordSize : Integer ;
                PreTriggerFraction : single ;
                AnalysisWindow : Single ;
+               Alignment : Integer ;
                PositivePeaks : Boolean ;
-               BaselineAtStart : Boolean ;
+               Baseline : Integer ;
                SubtractBaseline : Boolean ;
                NumBaselinePoints : Integer ;
                NumBaselineGap : Integer ;

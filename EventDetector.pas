@@ -89,6 +89,12 @@ unit EventDetector;
 //              First window of signal now fully displayed when detection window opened
 //              Template match tau rise and decay times now preserved in EDR file
 // 04.05.21 ... Shift in detection point when TimeThreshold <> 0 fixed
+// 24.05.21 ... Incorrect placement of mid-point at start of rising edge window when rising egde very slow fixed.
+// 25.05.21 ... Displayed signal data can now be exported to CSV file
+// 26.05.21 ... 'Fixed' event baseline level added which uses user-set baseline cursors for signal chaannel
+//               Baseline type now set using drop-down list rather than radio buttons
+// 02.06.21 ... Events can now be aligned on either max. rate of rise or mid-point of rise
+//              Mid-points now detected more reliably.
 
 interface
 
@@ -119,6 +125,11 @@ const
     vDuration = 10 ;
     vBaseline = 11 ;
     MaxVar = 12 ;
+    BaselineAtStart = 0 ;
+    BaselineAtEvent = 1 ;
+    FixedBaseline = 2 ;
+    AlignMaxRateOfRise = 0 ;
+    AlignMidPointOfRise = 1 ;
 
 type
 
@@ -209,7 +220,7 @@ type
     plHist: TXYPlotDisplay;
     AnalysisGrp: TGroupBox;
     meResults: TMemo;
-    GroupBox3: TGroupBox;
+    gpEventPolarity: TGroupBox;
     rbPositive: TRadioButton;
     rbNegative: TRadioButton;
     EventFilterGrp: TGroupBox;
@@ -270,10 +281,8 @@ type
     Label4: TLabel;
     edPreTrigger: TValidatedEdit;
     bAbortAverage: TButton;
-    GroupBox21: TGroupBox;
+    gpZeroLevel: TGroupBox;
     ckSubtractBaseline: TCheckBox;
-    rbBaselineAtStart: TRadioButton;
-    rbBaselineAtEvent: TRadioButton;
     Label3: TLabel;
     Label5: TLabel;
     edZeroNumAvg: TValidatedEdit;
@@ -326,6 +335,9 @@ type
     Label25: TLabel;
     ckEnableBaselineTracking: TCheckBox;
     bExportAnalysis: TButton;
+    cbBaseline: TComboBox;
+    gpEventAlignment: TGroupBox;
+    cbEventAlignment: TComboBox;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormResize(Sender: TObject);
@@ -388,8 +400,6 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure scAverageDisplayMouseUp(Sender: TObject;
       Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
-    procedure rbBaselineAtStartClick(Sender: TObject);
-    procedure rbBaselineAtEventClick(Sender: TObject);
     procedure rbTDecayFromPeakClick(Sender: TObject);
     procedure rbTDecayFromMidRiseClick(Sender: TObject);
     procedure rbTDecayFromC0Click(Sender: TObject);
@@ -413,6 +423,8 @@ type
     procedure ckEnableBaselineTrackingClick(Sender: TObject);
     procedure edTimeThresholdKeyPress(Sender: TObject; var Key: Char);
     procedure bExportAnalysisClick(Sender: TObject);
+    procedure cbBaselineChange(Sender: TObject);
+    procedure cbEventAlignmentChange(Sender: TObject);
   private
     { Private declarations }
 
@@ -568,6 +580,7 @@ function CalculateVariablesInInterval(
     procedure DisplayRecord ;
     function IsClipboardDataAvailable : Boolean ;
     procedure CopyDataToClipboard ;
+    procedure SaveDataToFile ;
     procedure CopyImageToClipboard ;
     procedure PrintDisplay ;
     procedure ZoomOutAll ;
@@ -775,6 +788,12 @@ begin
      edEditDisplayWidth.Scale := edDetDisplayWidth.Scale ;
      edEditDisplayWidth.Value := edDetDisplayWidth.Value ;
 
+     cbBaseline.Clear ;
+     cbBaseline.Items.Add('At Start') ;
+     cbBaseline.Items.Add('At Event') ;
+     cbBaseline.Items.Add('Fixed') ;
+     cbBaseline.ItemIndex := 0 ;
+
      { Initialise continuous and detected event displays }
      NewFile ;
 
@@ -826,8 +845,13 @@ begin
      rbPositive.Checked := Settings.EventDetector.PositivePeaks ;
      rbNegative.Checked := not Settings.EventDetector.PositivePeaks ;
 
-     rbBaselineAtStart.Checked := Settings.EventDetector.BaselineAtStart ;
-     rbBaselineAtEvent.Checked := not Settings.EventDetector.BaselineAtStart ;
+     // Event alignment
+     cbEventAlignment.Clear ;
+     cbEventAlignment.Items.Add('Max. rate of rise');
+     cbEventAlignment.Items.Add('Mid-point of rise');
+     cbEventAlignment.ItemIndex := Settings.EventDetector.Alignment ;
+
+     cbBaseline.ItemIndex := Settings.EventDetector.Baseline ;
      ckSubtractBaseline.Checked := Settings.EventDetector.SubtractBaseline ;
      edZeroNumAvg.Value := Max(Settings.EventDetector.NumBaselinePoints,2) ;
      edZeroGap.Value := Max(Settings.EventDetector.NumBaselineGap,0) ;
@@ -1462,11 +1486,11 @@ function  TEventDetFrm.FindMidPointOfRise(
 // -----------------------------------------------------------
 var
     iStartSample,iEndSample : Integer ;
-    i,j,NPBuf,NPHalf,iStart,iEnd,iDetectedAt : Integer ;
+    i,j,NPBuf,NPHalf,iStart,iEnd : Integer ;
     yMax,yMin,y,yMid,Polarity,yMaxAt,yMinAt : Integer ;
     Buf : PSmallIntArray ;
     DBuf : PSmallIntArray ;
-    ZeroCrossingCount,iPeakRateOfRise : Integer ;
+    iPeakRateOfRise,iYMidAt : Integer ;
     Done : Boolean ;
 begin
 
@@ -1490,85 +1514,68 @@ begin
        Buf^[i] := Buf^[j] ;
        end;
 
-   // Determine positive/negative-going polarity of signal
-   YMin := High(Integer) ;
-   YMax := Low(Integer) ;
-   for i := 0 to NPBuf-1 do
-       begin
-       y := DBuf^[i] ;
-       if y > YMax then YMax := y ;
-       if y < YMin then YMin := y ;
-       end;
-   if Abs(YMax) >= Abs(YMin) then Polarity := 1
-                             else Polarity := -1 ;
+   // Determine positive/negative-going polarity of signal from threshold value
+   if edThreshold.Value >= 0.0 then Polarity := 1
+                               else Polarity := -1 ;
 
-   // Find peak rate of rise
-   YMax := Low(Integer) ;
-   iPeakRateOfRise := 0 ;
-   for i := 0 to NPBuf-1 do
-       begin
-       y := DBuf^[i]*Polarity ;
-       if y >= YMax then
+
+   if cbEventAlignment.ItemIndex = AlignMaxRateOfRise then
+      begin
+      // Align by max. rate of rise
+      // --------------------------
+      // Find peak rate of rise
+      YMax := Low(Integer) ;
+      iPeakRateOfRise := 0 ;
+      for i := 0 to NPBuf-1 do
           begin
-          YMax := y ;
-          iPeakRateOfRise := i ;
+          y := DBuf^[i]*Polarity ;
+          if y >= YMax then
+             begin
+             YMax := y ;
+             iPeakRateOfRise := i ;
+             end;
           end;
-       end;
 
-   // Find start of signal rising edge
-   iStart := iPeakRateOfRise + 1 ;
-   ZeroCrossingCount := 0 ;
-   repeat
-       Dec(iStart) ;
-       y := DBuf^[iStart]*Polarity ;
-       if y <= 0 then Inc(ZeroCrossingCount) ;
-   until (ZeroCrossingCount > 10) or (iStart < 0) ;
+      Result := iStartSample + iPeakRateOfRise ;
 
-   // Find end of signal rising edge
-   iEnd := iPeakRateOfRise - 1 ;
-   ZeroCrossingCount := 0 ;
-   repeat
-       Inc(iEnd) ;
-       y := DBuf^[iEnd]*Polarity ;
-       if y <= 0 then Inc(ZeroCrossingCount) ;
-   until (ZeroCrossingCount > 10) or (iEnd >= NPBuf) ;
-
-   // Find Min./Max. of signal rising edge
-   yMin := High(Integer) ;
-   yMax := Low(Integer) ;
-   for i := iStart to iEnd do
-       begin
-       y := Buf^[i];
-       if y >= yMax then
+      end
+   else if cbEventAlignment.ItemIndex = AlignMidPointOfRise then
+      begin
+      // Align by mid-point of rise
+      // --------------------------
+      // Find Min./Max. of signal rising edge
+      iStart := 0 ;
+      iEnd := NPBuf-1 ;
+      yMin := High(Integer) ;
+      yMax := Low(Integer) ;
+      for i := iStart to iEnd do
           begin
-          YMax := y ;
-          YMaxAt := i ;
+          y := Buf^[i];
+          if y >= yMax then
+             begin
+             YMax := y ;
+             YMaxAt := i ;
+             end;
+          if y <= yMin then
+             begin
+             YMin := y ;
+             YMinAt := i ;
+             end;
           end;
-       if y <= yMin then
+
+      // Find mid-point of rising edge
+      yMid := (YMax + YMin) div 2 ;
+      iYMidAt := NPHalf ;
+      iStart := Min(YMaxAt,YMinAt);
+      iEnd := Max(YMaxAt,YMinAt);
+      for i := iStart to iEnd-1 do
           begin
-          YMin := y ;
-          YMinAt := i ;
+          if ((Buf^[i] - YMid)*(Buf^[i+1] - YMid)) <= 0 then iYMidAt := i ;
           end;
-       end;
 
-   // Find mid-point of rising edge
-    yMid := (YMax + YMin) div 2 ;
-   iDetectedAt := iStart - 1 ;
-   Done := False ;
-   repeat
-        Inc(iDetectedAt) ;
-        y := Buf^[iDetectedAt] ;
-        if YMaxAt >= YMinAt then
-           begin
-           if y >= YMid then Done := True ;
-           end
-        else
-           begin
-           if y < YMid then Done := True ;
-           end ;
-   until Done or (iDetectedAt >= iEnd) ;
+      Result := iStartSample + iYMidAt
 
-   Result := iStartSample + iDetectedAt ;
+      end ;
 
    FreeMem(Buf) ;
    FreeMem(DBuf) ;
@@ -1836,7 +1843,7 @@ begin
                       end;
                  // Find mid-point of signal rising edge
                 iEventSample := FindMidPointOfRise(iSample) ;
- //               iEventSample := iSample ;
+  //              iEventSample := iSample ;
                  Events[NumEvents] := Max(iEventSample,0) ;
                  Inc(NumEvents) ;
                  end ;
@@ -1922,7 +1929,8 @@ begin
                                              EditBuf^,
                                              scEditDisplay.MaxPoints) ;
 
-   if ckSubtractBaseline.Checked then begin
+   if ckSubtractBaseline.Checked then
+      begin
       SubtractBaseline( sbEvent.Position-1,
                         EditBuf^,
                         sbEditDisplay.Position,
@@ -2276,6 +2284,11 @@ begin
 
      meResults.Lines.Add( format( 'Duration= %.5g ms',[Event.Duration]));
 
+     meResults.Lines.Add( format( 'Baseline= %.5g %s',
+                          [Channel[cbChannel.ItemIndex].ADCScale*(Event.YBaseline - Channel[cbChannel.ItemIndex].ADCZero),
+                           Channel[cbChannel.ItemIndex].ADCUnits]));
+
+
      scEditDisplay.HorizontalCursors[0] := Event.YBaseline ;
 
      if cktCursorAtDetectionPoint.Checked then begin
@@ -2509,8 +2522,8 @@ begin
 
 function TEventDetFrm.PreEventBaselineLevel(
          var Buf : Array of SmallInt ; // Data buffer
-         EventScan : Integer ;     // Scan # of start of event in Buf
-         NumScans : Integer       // No. of scans in Buf
+         EventScan : Integer ;         // Scan # of start of event in Buf
+         NumScans : Integer            // No. of scans in Buf
          ) : Integer ;
 // ----------------------------------
 // Calculate pre-event baseline level
@@ -2529,18 +2542,20 @@ begin
    Result := 0 ;
    if NumScans < 1 then Exit ;
 
-
    NumAvgRequired := Round( edZeroNumAvg.Value) ;
    iZeroGap := Round( edZeroGap.Value) ;
 
-   if rbBaselineAtStart.Checked then begin
+   if cbBaseline.ItemIndex = BaselineAtStart then
+      begin
       // Baseline at start of event window
+      // ---------------------------------
       iStart := iZeroGap ;
       iEnd := NumAvgRequired-1 ;
       end
-   else begin
+   else if cbBaseline.ItemIndex = BaselineAtEvent then
+      begin
       // Baseline at start of event
-
+      // --------------------------
       // Set positive/negative polarity of event to be measured
       if rbPositive.Checked then Polarity := 1
                             else Polarity := -1 ;
@@ -2559,24 +2574,26 @@ begin
       end ;
 
    // Calculate baseline average
-   Sum := 0.0 ;
-   NumAvg := 0 ;
-   for i := iStart to iEnd do begin
-      j := (i*CDRFH.NumChannels) + Channel[cbChannel.ItemIndex].ChannelOffset ;
-      Sum := Sum + Buf[j] ;
-      Inc(NumAvg) ;
-      end ;
+   if cbBaseline.ItemIndex <> FixedBaseline then
+      begin
+      Sum := 0.0 ;
+      NumAvg := 0 ;
+      for i := iStart to iEnd do
+          begin
+          j := (i*CDRFH.NumChannels) + Channel[cbChannel.ItemIndex].ChannelOffset ;
+          Sum := Sum + Buf[j] ;
+          Inc(NumAvg) ;
+          end ;
 
-   // Determine pre-event baseline level
-
-   if NumAvg > 0 then begin
-      // If an average available use it for baseline
-      Result := Round( Sum / NumAvg ) ;
+      // Determine pre-event baseline level
+      if NumAvg > 0 then Result := Round( Sum / NumAvg )
+                    else Result := Buf[Channel[cbChannel.ItemIndex].ChannelOffset] ;
       end
    else begin
-      // If no average available use first sample
-      Result := Buf[Channel[cbChannel.ItemIndex].ChannelOffset] ;
-      end ;
+     // Fixed baseline, derived from current user-set baseline cursor.
+     Result := Channel[cbChannel.ItemIndex].ADCZero ;
+     end ;
+
    end ;
 
 
@@ -3362,6 +3379,68 @@ begin
      end ;
 
 
+procedure TEventDetFrm.SaveDataToFile ;
+// -------------------------------------
+// Save data on display to CSV text file
+// -------------------------------------
+var
+    TStart,TEnd : single ;
+begin
+
+     // Present user with standard Save File dialog box
+     Main.SaveDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofPathMustExist] ;
+     Main.SaveDialog.DefaultExt := 'csv' ;
+     Main.SaveDialog.Filter := ' CSV Files (*.csv)|*.csv' ;
+     Main.SaveDialog.Title := 'Export to CSV File' ;
+
+     { Create new data file }
+
+     if Page.ActivePage = DetectEventsPage then
+        begin
+        // Save signal in event detection display panel
+        TStart := sbDisplay.Position*scDisplay.TScale ;
+        TEnd := TStart + scDisplay.NumPoints*scDisplay.TScale ;
+        Main.SaveDialog.FileName := AnsiReplaceText(
+                                    LowerCase(ExtractFileName(CdrFH.FileName)),
+                                    '.edr',
+                                    format('.%.3g-%.3gs.csv',
+                                    [TStart,TEnd] ));
+        end
+     else if Page.ActivePage = EditEventsPage then
+         Main.SaveDialog.FileName := AnsiReplaceText(
+                                    LowerCase(ExtractFileName(CdrFH.FileName)),
+                                    '.edr',
+                                    format('-event.%d.csv',[sbEvent.Position] ))
+     else if Page.ActivePage = XYPlotPage then
+         Main.SaveDialog.FileName := AnsiReplaceText(
+                                    LowerCase(ExtractFileName(CdrFH.FileName)),
+                                    '.edr',
+                                    format('.event.%s.%s.csv',
+                                    [plPlot.XAxisLabel,plPlot.YAxisLabel]))
+     else if Page.ActivePage = HistPage then
+         Main.SaveDialog.FileName := AnsiReplaceText(
+                                    LowerCase(ExtractFileName(CdrFH.FileName)),
+                                    '.edr',
+                                    format('.event.%s.%s.csv',
+                                    [plPlot.XAxisLabel,plPlot.YAxisLabel]))
+     else if Page.ActivePage = AveragePage then
+         Main.SaveDialog.FileName := AnsiReplaceText(
+                                    LowerCase(ExtractFileName(CdrFH.FileName)),
+                                    '.edr',
+                                    '-avg.csv' ) ;
+
+     if not Main.SaveDialog.execute then Exit ;
+
+     if Page.ActivePage = DetectEventsPage then scDisplay.SaveDataToFile(Main.SaveDialog.FileName)
+     else if Page.ActivePage = EditEventsPage then scEditDisplay.SaveDataToFile(Main.SaveDialog.FileName)
+     else if Page.ActivePage = AveragePage then scAverageDisplay.SaveDataToFile(Main.SaveDialog.FileName)
+     else if Page.ActivePage = XYPlotPage then plPlot.SaveDataToFile(Main.SaveDialog.FileName)
+     else if Page.ActivePage = HistPage then plHist.SaveDataToFile(Main.SaveDialog.FileName) ;
+
+     end ;
+
+
+
 procedure TEventDetFrm.CopyImageToClipboard ;
 { -------------------------------------------
   Copy display image to clipboard as metafile
@@ -3916,6 +3995,20 @@ begin
         DisplayEvent ;
         end ;
      end;
+
+
+procedure TEventDetFrm.cbBaselineChange(Sender: TObject);
+// -------------------------
+// Baseline position changed
+// -------------------------
+begin
+
+     Settings.EventDetector.Baseline := cbBaseline.ItemIndex ;
+     SaveCDRHeader( CDRFH ) ;
+
+     DisplayEvent ;
+     EventAnalysisFileUpdateRequired := True ;
+     end ;
 
 
 procedure TEventDetFrm.cbChannelChange(Sender: TObject);
@@ -5268,33 +5361,6 @@ begin
 end;
 
 
-procedure TEventDetFrm.rbBaselineAtStartClick(Sender: TObject);
-// -----------------------------------------
-// Zero baseline at start of record selected
-// -----------------------------------------
-begin
-
-     Settings.EventDetector.BaselineAtStart := True ;
-     SaveCDRHeader( CDRFH ) ;
-
-     DisplayEvent ;
-     EventAnalysisFileUpdateRequired := True ;
-     end ;
-
-
-procedure TEventDetFrm.rbBaselineAtEventClick(Sender: TObject);
-// -----------------------------------------
-// Zero baseline at start of event selected
-// -----------------------------------------
-begin
-
-     Settings.EventDetector.BaselineAtStart := False ;
-     SaveCDRHeader( CDRFH ) ;
-
-     DisplayEvent ;
-     EventAnalysisFileUpdateRequired := True ;
-     end ;
-
 procedure TEventDetFrm.rbTDecayFromPeakClick(Sender: TObject);
 // -----------------------------------------
 // Decay time relative to peak selected
@@ -5351,6 +5417,15 @@ begin
      SaveCDRHeader( CDRFH ) ;
      DisplayEvent ;
      end;
+
+procedure TEventDetFrm.cbEventAlignmentChange(Sender: TObject);
+// ----------------------------
+// Event alignment menu changed
+// ----------------------------
+begin
+     Settings.EventDetector.Alignment := cbEventAlignment.ItemIndex ;
+end;
+
 
 procedure TEventDetFrm.FormCreate(Sender: TObject);
 // ------------------------------------
