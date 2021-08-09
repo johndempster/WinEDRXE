@@ -403,7 +403,8 @@ unit Mdiform;
   V3.9.4  05.05.21 Event Detector: Bug which caused event detection point to be slightly misaligned from mid-point of rise for multi-channel recordings fixed
   V3.9.5  03.06.21 Event Detector: Events can now be aligned by either max. rate of rise or mid-point of rise.
                    Save to File added to Edit menu, allowed displayed signals/plots to be saved to as CSV file
-
+  V3.9.6  09.08.21 AmpModule.pas copied from WinWCP. Axoclamp 900A module updated (not tested yet with actual hardware
+                   Sealtest.pas imported from WinWCP, Pulse rate now faster. Default holding potential for AO channels selected by tick now updated.
 
   =======================================================================}
 
@@ -644,7 +645,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.9.5' ;
+     Version := 'V3.9.6' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }

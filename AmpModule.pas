@@ -328,7 +328,7 @@ const
      AXC_MODE_DSEVC
      AXC_MODE_TEVC }
 
-     AxoClamp900ADemoMode = TRue ;
+     AxoClamp900ADemoMode = False ;
      AxoClamp900ADemoHS1Mode = AXC_MODE_DSEVC  ; //AXC_MODE_DSEVC ; //AXC_MODE_ICLAMP ;
      AxoClamp900ADemoHS2Mode = {AXC_MODE_TEVC ;} AXC_MODE_ICLAMP ;
 
