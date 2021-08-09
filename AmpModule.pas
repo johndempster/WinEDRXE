@@ -130,16 +130,19 @@ unit AmpModule;
 //          connected to the secondary channel in each clamp mode (applies to Axopatch 200 and AMS-2400)
 // 15.09.17 NPI ELC-03XS voltage channel gain telegraph now correct (and renamed ELC-03SX to ELC-03XS).
 // 21.09.17 NPI ELC-03XS now uses Command Input in voltage-clamp mode and Potential Output in current clamp mode
-// 18.01.18 AMS-2400: Now reads voltage gain in current clamp mode correctly
 // 16.05.18 MultiClampConvertUnits() added. PrimaryScaleFactorX1, SecondayScaleFactorX1 now set in correct units by Multiclamp
 // 24.09.18 EPC-800 current command channel now set to AmpNumber+1 since this amplifier has a separate current-clamp command channel
-// 26.04.21 WPI EVC-4000 epithelial tissue voltage clamp added
+// 28.01.20 A-M Systems 2400: Now supports latest version of patch clamp with 0.3V gain telegraph steps instead of original 0.5V steps
+//          GetAMS2400GainCC() removed since new GetAMS2400Gain function works for both current and voltage-clamp mode
+//          now default current-clamp X1 voltage gain = 0.00001 ;
+// 22.07.21 WPI EVC-4000 amplifier added
+// 04.08.21 Axoclamp 900A support updated and checked in demo mode. Not tested with actual hardware
 
 interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, Math, strutils,
-  xmldoc, xmlintf,ActiveX, shlobj, fileio  ;
+  xmldoc, xmlintf,ActiveX, shlobj, fileio, mmsystem  ;
 
 const
      MaxAmplifiers = 4 ;
@@ -252,6 +255,10 @@ const
      MCTG_HW_TYPE_NUMCHOICES  = 1;
 
 
+//   Molecular Devices Axoclamp 900A constants
+//   -----------------------------------------
+
+
      AXC_CHAN_1                 = 0;
      AXC_CHAN_2                 = 1;
      AXC_MAX_CHANNELS           = 2;
@@ -314,6 +321,16 @@ const
   AXC_HEADSTAGE_TYPE_VG9_x100uA           = 5;   // Rf = 0.1M
   AXC_HEADSTAGE_TYPE_NONE                 = 20;  // headstage not connected
 
+   {  AXC_MODE_IZERO
+     AXC_MODE_ICLAMP
+     AXC_MODE_DCC
+     AXC_MODE_HVIC
+     AXC_MODE_DSEVC
+     AXC_MODE_TEVC }
+
+     AxoClamp900ADemoMode = TRue ;
+     AxoClamp900ADemoHS1Mode = AXC_MODE_DSEVC  ; //AXC_MODE_DSEVC ; //AXC_MODE_ICLAMP ;
+     AxoClamp900ADemoHS2Mode = {AXC_MODE_TEVC ;} AXC_MODE_ICLAMP ;
 
     AXC_SignalName : Array[0..17] of String = (
     'Vc1',
@@ -447,7 +464,7 @@ TCED1902 = record
 
 // Axoclamp 900A
 
-TAXC_Signal = record
+TAXC_Signal = packed record
     Channel : Integer ;
     ID : Integer ;
     Name : pANSIChar ;
@@ -479,7 +496,7 @@ TAXC_MeterData = packed record
 
 // Create the Axoclamp device object and return a handle.
 
-TAXC_CheckAPIVersion = function(QueryVersion : pANSIChar ) : Boolean ;
+TAXC_CheckAPIVersion = function(QueryVersion : pANSIChar ) : Boolean ;  stdcall ;
 
 TAXC_CreateHandle = function(
                     bDemo : LongBool ;
@@ -544,6 +561,14 @@ TAXC_GetScaledOutputSignal = function(
                              Mode : Integer ;
                              var Error : Integer) : LongBool  ; stdcall ;
 
+// Get scaled output signal
+TAXC_GetScaledOutputSignalTable = function(
+                                  HAxHandle : Integer ;
+                                  var Signal : TAXC_Signal ;
+                                  Channel : Integer ;
+                                  Mode : Integer ;
+                                  var Error : Integer) : LongBool  ; stdcall ;
+
 // Set scaled output signal
 TAXC_SetScaledOutputSignal = function(
                              HAxHandle : Integer ;
@@ -568,7 +593,6 @@ TAXC_SetScaledOutputGain = function(
                            Channel : Integer ;
                            Mode : Integer ;
                            var Error : Integer) : LongBool  ; stdcall ;
-
 
 TAXC_GetMode = function(
                AxHandle : Integer ;
@@ -610,6 +634,27 @@ TAXC_GetHeadstageType = function(
 TAXC_AcquireMeterData = function(
                         AxHandle : Integer ;
                         var AXC_MeterData : TAXC_MeterData ;
+                        var Error : Integer ) : LongBool  ; stdcall ;
+
+TAXC_GetExtCmdSensit = function(
+                        AxHandle : Integer ;
+                        var Sensitivity : double ;
+                        uChannel : Integer ;
+                        uMode : Integer ;
+                        var Error : Integer ) : LongBool  ; stdcall ;
+
+TAXC_SetExtCmdEnable = function(
+                        AxHandle : Integer ;
+                        Enable : LongBool ;
+                        uChannel : Integer ;
+                        uMode : Integer ;
+                        var Error : Integer ) : LongBool  ; stdcall ;
+
+TAXC_GetExtCmdEnable = function(
+                        AxHandle : Integer ;
+                        var Enable : LongBool ;
+                        uChannel : Integer ;
+                        uMode : Integer ;
                         var Error : Integer ) : LongBool  ; stdcall ;
 
   TAmplifier = class(TDataModule)
@@ -674,9 +719,15 @@ TAXC_AcquireMeterData = function(
     Axoclamp900ALibPath : String ;
     Axoclamp900ALibLoaded : Boolean ;
     Axoclamp900AOpen : Boolean ;
+    Axoclamp900AOpenFailed : Boolean ;
+    Axoclamp900AList : TStringList ;
+    Axoclamp900ASelectedDevice : Integer ;
+
+    // DLL Library handles
     Axoclamp900ALibHnd : Integer ;
     Axoclamp900AHIDHnd : Integer ;
-    Axoclamp900AHnd : Integer ;
+    Axoclamp900AHnd : Integer ;          // Device handle
+
 
    procedure AddAmplifierNumber(
           var Name : string ;
@@ -820,8 +871,6 @@ TAXC_AcquireMeterData = function(
           ) ;
 
     function GetAMS2400Gain(
-         AmpNumber : Integer ) : single ;
-    function GetAMS2400GainCC(
          AmpNumber : Integer ) : single ;
 
     function GetAMS2400Mode(
@@ -979,7 +1028,15 @@ TAXC_AcquireMeterData = function(
           ) ;
     procedure OpenAxoclamp900A ;
     procedure CloseAxoclamp900A ;
+    procedure Axoclamp900ASelectDevice(
+              DeviceNum : Integer                    // Device # to select
+              ) ;
     procedure CheckErrorAxoclamp900A( Err : Integer ) ;
+    procedure LogErrorAxoclamp900A(
+              s : string ;
+              Err : Integer ;
+              DisplayMessage : Boolean
+          ) ;
     procedure DisplayAxoclamp900AError(
          Hnd : Integer ;
          Err : Integer ) ;
@@ -1062,7 +1119,6 @@ TAXC_AcquireMeterData = function(
           var ChanScale : Single ;
           var ADCInput : Integer
           ) ;
-
 
     function LoadProcedure(
          Hnd : THandle ;       { Library DLL handle }
@@ -1191,7 +1247,7 @@ TAXC_AcquireMeterData = function(
 
     function SettingsFileExists : Boolean ;
     procedure GetList( List : TStrings ) ;
-    function GetGain( AmpNumber : Integer ) : single ;
+  //  function GetGain( AmpNumber : Integer ) : single ;
 
     // CED 1902 amplifier procedures/functions
     procedure TransmitLine( const Line : string ) ;
@@ -1316,6 +1372,7 @@ var
   AXC_IsDeviceOpen : TAXC_IsDeviceOpen ;
   AXC_IsDemo : TAXC_IsDemo ;
   AXC_GetScaledOutputSignal : TAXC_GetScaledOutputSignal ;
+  AXC_GetScaledOutputSignalTable : TAXC_GetScaledOutputSignalTable ;
   AXC_SetScaledOutputSignal : TAXC_SetScaledOutputSignal ;
   AXC_GetScaledOutputGain : TAXC_GetScaledOutputGain ;
   AXC_SetScaledOutputGain : TAXC_SetScaledOutputGain ;
@@ -1326,6 +1383,9 @@ var
   AXC_GetSignalScaleFactor : TAXC_GetSignalScaleFactor ;
   AXC_GetHeadstageType : TAXC_GetHeadstageType ;
   AXC_AcquireMeterData : TAXC_AcquireMeterData ;
+  AXC_GetExtCmdSensit : TAXC_GetExtCmdSensit ;
+  AXC_SetExtCmdEnable : TAXC_SetExtCmdEnable ;
+  AXC_GetExtCmdEnable : TAXC_GetExtCmdEnable ;
 
 procedure TAmplifier.AmplifierCreate(Sender: TObject);
 // ---------------------------------------------
@@ -1385,12 +1445,15 @@ begin
      for i := 0 to High(MCChannels) do MCChannels[i] := 0 ;
 
      // Axoclamp 900A
-     Axoclamp900ALibPath := 'C:\Program Files\Molecular Devices\Axoclamp 900A Commander\' ;
+     Axoclamp900ALibPath := 'C:\Program Files (x86)\Molecular Devices\Axoclamp 900A Commander 1.2\' ;
      Axoclamp900ALibLoaded := False ;
      Axoclamp900AOpen := False ;
+     Axoclamp900AOpenFailed := False ;
      Axoclamp900ALibHnd := -1 ;
      Axoclamp900AHIDHnd := -1 ;
      Axoclamp900AHnd := -1 ;
+     Axoclamp900AList := TStringList.Create ;
+     Axoclamp900ASelectedDevice := 0 ;
 
      // Load settings
      SettingsDirectory := GetSpecialFolder(CSIDL_COMMON_DOCUMENTS) + '\WinWCP\';
@@ -1460,8 +1523,6 @@ begin
      List.AddObject('WPI EVC-4000',TObject(amWPIEVC4000)) ;
 
      List.AddObject('Tecella Triton/Pico',TObject(amTriton)) ;
-
-
 
      end ;
 
@@ -1948,7 +2009,7 @@ begin
             FPrimaryChannelUnitsCC[AmpNumber] := 'mV' ;
 
             FPrimaryChannelScaleFactorX1Gain[AmpNumber] := 0.00001 ;
-            FPrimaryChannelScaleFactorX1GainCC[AmpNumber] := 0.01 ;
+            FPrimaryChannelScaleFactorX1GainCC[AmpNumber] := 0.00001 ; // Changed from 0.01 28.01.20;
             FPrimaryChannelScaleFactor[AmpNumber] := 0.00001 ;
 
             FSecondaryOutputChannel[AmpNumber] := 2*AmpNumber + 1 ;
@@ -2320,8 +2381,8 @@ begin
             FPrimaryChannelScaleFactor[AmpNumber] := FPrimaryChannelScaleFactorX1Gain[AmpNumber] ;
 
             FSecondaryOutputChannel[AmpNumber] := 2*AmpNumber + 1 ;
-            FSecondaryOutputChannelName[AmpNumber] := 'Ch.1 Scaled Output' ;
-            FSecondaryOutputChannelNameCC[AmpNumber] := 'Ch.1 Scaled Output' ;
+            FSecondaryOutputChannelName[AmpNumber] := 'Ch.2 Scaled Output' ;
+            FSecondaryOutputChannelNameCC[AmpNumber] := 'Ch.2 Scaled Output' ;
             FSecondaryCHannelUnits[AmpNumber] := 'mV' ;
             FSecondaryCHannelUnitsCC[AmpNumber] := 'mV' ;
             FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.01 ;
@@ -2571,7 +2632,6 @@ begin
             FModeTelegraphChannel[AmpNumber] := DefModeTelegraphChannel[AmpNumber] ;
             end ;
 
-
         else begin
             FPrimaryOutputChannel[AmpNumber] := 2*AmpNumber ;
             FSecondaryOutputChannel[AmpNumber] := 2*AmpNumber + 1 ;
@@ -2629,6 +2689,7 @@ begin
      end ;
 
 
+{
 function TAmplifier.GetGain(
          AmpNumber : Integer
          ) : single ;
@@ -2686,7 +2747,7 @@ begin
           else Result := 1.0 ;
           end ;
      end ;
-
+}
 
 function TAmplifier.GetNeedsGainTelegraphChannel(
           AmpNumber : Integer )
@@ -4535,12 +4596,11 @@ function TAmplifier.GetAMS2400Gain(
 // Voltage-clamp mode
 // ---------------------------------------------------
 const
-     NumGains = 16 ;
+     NumGains = 18 ;
      VGainSpacing = 0.5 ;
-     VStart = 0.3 ;
 var
    Gains : Array[0..NumGains-1] of single ;
-   V : single ;
+   V,VOffset : single ;
    iGain : Integer ;
 begin
 
@@ -4552,31 +4612,32 @@ begin
         (not ADCInUse) then begin
 
         // Gain settings
-        Gains[0] := 1.0 ;
-        Gains[1] := 2.0 ;
-        Gains[2] := 5.0 ;
-        Gains[3] := 10.0 ;
-        Gains[4] := 20.0 ;
-        Gains[5] := 50.0 ;
-        Gains[6] := 100.0 ;
-        Gains[7] := 200.0 ;
-        Gains[8] := 500.0 ;
-        Gains[9] := 1000.0 ;
-        Gains[10] := 2000.0 ;
-        Gains[11] := 5000.0 ;
-        Gains[12] := 10000.0 ;
-        Gains[13] := 20000.0 ;
-        Gains[14] := 50000.0 ;
-        Gains[15] := 100000.0 ;
+        Gains[0] := 1.0 ;         // 0V
+        Gains[1] := 2.0 ;         // 0.3, 0.5V
+        Gains[2] := 5.0 ;         // 0.8, 1.0V
+        Gains[3] := 10.0 ;        // 1.3, 1.5V
+        Gains[4] := 20.0 ;        // 1.8, 2.0V
+        Gains[5] := 50.0 ;        // 2.3, 2.5V
+        Gains[6] := 100.0 ;       // 2.8, 3.0V
+        Gains[7] := 200.0 ;       // 3.3, 3.5V
+        Gains[8] := 500.0 ;       // 3.8, 4.0V
+        Gains[9] := 1000.0 ;      // 4.3, 4.5V
+        Gains[10] := 2000.0 ;     // 4.8, 5.0V
+        Gains[11] := 5000.0 ;     // 5.3, 5.5V
+        Gains[12] := 10000.0 ;    // 5.8, 6.0V
+        Gains[13] := 20000.0 ;    // 6.3, 6.5V
+        Gains[14] := 50000.0 ;    // 6.8, 7.0V
+        Gains[15] := 100000.0 ;   // 7.3, 7.5V
+        Gains[16] := 200000.0 ;   // 7.8, 8.0V
+        Gains[17] := 500000.0 ;   // 8.3, 8.5V
 
         // Get voltage from telegraph channel
         V := GetTelegraphVoltage( FGainTelegraphChannel[AmpNumber] ) ;
 
+        // Determine gain step size (0.3V or 0.5V)
+        if Frac( (V+0.1)/VGainSpacing ) > 0.1 then V := V + 0.2 ;
         // Extract gain associated with telegraph voltage
-        if V < (VStart-0.1) then iGain := 0
-        else begin
-           iGain := Trunc( (V - VStart + 0.1)/VGainSpacing ) + 1 ;
-           end ;
+        iGain := Trunc( (V + 0.1)/VGainSpacing ) ;
         iGain := Min(Max(iGain,0),NumGains-1) ;
         LastGain[AmpNumber] := Gains[iGain] ;
 
@@ -4585,57 +4646,6 @@ begin
      Result := LastGain[AmpNumber] ;
 
      end ;
-
-
-function TAmplifier.GetAMS2400GainCC(
-         AmpNumber : Integer ) : single ;
-// ----------------------------------------------------------
-// Decode A-M Systems 2400 voltage gain from telegraph output
-// Current-clamp mode
-// ----------------------------------------------------------
-const
-     NumGains = 7 ;
-     VGainSpacing = 0.5 ;
-     VStart = 1.3 ;
-var
-   Gains : Array[0..NumGains-1] of single ;
-   V : single ;
-   iGain : Integer ;
-begin
-
-     // Note. Don't interrupt A/D sampling if it in progress.
-     // Use most recent gain setting instead
-
-    if (FGainTelegraphChannel[AmpNumber] >= 0) and
-        (FGainTelegraphChannel[AmpNumber] < Main.SESLabIO.ADCMaxChannels) and
-        (not ADCInUse) then begin
-
-        // Gain settings
-        Gains[0] := 1.0 ;
-        Gains[1] := 2.0 ;
-        Gains[2] := 5.0 ;
-        Gains[3] := 10.0 ;
-        Gains[4] := 20.0 ;
-        Gains[5] := 50.0 ;
-        Gains[6] := 100.0 ;
-
-        // Get voltage from telegraph channel
-        V := GetTelegraphVoltage( FGainTelegraphChannel[AmpNumber] ) ;
-
-        // Extract gain associated with telegraph voltage
-        if V < (VStart-0.1) then iGain := 0
-        else begin
-           iGain := Trunc( (V - VStart + 0.1)/VGainSpacing ) + 1 ;
-           end ;
-        iGain := Min(Max(iGain,0),NumGains-1) ;
-        LastGain[AmpNumber] := Gains[iGain] ;
-
-        end ;
-
-     Result := LastGain[AmpNumber] ;
-
-     end ;
-
 
 
 function TAmplifier.GetAMS2400Mode(
@@ -4700,7 +4710,7 @@ begin
           AddAmplifierNumber( ChanName, iChan ) ;
           ChanUnits := FPrimaryChannelUnitsCC[AmpNumber];
           ChanCalFactor := FPrimaryChannelScaleFactorX1GainCC[AmpNumber] ;
-          if GetGainTelegraphAvailable(AmpNumber) then ChanScale := GetAMS2400GainCC( AmpNumber )
+          if GetGainTelegraphAvailable(AmpNumber) then ChanScale := GetAMS2400Gain( AmpNumber )
           else ChanScale := FPrimaryChannelScaleFactor[AmpNumber]/ ChanCalFactor ;
           end ;
        FPrimaryChannelScaleFactor[AmpNumber] := ChanCalFactor*ChanScale ;
@@ -6078,7 +6088,6 @@ begin
     end ;
 
 
-
 function TAmplifier.GetAxoclamp900AGain(
          ChanNumber : Integer ) : single ;
 // ---------------------------------------------------
@@ -6090,30 +6099,30 @@ const
      VStart = 0.4 ;
 var
    Gain : Double ;
-   Mode,Err : Integer ;
-   AXC_MeterData : TAXC_MeterData ;
+   Mode,Err,AXChan,iMode,AmpNum : Integer ;
 begin
 
-     // Note. Don't interrupt A/D sampling if it in progress.
-     // Use most recent gain setting instead
      Result := 1.0 ;
      if not Axoclamp900AOpen then OpenAxoclamp900A ;
      if not Axoclamp900AOpen then Exit ;
 
-//     AXC_AcquireMeterData( Axoclamp900AHnd,AXC_MeterData,Err) ;
-//     outputdebugstring(pchar(format( '%.4g',[AXC_MeterData.Meter1])));
+     AxChan := ChanNumber mod 2 ;
+     AmpNum := CHanNumber div 2 ;
 
-     ChanNumber := Min(Max(ChanNumber,0),1) ;
-     Err := 0 ;
-     AXC_GetMode( Axoclamp900AHnd, ChanNumber, Mode, Err ) ;
-     if Err <> 0 then WriteToLogFile( format('Axoclamp 900A (AXC_GetMode): Error=%d',[Err]));
+    // Select device for I/O (if more than one available)
+    Axoclamp900ASelectDevice(AmpNum) ;
 
-     Gain := -1 ;
-     AXC_GetScaledOutputGain( Axoclamp900AHnd, Gain, ChanNumber, Mode, Err ) ;
-     if Err <> 0 then WriteToLogFile( format('Axoclamp 900A (AXC_GetScaledOutputGain): Error=%d',[Err]));
+     // Get mode of channel
+     AXC_GetMode( Axoclamp900AHnd, AxChan, iMode, Err ) ;
+     LogErrorAxoClamp900A(format('GetAxoclamp900AGain.AXC_GetMod Ch.%d ',[AxChan]),Err,False) ;
+
+     // Get output channel gain
+     AXC_GetScaledOutputGain( Axoclamp900AHnd, Gain, AXChan, iMode, Err ) ;
+     LogErrorAxoClamp900A(format('GetAxoclamp900AGain.AXC_GetScaledOutputGain Ch.%d ',[AxChan]),Err,False) ;
 
      Result := Gain ;
      end ;
+
 
 procedure TAmplifier.DisplayAxoclamp900AError(
          Hnd : Integer ;
@@ -6133,18 +6142,59 @@ function TAmplifier.GetAxoclamp900AMode(
 // Read voltage/current clamp mode telegraph
 // -----------------------------------------
 var
-    ChanName : String ;
-    ChanUnits : String ;
-    ChanCalFactor : single ;
-    ChanScale : single ;
-    ADCInput : Integer ;
+    ch, iMode, Err, AmpNum : Integer;
+    CommandSensitivity : Array[0..1] of Double ;
 begin
 
-     GetAxoclamp900AChannelSettings( FPrimaryOutputChannel[AmpNumber],
-                                   ChanName,ChanUnits,ChanCalFactor,ChanScale,ADCInput ) ;
-     if ANSIContainsText(ChanUnits,'A') then LastMode[AmpNumber] := ICLAMPMode
-                                        else LastMode[AmpNumber] := VCLAMPMode ;
+    if not Axoclamp900AOpen then OpenAxoclamp900A ;
+    if not Axoclamp900AOpen then Exit ;
+
+    AmpNumber := Min(AmpNumber,High(Axoclamp900AHnd)) ;
+
+     // Get channel operating modes and report whether in a current-clamp or voltage-clamp mode
+
+     LastMode[AmpNumber] := ICLAMPMode ;
+     for ch := 1 downto 0 do
+         begin
+        // Get operating mode for channel
+        Err := 0 ;
+        AXC_GetMode( Axoclamp900AHnd, ch, iMode, Err ) ;
+        LogErrorAxoClamp900A(format('GetAxoclamp900AMode.AXC_GetMode Ch.%d',[ch]),Err,False) ;
+
+        // Get command sensitivity
+        Err := 0 ;
+        AXC_GetExtCmdSensit( Axoclamp900AHnd, CommandSensitivity[ch], ch, iMode, Err ) ;
+        LogErrorAxoClamp900A(format('GetAxoclamp900AMode.AXC_GetExtCmdSensit Ch.%d',[ch]),Err,False) ;
+
+        if (iMode = AXC_MODE_DSEVC) or (iMode = AXC_MODE_TEVC) then
+           begin
+           // Set command voltage scale factor in voltage clamp mode
+           if CommandSensitivity[ch] <> 0.0 then FVoltageCommandScaleFactor[AmpNumber] := CommandSensitivity[ch] ;
+           // Enable voltage-clamp command, disable current clamp command
+           Err := 0 ;
+           AXC_SetExtCmdEnable(Axoclamp900AHnd,False,ch,AXC_MODE_ICLAMP,Err);
+           LogErrorAxoClamp900A(format('GetAxoclamp900AMode.AXC_SetExtCmdEnable Ch.%d Mode=%d',[ch,iMode]),Err,False) ;
+           Err := 0 ;
+           AXC_SetExtCmdEnable(Axoclamp900AHnd,True,ch,iMode,Err);
+           LogErrorAxoClamp900A(format('GetAxoclamp900AMode.AXC_SetExtCmdEnable Ch.%d',[ch,iMode]),Err,False) ;
+           LastMode[AmpNumber] := VCLAMPMode
+           end
+        else
+           begin
+           // Set current scale factor in current clamp mode
+           if CommandSensitivity[ch] <> 0.0 then FCurrentCommandScaleFactor[AmpNumber] := CommandSensitivity[ch] ;
+           // Enable current-clamp command, disable voltage clamp command
+           Err := 0 ;
+           AXC_SetExtCmdEnable(Axoclamp900AHnd,False,ch,AXC_MODE_DSEVC,Err);
+           LogErrorAxoClamp900A(format('GetAxoclamp900AMode.AXC_SetExtCmdEnable Ch.%d Mode=%d',[ch,iMode]),Err,False) ;
+           Err := 0 ;
+           AXC_SetExtCmdEnable(Axoclamp900AHnd,True,ch,iMode,Err);
+           LogErrorAxoClamp900A(format('GetAxoclamp900AMode.AXC_SetExtCmdEnable Ch.%d Mode=%d',[ch,iMode]),Err,False) ;
+           end;
+        end ;
+
      Result := LastMode[AmpNumber] ;
+
      end ;
 
 
@@ -6156,14 +6206,14 @@ procedure TAmplifier.GetAxoclamp900AChannelSettings(
           var ChanScale : Single ;
           var ADCInput : Integer
           ) ;
-// -----------------------------------
+// -----------------------------------------------
 // Get Axoclamp900A voltage clamp channel settings
-// -----------------------------------
+// -----------------------------------------------
 var
     Err,iSignal,iMode : Integer ;
-    ISCale : Double ;
-    HeadstageType : Integer ;
     AmpNumber : Integer ;
+    Gain,ScaleFactor : Double ;
+    AXChan : Integer ;
 begin
 
     AmpNumber := AmpNumberOfChannel(iChan) ;
@@ -6172,80 +6222,94 @@ begin
     if not Axoclamp900AOpen then OpenAxoclamp900A ;
     if not Axoclamp900AOpen then Exit ;
 
-    if IsPrimaryChannel(iChan) then begin
+    // Select device for I/O (if more than one available)
+    Axoclamp900ASelectDevice(AmpNumber) ;
 
-          // Primary channel
+    AXChan := iChan mod 2  ;
+    iSignal := 2;
+    ScaleFactor := 1.0 ;
+    Gain := 1.0 ;
 
-       AXC_GetMode( Axoclamp900AHnd, iChan mod 2, iMode, Err ) ;
-       if Err <> 0 then WriteToLogFile( format('Axoclamp 900A (AXC_GetMode): Error=%d',[Err]));
+    // Get mode of channel
+    Err := 0 ;
+    AXC_GetMode( Axoclamp900AHnd, AxChan, iMode, Err ) ;
+    LogErrorAxoClamp900A(format('GetAxoclamp900AChannelSettings.AXC_GetMode Ch.%d ',[AxChan]),Err,False) ;
 
-       AXC_GetScaledOutputSignal( Axoclamp900AHnd, iSignal, AmpNumber, iMode, Err ) ;
-       if Err <> 0 then WriteToLogFile( format('Axoclamp 900A (AXC_GetScaledOutputSignal): Error=%d',[Err]));
+    // Get signal attached to this channel
+    Err := 0 ;
+    AXC_GetScaledOutputSignal( Axoclamp900AHnd, iSignal, AxChan, iMode, Err ) ;
+    LogErrorAxoClamp900A(format('GetAxoclamp900AChannelSettings.AXC_GetScaledOutputSignal Ch.%d ',[AxChan]),Err,False) ;
 
-       ChanName := AXC_SignalName[iSignal] ;
-       ChanUnits := AXC_SignalUnits[iSignal] ;
+    // Get output channel gain
+    Err := 0 ;
+    AXC_GetScaledOutputGain( Axoclamp900AHnd, Gain, AXChan, iMode, Err ) ;
+    LogErrorAxoClamp900A(format('GetAxoclamp900AChannelSettings.AXC_GetScaledOutputGain Ch.%d ',[AxChan]),Err,False) ;
+    ChanScale := Gain ;
 
-       iSignal := Min(Max(iSignal,0),High(AXC_ChanCalFactors)) ;
+    // Channel name and units
+    ChanName := AXC_SignalName[iSignal] ;
+    ChanUnits := AXC_SignalUnits[iSignal] ;
 
-       //AXC_GetSignalScaleFactor( Axoclamp900AHnd, ScaleFactor, iSignal, Err ) ;
-       // Get type of headstage and calculate calibration factor
-       AXC_GetHeadstageType( Axoclamp900AHnd, HeadstageType, AmpNumber, False, Err ) ;
-       case HeadstageType of
-          AXC_HEADSTAGE_TYPE_HS9_x10uA : IScale := 0.001 ;
-          AXC_HEADSTAGE_TYPE_HS9_x1uA : IScale := 0.01 ;
-          AXC_HEADSTAGE_TYPE_HS9_x100nA : IScale := 0.1 ;
-          AXC_HEADSTAGE_TYPE_VG9_x10uA : IScale := 0.001 ;
-          AXC_HEADSTAGE_TYPE_VG9_x100uA : IScale := 0.0001 ;
-          else IScale := 0.01 ;
-          end ;
-       if ChanUnits = 'mV' then ChanCalFactor := 0.01
-                           else ChanCalFactor := IScale ;
+    // Get headstage scaling factor
+    Err := 0 ;
+    AXC_GetSignalScaleFactor(Axoclamp900AHnd, ScaleFactor, iSignal, Err);
+    LogErrorAxoClamp900A(format('GetAxoclamp900AChannelSettings.AXC_GetSignalScaleFactor Sig.%d ',[iSignal]),Err,False) ;
 
-       if (iSignal = AXC_SIGNAL_ID_DIV10V2) or (iSignal = AXC_SIGNAL_ID_DIV10I2) then
-          ChanCalFactor := ChanCalFactor*0.1 ;
+    if Contains(ChanUnits,'mA') then ScaleFactor := ScaleFactor*1E-3
+    else if Contains(ChanUnits,'uA') then ScaleFactor := ScaleFactor*1E-6
+    else if Contains(ChanUnits,'nA') then ScaleFactor := ScaleFactor*1E-9
+    else if Contains(ChanUnits,'pA') then ScaleFactor := ScaleFactor*1E-12
+    else if Contains(ChanUnits,'mV') then ScaleFactor := ScaleFactor*1E-3 ;
+    ChanCalFactor := ScaleFactor*Gain ;
 
-       ChanScale := GetAxoclamp900AGain(AmpNumber) ;
-       FPrimaryChannelScaleFactorX1Gain[AmpNumber] := ChanCalFactor ;
-       FPrimaryChannelScaleFactor[AmpNumber] := FPrimaryChannelScaleFactorX1Gain[AmpNumber]*ChanScale ;
+    // Update primary/secondary channel settings
+
+    if IsPrimaryChannel(iChan) then
+       begin
+       FPrimaryChannelScaleFactorX1Gain[AmpNumber] := ScaleFactor ;
+       FPrimaryChannelScaleFactor[AmpNumber] := ChanCalFactor ;
        FPrimaryChannelUnits[AmpNumber] := ChanUnits ;
-
-
        end
-    else begin
-
-       AXC_GetMode( Axoclamp900AHnd, AmpNumber, iMode, Err ) ;
-       AXC_GetScaledOutputSignal( Axoclamp900AHnd, iSignal, AmpNumber, iMode, Err ) ;
-
-       iSignal := Min(Max(iSignal,0),High(AXC_ChanCalFactors)) ;
-
-       ChanName := AXC_SignalName[iSignal] ;
-       ChanUnits := AXC_SignalUnits[iSignal] ;
-
-       // Get type of headstage and calculate calibration factor
-       AXC_GetHeadstageType( Axoclamp900AHnd, HeadstageType, AmpNumber, False, Err ) ;
-       case HeadstageType of
-          AXC_HEADSTAGE_TYPE_HS9_x10uA : IScale := 0.001 ;
-          AXC_HEADSTAGE_TYPE_HS9_x1uA : IScale := 0.01 ;
-          AXC_HEADSTAGE_TYPE_HS9_x100nA : IScale := 0.1 ;
-          AXC_HEADSTAGE_TYPE_VG9_x10uA : IScale := 0.001 ;
-          AXC_HEADSTAGE_TYPE_VG9_x100uA : IScale := 0.0001 ;
-          else IScale := 0.01 ;
-          end ;
-
-       if ChanUnits = 'mV' then ChanCalFactor := 0.01
-                           else ChanCalFactor := IScale ;
-
-       if (iSignal = AXC_SIGNAL_ID_DIV10V2) or (iSignal = AXC_SIGNAL_ID_DIV10I2) then
-          ChanCalFactor := ChanCalFactor*0.1 ;
-
-       ChanScale := GetAxoclamp900AGain(AmpNumber) ;
-       FSecondaryChannelScaleFactorX1Gain[AmpNumber] := ChanCalFactor ;
-       FSecondaryChannelScaleFactor[AmpNumber] := FSecondaryChannelScaleFactorX1Gain[AmpNumber]*ChanScale ;
+    else
+       begin
+       FSecondaryChannelScaleFactorX1Gain[AmpNumber] := ScaleFactor ;
+       FSecondaryChannelScaleFactor[AmpNumber] := ChanCalFactor ;
        FSecondaryChannelUnits[AmpNumber] := ChanUnits ;
-
        end ;
 
+//    outputdebugstring(pchar(format('%d %s %s %.4g %.4g',
+//    [iChan,ChanName,ChanUnits,ChanCalFactor,ChanScale])));
+
     end ;
+
+
+procedure TAmplifier.Axoclamp900ASelectDevice(
+          DeviceNum : Integer                    // Device # to select
+          ) ;
+// ---------------------------
+// Select Axoclamp 900A device
+// ---------------------------
+var
+    s : ansistring ;
+    Err : Integer ;
+begin
+
+    DeviceNum := Min( DeviceNum, Axoclamp900AList.Count-1) ;
+
+    if (Axoclamp900AList.Count > 1) and (Axoclamp900ASelectedDevice <> DeviceNum) then
+       begin
+       // Close currently selected device
+       s := Axoclamp900AList[Axoclamp900ASelectedDevice] ;
+       Err := 0 ;
+       AXC_CloseDevice( Axoclamp900AHnd, Err ) ;
+       // Open new device
+       Axoclamp900ASelectedDevice := DeviceNum ;
+       Err := 0 ;
+       s := Axoclamp900AList[DeviceNum] ;
+       AXC_OpenDevice( Axoclamp900AHnd, pANSIChar(s), true, Err ) ;
+       end;
+
+end;
 
 
 procedure TAmplifier.OpenAxoclamp900A ;
@@ -6255,30 +6319,50 @@ procedure TAmplifier.OpenAxoclamp900A ;
 var
     Err : Integer ;
     SerialNum : Array[0..15] of ANSIChar ;
-    APIVersion : Array[0..255] of ANSIChar ;
-    cBuf : Array[0..255] of ANSIChar ;
-    DemoMode,IsOpen : LongBool ;
-//    Devicename : Array[0..32] of Char ;
+    i: Integer;
+    Paths : TStringList ;
+    Path : string ;
+    iPath : Integer ;
+    s : ansistring ;
 begin
 
      if Axoclamp900AOpen then Exit ;
 
-     if not Axoclamp900ALibLoaded then begin
-        // Load main library
-        if FileExists(Axoclamp900ALibPath + 'axoclampdriver.dll') then begin
-           // Look for DLLs in Axoclamp 900A folder
-           Axoclamp900AHIDHnd := LoadLibrary(PChar(Axoclamp900ALibPath + 'axHIDManager.dll')) ;
-           Axoclamp900ALibHnd := LoadLibrary(PChar(Axoclamp900ALibPath + 'axoclampdriver.dll')) ;
-           end
-        else begin
-           // Look for DLLs elsewhere
-           Axoclamp900AHIDHnd := LoadLibrary(PChar('axHIDManager.dll')) ;
-           Axoclamp900ALibHnd := LoadLibrary(PChar('axoclampdriver.dll')) ;
-           end ;
-        if Axoclamp900ALibHnd <= 0 then begin
-           ShowMessage( format('%s library not found',[Axoclamp900ALibPath])) ;
+     // Load DLL libraries
+     if not Axoclamp900ALibLoaded then
+        begin
+
+        // Create list of possible paths for Axoclamp Commander folder
+        Paths := TStringList.Create ;
+        for i := 0 to 9 do
+            begin
+            s := format('c:\Program Files\Molecular Devices\Axoclamp 900A Commander 1.%d\',[i]) ;
+            Paths.Add(s) ;
+            s := format('c:\Program Files (x86)\Molecular Devices\Axoclamp 900A Commander 1.%d\',[i]) ;
+            Paths.Add(s) ;
+            end;
+
+        // Determine which folder exists
+        Path := '' ;
+        for iPath := 0 to Paths.Count-1 do
+            begin
+            if FileExists(Paths[iPath] + 'axoclampdriver.dll') then Path := Paths[iPath] ;
+            end;
+
+        // Load libraries using found path or from program folder (path='')
+        Axoclamp900AHIDHnd := LoadLibrary(PChar( Path + 'axHIDManager.dll')) ;
+        Axoclamp900ALibHnd := LoadLibrary(PChar( Path + 'axoclampdriver.dll')) ;
+
+        Paths.Free ;
+
+        if Axoclamp900ALibHnd <= 0 then
+           begin
+           if not Axoclamp900AOpenFailed then
+           ShowMessage('DLL libraries not found. Copy files axoclampdriver.dll && axHIDManager.dll into c:\Program Files\Molecular Devices (x86)\winwcp') ;
+           Axoclamp900AOpenFailed := True ;
            Exit ;
            end ;
+
         end ;
 
      Axoclamp900ALibLoaded := True ;
@@ -6294,6 +6378,7 @@ begin
      @AXC_IsDeviceOpen := LoadProcedure( Axoclamp900ALibHnd, '_AXC_IsDeviceOpen@12' ) ;
      @AXC_IsDemo := LoadProcedure( Axoclamp900ALibHnd, '_AXC_IsDemo@12' ) ;
      @AXC_GetScaledOutputSignal := LoadProcedure( Axoclamp900ALibHnd, '_AXC_GetScaledOutputSignal@20' ) ;
+     @AXC_GetScaledOutputSignalTable := LoadProcedure( Axoclamp900ALibHnd, '_AXC_GetScaledOutputSignalTable@20' ) ;
      AXC_SetScaledOutputSignal := LoadProcedure( Axoclamp900ALibHnd, '_AXC_SetScaledOutputSignal@20' ) ;
      @AXC_GetScaledOutputGain := LoadProcedure( Axoclamp900ALibHnd, '_AXC_GetScaledOutputGain@20' ) ;
      @AXC_SetScaledOutputGain := LoadProcedure( Axoclamp900ALibHnd, '_AXC_SetScaledOutputGain@24' ) ;
@@ -6304,38 +6389,80 @@ begin
      @AXC_GetSignalScaleFactor := LoadProcedure( Axoclamp900ALibHnd, '_AXC_GetSignalScaleFactor@16' ) ;
      @AXC_GetHeadstageType := LoadProcedure( Axoclamp900ALibHnd, '_AXC_GetHeadstageType@20' ) ;
      @AXC_AcquireMeterData := LoadProcedure( Axoclamp900ALibHnd, '_AXC_AcquireMeterData@12' ) ;
+     @AXC_GetExtCmdSensit := LoadProcedure( Axoclamp900ALibHnd, '_AXC_GetExtCmdSensit@20' ) ;
+     @AXC_SetExtCmdEnable := LoadProcedure( Axoclamp900ALibHnd, '_AXC_SetExtCmdEnable@20' ) ;
+     @AXC_GetExtCmdEnable := LoadProcedure( Axoclamp900ALibHnd, '_AXC_GetExtCmdEnable@20' ) ;
 
-     //AXC_CheckAPIVersion( APIVersion ) ;
-     //ShowMessage( ANSIString(APIVersion)) ;
-
-     DemoMode := false ;
+     // Open device handle
      Err := 0 ;
-     Axoclamp900AHnd := AXC_CreateHandle( DemoMode, Err ) ;
-     AXC_FindFirstDevice( Axoclamp900AHnd, SerialNum, High(SerialNum), Err ) ;
-     if Err <> 0 then begin
-     //   DisplayAxoclamp900AError(Axoclamp900AHnd,Err);
-        ShowMessage('ERROR! Unable to find Axoclamp 900A') ;
-        AXC_DestroyHandle(Axoclamp900AHnd) ;
+     Axoclamp900AHnd := AXC_CreateHandle( AxoClamp900ADemoMode, Err ) ;
+     if Err <> 0 then
+        begin
+        if not AxoClamp900AOpenFailed then LogErrorAxoClamp900A('Axoclamp 900A: ',Err,True) ;
+        if not AxoClamp900AOpenFailed then ShowMessage('Axoclamp 900A: Unable to open device driver!') ;
         Axoclamp900AHnd := -1 ;
+        AxoClamp900AOpenFailed := True ;
         exit ;
         end ;
 
-     if Err = 0 then begin
-        AXC_OpenDevice( Axoclamp900AHnd, SerialNum, true, Err ) ;
-        if Err <> 0 then begin
-           ShowMessage('ERROR! Unable to open Axoclamp 900A') ;
-           AXC_DestroyHandle(Axoclamp900AHnd) ;
-           Axoclamp900AHnd := -1 ;
-           exit ;
-           end ;
+     // Find first Axoclamp 900A device
+     Err := 0 ;
+     AXC_FindFirstDevice( Axoclamp900AHnd, SerialNum, High(SerialNum), Err ) ;
+     if Err = 0 then
+        begin
+        // First device found
+        Axoclamp900AList.Add(ansistring(SerialNum)) ;
+        WriteToLogFile( format('Axoclamp 900A #%d found: Serial No. %s: ',
+                        [Axoclamp900AList.Count,Axoclamp900AList[0]]) );
+
+        // Find any additional devices
+        Err := 0 ;
+        while AXC_FindNextDevice( Axoclamp900AHnd, SerialNum, High(SerialNum), Err ) do
+           begin
+           Axoclamp900AList.Add(ansistring(SerialNum)) ;
+           WriteToLogFile( format('Axoclamp 900A #%d found: Serial No. %s: ',
+                           [Axoclamp900AList.Count,Axoclamp900AList[Axoclamp900AList.Count-1]]) );
+           end;
+
+        end
+     else
+        begin
+        // No devices found
+        if not AxoClamp900AOpenFailed then ShowMessage('Axoclamp 900A: No devices found!') ;
+        AXC_DestroyHandle(Axoclamp900AHnd) ;
+        Axoclamp900AHnd := -1 ;
+        AxoClamp900AOpenFailed := True ;
+        exit ;
         end ;
 
-     AXC_GetSerialNumber( Axoclamp900AHnd, cbuf, High(cbuf), Err ) ;
-     WriteToLogFile('Axoclamp 900A s/n ' + ansistring(cbuf));
+     // Open first device
+     Err := 0 ;
+     s := Axoclamp900AList[0] ;
+     AXC_OpenDevice( Axoclamp900AHnd, pANSIChar(s), true, Err ) ;
+     if Err <> 0 then begin
+       if not AxoClamp900AOpenFailed then ShowMessage('ERROR! Unable to open Axoclamp 900A') ;
+       AXC_DestroyHandle(Axoclamp900AHnd) ;
+       Axoclamp900AHnd := -1 ;
+       exit ;
+       end ;
 
      Axoclamp900AOpen := True ;
+      AxoClamp900AOpenFailed := False ;
+
+     if AxoClamp900ADemoMode then
+        begin
+        // Default settings for testing in demo mode
+        AXC_SetMode( Axoclamp900AHnd, 0, AxoClamp900ADemoHS1Mode, Err ) ;
+        AXC_SetMode( Axoclamp900AHnd, 1, AxoClamp900ADemoHS2Mode, Err ) ;
+        AXC_SetScaledOutputSignal( Axoclamp900AHnd, AXC_SIGNAL_ID_I1, 0, AxoClamp900ADemoHS1Mode, Err ) ;
+        AXC_SetScaledOutputGain( Axoclamp900AHnd, 2.0, 0, AxoClamp900ADemoHS1Mode, Err ) ;
+        AXC_SetScaledOutputSignal( Axoclamp900AHnd, AXC_SIGNAL_ID_10V1, 1, AxoClamp900ADemoHS2Mode, Err ) ;
+        AXC_SetScaledOutputGain( Axoclamp900AHnd, 1.0, 1, AxoClamp900ADemoHS2Mode, Err ) ;
+
+        end;
 
      end ;
+
 
 procedure TAmplifier.CloseAxoclamp900A ;
 // --------------------
@@ -6346,15 +6473,19 @@ var
     Err : Integer ;
 begin
 
-    if Axoclamp900AOpen then begin
+    if Axoclamp900AOpen then
+       begin
+       Err := 0 ;
        AXC_CloseDevice( Axoclamp900AHnd, Err ) ;
        CheckErrorAxoclamp900A(Err) ;
        AXC_DestroyHandle(Axoclamp900AHnd) ;
        Axoclamp900AHnd := -1 ;
        Axoclamp900AOpen := False ;
+       Axoclamp900AOpenFailed := False ;
        end ;
 
-    if Axoclamp900ALibLoaded then begin
+    if Axoclamp900ALibLoaded then
+       begin
        FreeLibrary( Axoclamp900ALibHnd ) ;
        FreeLibrary( Axoclamp900AHIDHnd ) ;
        Axoclamp900ALibLoaded := False ;
@@ -6417,6 +6548,27 @@ begin
         ShowMessage(ErrText) ;
         end ;
      end ;
+
+
+procedure TAmplifier.LogErrorAxoclamp900A(
+          s : string ;
+          Err : Integer ;
+          DisplayMessage : Boolean
+          ) ;
+// -----------------------
+// write error to log file
+// -----------------------
+var
+    ErrText : Array[0..255] of ANSIChar ;
+begin
+     if Err <> 0 then
+        begin
+        AXC_BuildErrorText( Axoclamp900AHnd, Err, ErrText, High(ErrText)) ;
+        WriteToLogFile( s + ' : ' + ansistring(ErrText) ) ;
+        if DisplayMessage then ShowMessage(ErrText) ;
+        end ;
+     end ;
+
 
 
 function TAmplifier.GetNPIELC03XSGain(
@@ -7545,15 +7697,15 @@ function TAmplifier.getPrimaryChannelScaleFactor( AmpNumber : Integer ) : Single
 // --------------------------------
 // Get primary channel scale factor
 // --------------------------------
-var
-    ChanName,ChanUnits : String ;
-    ChanCalFactor,ChanScale : Single ;
-    ADCInput : Integer ;
+//var
+//    ChanName,ChanUnits : String ;
+//    ChanCalFactor,ChanScale : Single ;
+//    ADCInput : Integer ;
 begin
 
-     GetChannelSettings( FPrimaryOutputChannel[AmpNumber],
-                         ChanName,ChanUnits,ChanCalFactor,ChanScale,ADCInput) ;
-     Result := ChanCalFactor*ChanScale ;
+//     GetChannelSettings( FPrimaryOutputChannel[AmpNumber],
+//                         ChanName,ChanUnits,ChanCalFactor,ChanScale,ADCInput) ;
+     Result := FPrimaryChannelScaleFactor[AmpNumber] ;
     end ;
 
 
@@ -7561,14 +7713,15 @@ function TAmplifier.getSecondaryChannelScaleFactor( AmpNumber : Integer ) : Sing
 // --------------------------------
 // Get secondary channel scale factor
 // --------------------------------
-var
-    ChanName,ChanUnits : String ;
-    ChanCalFactor,ChanScale : Single ;
-    ADCInput : Integer ;
+//var
+//    ChanName,ChanUnits : String ;
+//    ChanCalFactor,ChanScale : Single ;
+//    ADCInput : Integer ;
 begin
-     GetChannelSettings( FSecondaryOutputChannel[AmpNumber],
-                         ChanName,ChanUnits,ChanCalFactor,ChanScale,ADCInput) ;
-     Result := ChanCalFactor ;
+//     GetChannelSettings( FSecondaryOutputChannel[AmpNumber],
+//                         ChanName,ChanUnits,ChanCalFactor,ChanScale,ADCInput) ;
+//     Result := ChanCalFactor ;
+     Result := FSecondaryChannelScaleFactor[AmpNumber] ;
     end ;
 
 
@@ -7659,12 +7812,18 @@ begin
 
 
 procedure TAmplifier.SetPrimaryChannelScaleFactor( AmpNumber : Integer ; Value : Single ) ;
+// ----------------------------------------
+// Set primary channel V/units scale factor
+// ----------------------------------------
 begin
     FPrimaryChannelScaleFactor[AmpNumber] := Value ;
     end ;
 
 
 procedure TAmplifier.SetSecondaryChannelScaleFactor ( AmpNumber : Integer ; Value : Single ) ;
+// ----------------------------------------
+// Set secondary channel V/units scale factor
+// ----------------------------------------
 begin
     if (AmpNumber >= 0) and (AmpNumber < MaxAmplifiers) then begin
        FSecondaryChannelScaleFactor[AmpNumber] := Value ;

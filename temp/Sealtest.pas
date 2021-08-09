@@ -80,12 +80,29 @@ unit Sealtest;
               when EPC9PanelFrm title bar held down.
   09.07.15 .. DACScale arrays increased to cope with up to 128 analog output channels
   02.10.15 .. Zap pulse added to panel
-// 05.11.15 HekaEPC9USB interface added
-  11.03.16 .. Copied from WinWCP V5.1.5 Now incorporates ZAP button
-  24.07.17 .. Amplifier.GetChannelSettings() now returns ADCInput, so
+  05.11.15 .. HekaEPC9USB interface added
+  05.08.16 .. Holding potential setting in use now updated with default holding potential of selected amplifier
+              (Change to SetCLampMode)
+  20.07.17 .. Sweep now goes into idle mode if A/D conversion fails to become active
+              Amplifier.GetChannelSettings() now returns ADCInput, so
               secondary channel analogue input for be changed in CC mode
               for Axopatch 200 and AMS-2400
-  04.09.17 .. Max. no. of DAC channels limited to 4
+  27.04.18 .. Holding levels now calculated from 5% of sweep preceding test pulse (rather than 1st 5%)
+              to avoid errors created when transition exists at beginning
+  03.09.18 .. End of holding level calculation range now shifted DacDT earlier
+              to prevent it extending into test pulse interval when
+              DACDT greater than A/D sampling interval
+  17.04.19    Reset Avg. button added to reset pipette reistance readout
+              StartADCandDAC() now also resets readout average
+  20.05.19    Cell parameter averages now computed using ring buffer instead of smoothing factor
+  22.05.19    Pipette Resistance and cell parameters now have separate averaging counter
+              Large incorrect measurements of Ga,Gm,Cm due to noise/interference now excluded
+              from average and average restricted to most recent <n> measurements. G access computation mode
+              (from peak or exponential amplitude) option setting now preserved in INI file and can be set
+              by .SealTestGaFromPeak Active X command. No. of cell parameter measurements averaged can now be set by
+              .SealTestNumAverages command. Ga,Gm,Cm etc. now displayed as 0 if no data available.
+  17.06.19    Copied to WinEDR from WinWCP
+
   ==================================================}
 
 interface
@@ -100,6 +117,7 @@ const
     StartSweep = 1 ;
     SweepInProgress = 2;
     EndofSweep = 3 ;
+    MaxAverage = 100 ;
 type
   //TState = ( Idle, StartSweep, SweepInProgress, EndofSweep ) ;
 
@@ -189,7 +207,7 @@ type
     edRAccess: TValidatedEdit;
     edRMembrane: TValidatedEdit;
     edCMembrane1: TValidatedEdit;
-    edSmoothingFactor: TValidatedEdit;
+    edNumAverages: TValidatedEdit;
     Label22: TLabel;
     ZapGrp: TGroupBox;
     bzap: TButton;
@@ -197,6 +215,7 @@ type
     edZapDuration: TValidatedEdit;
     Label23: TLabel;
     Label24: TLabel;
+    bResetAverage: TButton;
     procedure TimerTimer(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure edHoldingVoltage1KeyPress(Sender: TObject; var Key: Char);
@@ -226,11 +245,12 @@ type
     procedure rbVclampClick(Sender: TObject);
     procedure rbIclampClick(Sender: TObject);
     procedure cbNumChannelsChange(Sender: TObject);
-    procedure edSmoothingFactorKeyPress(Sender: TObject; var Key: Char);
+    procedure edNumAveragesKeyPress(Sender: TObject; var Key: Char);
     procedure FormCreate(Sender: TObject);
     procedure bzapClick(Sender: TObject);
     procedure edZapAmplitudeKeyPress(Sender: TObject; var Key: Char);
     procedure edZapDurationKeyPress(Sender: TObject; var Key: Char);
+    procedure bResetAverageClick(Sender: TObject);
   private
     { Private declarations }
   Initialised : Boolean ;
@@ -254,6 +274,16 @@ type
   ClampMode : Array[0..MaxAmplifiers-1] of Integer ;
 
   DisplayScale : Array[0..MaxChannels-1] of Integer ;
+
+  // Cell parameter averaging arrays
+  iResistance : Integer ;                            // Averaging buffer pointer
+  NumResistances : Integer ;                         // No. averages available
+  Resistance : Array[0..MaxAverage-1] of Single ;
+  iAverage : Integer ;                            // Averaging buffer pointer
+  NumAverages : Integer ;                         // No. averages available
+  GAccess : Array[0..MaxAverage-1] of Single ;
+  GMembrane : Array[0..MaxAverage-1] of Single ;
+  Capacity : Array[0..MaxAverage-1] of Single ;
 
     procedure CreateTestPulse ;
     procedure AnalyseTestPulse ;
@@ -281,8 +311,17 @@ type
               NewScale : Single ) ;
     procedure DisplayClampMode ;
 
+    function Average(
+          Buf : Array of Single ; // Array of measurements to be averaged
+          NumPoints : Integer ;   // No. of points to average
+          OldAverage : single      // Previous avg. (returned when NumAverage = 0)
+          ) : single ;
+
+
   public
     { Public declarations }
+    t0 : integer ;
+    t0max : integer ;
     State : Integer ;
     LoadEPC9Panel : Boolean ;
     procedure StopADCandDAC ;
@@ -330,7 +369,8 @@ procedure TSealTestFrm.FormShow(Sender: TObject);
 var
    i,ch : Integer ;
 begin
-
+     t0 := 0 ;
+     t0Max := 0 ;
      // Exit if no interface selected
      if (Main.SESLabIO.LabInterfaceType = NoInterface12) or
         (Main.SESLabIO.LabInterfaceType = NoInterface16) then begin
@@ -401,15 +441,18 @@ begin
          scDisplay.yMin[ch] := Main.SESLabIO.ADCMinValue ;
          end ;
 
-     // Ensure smoothing factor is valid
-     Settings.SealTest.SmoothingFactor := Min(Max(Settings.SealTest.SmoothingFactor,0.1),1.0) ;
-     edSmoothingFactor.Value := 1.0/Settings.SealTest.SmoothingFactor ;
+     // Ensure no. of cell parameter averages is valid
+     Settings.SealTest.NumAverages := Min(Max(Settings.SealTest.NumAverages,1),MaxAverage) ;
+     edNumAverages.Value := Settings.SealTest.NumAverages ;
+
+     // Gaccess calculation mode
+     rbGaFromPeak.Checked := Settings.SealTest.GaFromPeak ;
+     rbGaFromExp.Checked := not Settings.SealTest.GaFromPeak ;
 
      scDisplay.xMin := 0 ;
      scDisplay.xMax := NumTestSamples-1  ;
 
      scDisplay.TUnits := Settings.TUnits ;
-
 
      // Show available output channels
      ckPulseToAO0.Visible := False ;
@@ -434,6 +477,8 @@ begin
      edPulseWidth.Value := Settings.SealTest.PulseWidth ;
 
      { Update holding potential text boxes }
+
+
      edHoldingVoltage1.Value := Settings.SealTest.HoldingVoltage1 ;
      edHoldingVoltage2.Value := Settings.SealTest.HoldingVoltage2 ;
      edHoldingVoltage3.Value := Settings.SealTest.HoldingVoltage3 ;
@@ -465,6 +510,15 @@ begin
      FirstSweep := True ;
      State := idle ;//StartSweep ;
      NewAmplifierGain := True ;
+     iAverage := 0 ;
+     NumAverages := 0 ;
+     iResistance := 0 ;
+     NumResistances := 0 ;
+     edGAccess.Value := 0.0 ;
+     edGMembrane.Value := 0.0 ;
+     edCMembrane.Value := 0.0 ;
+     edRMembrane.Value := 0.0 ;
+
 
      // Clear display
      InitialiseDisplay ;
@@ -515,13 +569,15 @@ procedure TSealTestFrm.TimerTimer(Sender: TObject);
 { ---------------------
   Timed Event scheduler
   ---------------------}
+
 var
-   ch,T,ADCInput : Integer ;
+   ch,T : Integer ;
    OldADCUnits : Array[0..MaxChannels-1] of String ;
    OldADCName : Array[0..MaxChannels-1] of String ;
    Changed : Boolean ;
    Name,Units : string ;
    VPU,Gain : Single ;
+   ADCInput : Integer ;
 begin
 
      if not TimerBusy then begin
@@ -535,6 +591,10 @@ begin
           case State of
 
                StartSweep : Begin
+//                   if t0 = 0 then t0 := timegettime;
+//                   t0max := Max(timegettime-t0,t0max) ;
+//                   outputdebugstring(pchar(format('%d %d',[timegettime-t0, t0max])));
+//                   t0 := timegettime ;
 
                    { Start recording sweep(s) }
 
@@ -640,8 +700,8 @@ begin
                    { Procedure to be done when recording sweep completes }
                    if State = EndOfSweep then begin
                        { Analyse and display test pulse results }
-                       Main.SESLabIO.ADCStop ;
                        Main.SESLabIO.DACStop ;
+                       Main.SESLabIO.ADCStop ;
                        AnalyseTestPulse ;
 
                        FirstSweep := False ;
@@ -701,6 +761,23 @@ begin
     ChangeUnits( edPulseHeight2, Units, Scale ) ;
     ChangeUnits( edPulseHeight3, Units, Scale ) ;
     ChangeUnits( edZapAmplitude, Units, Scale ) ;
+
+    // Use current default holding potential for selected AO channel
+    TestDAC := Min(Max(TestDAC,0),Main.SESLabIO.DACNumChannels-1) ;
+    case Settings.SealTest.Use of
+          2 : begin
+             Settings.SealTest.HoldingVoltage2 :=  Main.SESLabIO.DACHoldingVoltage[TestDAC] ;
+             edHoldingVoltage2.Value := Settings.SealTest.HoldingVoltage2 ;
+              end ;
+          3 : begin
+              Settings.SealTest.HoldingVoltage3 :=  Main.SESLabIO.DACHoldingVoltage[TestDAC] ;
+              edHoldingVoltage3.Value := Settings.SealTest.HoldingVoltage3 ;
+              end ;
+          else begin
+              Settings.SealTest.HoldingVoltage1 :=  Main.SESLabIO.DACHoldingVoltage[TestDAC] ;
+              edHoldingVoltage1.Value := Settings.SealTest.HoldingVoltage1 ;
+              end ;
+          end ;
 
     end ;
 
@@ -892,15 +969,14 @@ const
     LoLimit = 1E-15 ;
 var
    i,j,ch,iStart,iEnd,n : Integer ;
-   iAvgStart,iAvgEnd,nAvg,EndofVHold,NumSamplesIn : Integer ;
+   iAvgStart,iAvgEnd,nAvg,NumSamplesIn : Integer ;
    NewDisplayScale,NewDisplayRange,HalfRange,Mid : Integer ;
    ChIm,ChVm,ChOffset,ChStim,yADC : Integer ;
    HoldLevel,VThreshold,iOffLevel,iOnLevel,PeakAt : Integer ;
    YMin,YMax : Array[0..MaxChannels-1] of Integer ;
    VHold,VPulse,IHold,IPulse,Avg,Sum,IPeak,IValue : single ;
    Voltage,SteadyCurrent,PeakCurrent : single ;
-   TauC,Slope,YIntercept,SteadyStateLevel,GMembrane,GAccess,Capacity,dt : single ;
-   Resistance : Single ;
+   TauC,Slope,YIntercept,SteadyStateLevel,dt : single ;
    x,y : Array[0..NumTestSamples] of Single ;
    OK,Done : Boolean ;
    VOffset,IOffset : Integer ;
@@ -911,6 +987,23 @@ var
 begin
 
      try
+
+     // Reset cell parameter averaging count and pointers
+     if ResetReadout then
+        begin
+        iAverage := 0 ;
+        NumAverages := 0 ;
+        iResistance := 0 ;
+        NumResistances := 0 ;
+        edGAccess.Value := 0.0 ;
+        edGMembrane.Value := 0.0 ;
+        edCMembrane.Value := 0.0 ;
+        edRAccess.Value := 0.0 ;
+        edRMembrane.Value := 0.0 ;
+        edCMembrane1.Value := 0.0 ;
+        edResistance.Value := 0.0 ;
+        ResetReadout := False ;
+        end;
 
      // Current and voltage channels
      ChIm := cbCurrentChannel.ItemIndex ;
@@ -974,25 +1067,28 @@ begin
      // Calculate current/voltage test pulse amplitudes
      // -----------------------------------------------
 
+     // Holding average region (5% preceding test pulse)
+     // Note. subtraction of DacDT interval to ensure range is before pulse start
+     iEnd := Max( Round((TestPulse.TStart-DacDt)/Main.SESLabIO.ADCSamplingInterval)-1,0 ) ;
+     iStart := Max(iEnd div 2,0) ;
+
      // Holding voltage
      Sum := 0. ;
-     EndofVHold := Max( Round(TestPulse.TStart/
-                           (2.0*Main.SESLabIO.ADCSamplingInterval)),1 ) ;
-     for i := 0 to EndofVHold do begin
+     for i := iStart to iEnd do begin
          j := i*NumTestChannels + VOffset ;
          Sum := Sum + ADC^[j] ;
          end ;
-     Avg := Sum/(EndofVHold+1) ;
+     Avg := Sum/(iEnd - iStart +1) ;
      HoldLevel := Round(Avg) ;
      VHold := (Avg - VZero)*VScale ;
 
      // Holding current
      Sum := 0. ;
-     for i := 0 to EndofVHold do begin
+     for i := iStart to iEnd do begin
          j := i*NumTestChannels + IOffset ;
          Sum := Sum + ADC^[j] ;
          end ;
-     Avg := Sum/(EndofVHold+1) ;
+     Avg := Sum/(iEnd - iStart +1) ;
      IHold := (Avg - IZero)*IScale ;
 
      // Find start / end of test pulse
@@ -1004,16 +1100,12 @@ begin
         ChStim := ChVm ;
         HoldLevel := Round(VHold/VScale) + VZero ;
         end ;
-     VThreshold := Abs( YMax[ChStim] - YMin[ChStim] ) div 2 ;
-     iStart := 0 ;
-     iEnd := 0 ;
-     j := Main.SESLabIO.ADCChannelOffset[ChStim] ;
-     for i := 0 to NumTestSamples-1 do begin
-         yADC := Abs(ADC^[j] - HoldLevel) ;
-         if (yADC >= VThreshold) and (iStart = 0) then iStart := i ;
-         if (iStart <> 0) and (iEnd=0) and (yADC < VThreshold) then iEnd := i ;
-         j := j + NumTestChannels ;
-         end ;
+
+     // 22.02.19 End of analysis area determined from time of pulse end
+     // rather than from 50% transition threshold for better
+     // accuracy when trailing edge of pulse is rounded
+     iStart := Max( Round((TestPulse.TStart-DacDt)/Main.SESLabIO.ADCSamplingInterval)-1,0 ) ;
+     iEnd := Max( Round((TestPulse.TEnd-DacDt)/Main.SESLabIO.ADCSamplingInterval)-1,0 ) ;
 
      { Calculate amplitude of voltage pulse (from last half of pulse) }
      nAvg := Max( (iEnd - iStart + 1) div 2, 1 ) ;
@@ -1078,12 +1170,17 @@ begin
      if Abs(SteadyCurrent) < LoCurrentLimit then Exit ;
 
      // Calculate seal resistance
-     Resistance := Voltage/SteadyCurrent ;
-     // Note the use of low pass filter to smooth reading
-     if ResetReadout then EdResistance.Value := Resistance ;
+     Resistance[iResistance] := Voltage/SteadyCurrent ;
+     if Resistance[iResistance] < 0.0 then begin
+        outputdebugstring(pchar('negative resistance'));
+        Exit ;
+        end;
 
-     EdResistance.Value := Settings.SealTest.SmoothingFactor*Resistance +
-                           (1.0 - Settings.SealTest.SmoothingFactor)*EdResistance.Value ;
+     edResistance.Value := Average( Resistance, NumResistances, edResistance.Value ) ;
+     iResistance := iResistance + 1 ;
+     if iResistance >= Round(EdNumAverages.Value) then iResistance := 0 ;
+     NumResistances := Min(NumResistances + 1,Round(EdNumAverages.Value));
+
      Main.RSeal := EdResistance.Value ;
 
      { Calculate peak current from first half of pulse }
@@ -1118,69 +1215,78 @@ begin
          else Done := True ;
          end ;
      OK := LinearRegression( x, y, n, Slope, YIntercept ) ;
-     if (not OK) or (Abs(Slope) <= LoLimit) or (Abs(Slope) > 1E30) then Exit ;
+     if (not OK) or (Abs(Slope) <= (1.0/(dt*NumTestSamples)) ) or (Abs(Slope) > (10.0/dt) ) then Exit ;
 
      // Calculate Access conductance (Ga)
      // See Gillis K.D. p. 161 Single-channel recording (Neher & Sakmann)
      if rbGaFromPeak.Checked then begin
-        if Abs(PeakCurrent) < LoCurrentLimit then Exit ;
-        GAccess := PeakCurrent/Voltage ;
+        GAccess[iAverage] := PeakCurrent/Voltage ;
         end
      else begin
-        if Abs(YIntercept) > 30 then Exit ;
-        GAccess := exp(YIntercept)*sign(PeakCurrent)/Voltage ;
+        // Quit if Y intercept too different from peak value measurement
+        if Abs( YIntercept - ln(abs(PeakCurrent))) > 2.0 then Exit ;
+        GAccess[iAverage] := exp(YIntercept)*sign(PeakCurrent)/Voltage ;
         end ;
-
-     if GAccess > 1E-14 then begin
-        if ResetReadout then edGAccess.Value := GAccess ;
-        edGAccess.Value := Settings.SealTest.SmoothingFactor*GAccess +
-                           (1.0 - Settings.SealTest.SmoothingFactor)*edGAccess.Value ;
-        edRAccess.Value := 1.0 / edGAccess.Value ;
-        end
-     else begin
-        edGAccess.Value := 0.0 ;
-        edRAccess.Value := 1E30 ;
-        end ;
-     if edGAccess.Value < 1E-14 then Exit ;
-     Main.Ga := edGAccess.Value ;
+     if GAccess[iAverage] < 0.0 then Exit ;
 
      // Calculate membrane conductance (Gm)
-     if Abs(Voltage - (SteadyCurrent/edGAccess.Value)) > LoVoltageLimit then begin
-        GMembrane := SteadyCurrent/(Voltage - (SteadyCurrent/edGAccess.Value)) ;
-        if ResetReadout then edGmembrane.Value := GMembrane ;
-        edGmembrane.Value := Settings.SealTest.SmoothingFactor*GMembrane +
-                             (1.0 - Settings.SealTest.SmoothingFactor)*edGmembrane.Value ;
-        edRmembrane.Value := 1 / edGmembrane.Value ;
+     if Abs(Voltage - (SteadyCurrent/GAccess[iAverage])) > LoVoltageLimit then begin
+        GMembrane[iAverage] := SteadyCurrent/(Voltage - (SteadyCurrent/GAccess[iAverage])) ;
         end
-     else begin
-        edGmembrane.Value := 0.0 ;
-        edRmembrane.Value := 1E30 ;
-        end ;
-     if edGmembrane.Value < 1E-14 then Exit ;
-     Main.Gm := edGmembrane.Value ;
+     else Exit ;
+     if GMembrane[iAverage] < 0.0 then Exit ;
 
      // Calculate membrane capacity
-     if OK and (Abs(Slope) > LoLimit) and (Abs(Slope) < 1E30)then begin
-        TauC := -1.0 / Slope ;
-        Capacity := TauC*(edGAccess.Value + edGmembrane.Value) ;
-        if ResetReadout then EdCmembrane.Value := Capacity ;
-        EdCmembrane.Value := Settings.SealTest.SmoothingFactor*Capacity +
-                             (1.0 - Settings.SealTest.SmoothingFactor)*EdCmembrane.Value ;
-        EdCmembrane1.Value := EdCmembrane.Value ;
-        end
-     else begin
-        EdCmembrane.Value := 0.0 ;
-        EdCmembrane1.Value := 0.0 ;
-        end ;
+     TauC := -1.0 / Slope ;
+     outputdebugstring(pchar(format('Tau=%.4g',[TauC])));
+     Capacity[iAverage] := TauC*(GAccess[iAverage] + GMembrane[iAverage]) ;
+     if Capacity[iAverage] < 0.0 then Exit ;
+
+     iAverage := iAverage + 1 ;
+     if iAverage >= Round(edNumAverages.Value) then iAverage := 0 ;
+     NumAverages := Min(NumAverages + 1, Round(edNumAverages.Value) ) ;
+
+     edGAccess.Value := Average( GAccess, NumAverages, edGAccess.Value ) ;
+     if Abs(edGAccess.Value) > 1E-20 then  edRAccess.Value := 1.0 / edGAccess.Value ;
+     Main.Ga := edGAccess.Value ;
+
+     edGMembrane.Value := Average( GMembrane, NumAverages, edGMembrane.Value ) ;
+     if Abs(edGmembrane.Value) > 1E-20 then edRmembrane.Value := 1.0 / edGmembrane.Value ;
+     Main.Gm := edGmembrane.Value ;
+
+     EdCmembrane.Value := Average( Capacity, NumAverages, EdCmembrane.Value ) ;
+     EdCmembrane1.Value := EdCmembrane.Value ;
      Main.Cm := EdCmembrane.Value ;
 
      except
         Main.StatusBar.SimpleText := 'SealTest: Floating Point Error' ;
         end ;
 
-     ResetReadout := False ;
-
      end ;
+
+
+function TSealTestFrm.Average(
+          Buf : Array of Single ; // Array of measurements to be averaged
+          NumPoints : Integer ;   // No. of points to average
+          OldAverage : single      // Previous avg. (returned when NumAverage = 0)
+          ) : single ;
+// ------------------------------------
+// Return average of data points in Buf
+// ------------------------------------
+var
+    Sum : single ;
+    i : Integer ;
+begin
+
+     if NumPoints > 0 then
+        begin
+        Sum := 0.0 ;
+        for i := 0 to NumPoints-1 do Sum := Sum + Buf[i] ;
+        Result := Sum / NumPoints ;
+        if Result < 0.0 then Result := OldAverage ;
+        end
+      else Result := OldAverage ;
+end;
 
 
 procedure TSealTestFrm.StopADCandDAC ;
@@ -1227,8 +1333,10 @@ begin
      Timer.enabled := True ;
      TimerBusy := False ;
      State := StartSweep ;
+     ResetReadout := True ;
 
      end;
+
 
 
 procedure TSealTestFrm.edHoldingVoltage1KeyPress(Sender: TObject; var Key: Char);
@@ -1410,24 +1518,15 @@ begin
      case Key of
           { F3 selects holding voltage #1 }
           VK_F3 : begin
-//               Settings.SealTest.Use := 1 ;
-//               Settings.DAC[TestDAC].HoldingVoltage := edHoldingVoltage1.Value ;
-//               Settings.SealTest.PulseHeight := edPulseHeight1.Value ;
                rbUseHoldingVoltage1.checked := True ;
                end ;
           { F4 selects holding voltage #2 }
           VK_F4 : begin
-//               Settings.SealTest.Use := 2 ;
-//               Settings.DAC[TestDAC].HoldingVoltage := edHoldingVoltage2.value ;
-//               Settings.SealTest.PulseHeight :=edPulseHeight2.Value ;
                rbUseHoldingVoltage2.checked := True ;
                end ;
           { F5 selects holding voltage #3 }
           VK_F5 : begin
                rbUseHoldingVoltage3.checked := True ;
-//               Settings.SealTest.Use := 3 ;
-//               Settings.DAC[TestDAC].HoldingVoltage := edHoldingVoltage3.Value ;
-//               Settings.SealTest.PulseHeight := 0.0 ;
                end ;
           end ;
      end;
@@ -1492,6 +1591,15 @@ begin
      end ;
 
 
+procedure TSealTestFrm.bResetAverageClick(Sender: TObject);
+// ------------------------------------------------------
+// Reset averaging for pipette reistance/capacity readout
+// ------------------------------------------------------
+begin
+    ResetReadout := True ;
+end;
+
+
 procedure TSealTestFrm.bResetTimerClick(Sender: TObject);
 begin
     // Initialise elapsed time readout
@@ -1541,12 +1649,20 @@ begin
      end;
 
 procedure TSealTestFrm.rbGaFromPeakClick(Sender: TObject);
+// ----------------------------------------------------
+// Select Ga calculated from capacity current peak mode
+// ----------------------------------------------------
 begin
+     Settings.SealTest.GaFromPeak := True ;
      ResetReadout := True ;
      end;
 
 procedure TSealTestFrm.rbGaFromExpClick(Sender: TObject);
+// ----------------------------------------------------
+// Select Ga calculated from exponential amplitude mode
+// ----------------------------------------------------
 begin
+     Settings.SealTest.GaFromPeak := False ;
      ResetReadout := True ;
      end;
 
@@ -1690,8 +1806,8 @@ procedure TSealTestFrm.SetSmoothingFactor( Value : Single ) ;
 // Set cell parameter smoothing factor
 // -----------------------------------
 begin
-     Settings.SealTest.SmoothingFactor := Min(Max(Value,0.1),1.0) ;
-     edSmoothingFactor.Value := 1.0 / Max(Settings.SealTest.SmoothingFactor,0.1) ;
+     Settings.SealTest.NumAverages := Min(Max(Round(Value),1),MaxAverage) ;
+     edNumAverages.Value := Settings.SealTest.NumAverages ;
      end ;
 
 
@@ -1700,7 +1816,7 @@ function  TSealTestFrm.GetSmoothingFactor : Single ;
 // Get cell parameter smoothing factor
 // -----------------------------------
 begin
-     Result := Settings.SealTest.SmoothingFactor ;
+     Result := Settings.SealTest.NumAverages ;
      end ;
 
 
@@ -1783,11 +1899,12 @@ begin
      UpdateChannelLists ;
      end;
 
-procedure TSealTestFrm.edSmoothingFactorKeyPress(Sender: TObject;
+
+procedure TSealTestFrm.edNumAveragesKeyPress(Sender: TObject;
   var Key: Char);
 begin
     if Key = #13 then begin
-       Settings.SealTest.SmoothingFactor := 1.0 / edSmoothingFactor.Value
+       Settings.SealTest.NumAverages := Round(edNumAverages.Value)
        end ;
      end;
 

@@ -131,6 +131,9 @@ unit AmpModule;
 // 15.09.17 NPI ELC-03XS voltage channel gain telegraph now correct (and renamed ELC-03SX to ELC-03XS).
 // 21.09.17 NPI ELC-03XS now uses Command Input in voltage-clamp mode and Potential Output in current clamp mode
 // 18.01.18 AMS-2400: Now reads voltage gain in current clamp mode correctly
+// 16.05.18 MultiClampConvertUnits() added. PrimaryScaleFactorX1, SecondayScaleFactorX1 now set in correct units by Multiclamp
+// 24.09.18 EPC-800 current command channel now set to AmpNumber+1 since this amplifier has a separate current-clamp command channel
+// 26.04.21 WPI EVC-4000 epithelial tissue voltage clamp added
 
 interface
 
@@ -186,7 +189,8 @@ const
      amHekaEPC9 = 38 ;
      amNPIELC03XS = 39 ;
      amDaganBVC700A = 40 ;
-     NumAmplifiers = 41 ;
+     amWPIEVC4000 = 41 ;
+     NumAmplifiers = 42 ;
 
      // Patch clamp mode flags
      VClampMode = 0 ;
@@ -796,6 +800,11 @@ TAXC_AcquireMeterData = function(
           var ChanScale : Single ;
           var ADCInput : Integer
           ) ;
+    Procedure MultiClampConvertScale(
+          Units : Integer ;                    // Multiclamp channel units code
+          var ChanCalFactor : Single ;         // Channel V/Units scale factor
+          var ChanUnits : string );          // WinWCPChannel units
+
 
     function GetTurboTecGain(
          AmpNumber : Integer ) : single ;
@@ -1044,6 +1053,16 @@ TAXC_AcquireMeterData = function(
           var ChanScale : Single ;
           var ADCInput : Integer
           ) ;
+
+    procedure GetWPIEVC4000ChannelSettings(
+          iChan : Integer ;
+          var ChanName : String ;
+          var ChanUnits : String ;
+          var ChanCalFactor : single ;
+          var ChanScale : Single ;
+          var ADCInput : Integer
+          ) ;
+
 
     function LoadProcedure(
          Hnd : THandle ;       { Library DLL handle }
@@ -1438,7 +1457,11 @@ begin
      List.AddObject('Warner PC505B',TObject(amWarnerPC505B)) ;
      List.AddObject('Warner OC725C',TObject(amWarnerOC725C)) ;
 
+     List.AddObject('WPI EVC-4000',TObject(amWPIEVC4000)) ;
+
      List.AddObject('Tecella Triton/Pico',TObject(amTriton)) ;
+
+
 
      end ;
 
@@ -2343,7 +2366,7 @@ begin
             FVoltageCommandScaleFactor[AmpNumber] := 0.1 ;
             FVoltageCommandChannel[AmpNumber] := AmpNumber ;
             FCurrentCommandScaleFactor[AmpNumber] := 1E-10 ;
-            FCurrentCommandChannel[AmpNumber] := AmpNumber ;
+            FCurrentCommandChannel[AmpNumber] := Min(AmpNumber+1,MaxAmplifiers-1) ;
 
             FGainTelegraphAvailable[AmpNumber] := True ;
             FModeTelegraphAvailable[AmpNumber] := True ;
@@ -2514,6 +2537,41 @@ begin
             FModeTelegraphChannel[AmpNumber] := DefModeTelegraphChannel[AmpNumber] ;
             end ;
 
+         amWPIEVC4000  : begin
+            FPrimaryOutputChannel[AmpNumber] := 2*AmpNumber ;
+            FPrimaryOutputChannelName[AmpNumber] := ' Current ' ;
+            FPrimaryOutputChannelNameCC[AmpNumber] := ' Current ' ;
+            FPrimaryChannelUnits[AmpNumber] := 'uA' ;
+            FPrimaryChannelUnitsCC[AmpNumber] :='uA' ;
+            FPrimaryChannelScaleFactorX1Gain[AmpNumber] := 0.001 ;
+            FPrimaryChannelScaleFactorX1GainCC[AmpNumber] := 0.001 ;
+            FPrimaryChannelScaleFactor[AmpNumber] := 0.01 ;
+
+            FSecondaryOutputChannel[AmpNumber] := 2*AmpNumber + 1 ;
+            FSecondaryOutputChannelName[AmpNumber] := ' Voltage ' ;
+            FSecondaryOutputChannelNameCC[AmpNumber] := ' Voltage ' ;
+            FSecondaryChannelUnits[AmpNumber] := 'mV' ;
+            FSecondaryChannelUnitsCC[AmpNumber] := 'mV' ;
+            FSecondaryChannelScaleFactorX1Gain[AmpNumber] := 0.001 ;
+            FSecondaryChannelScaleFactorX1GainCC[AmpNumber] := 0.001 ;
+            FSecondaryChannelScaleFactor[AmpNumber] := 0.01 ;
+            FSecondaryAnalogInputOffsetCC[AmpNumber] := 0 ;
+
+            FVoltageCommandScaleFactor[AmpNumber] := 0.1 ; // 10mV/V
+            FVoltageCommandChannel[AmpNumber] := 0 ;
+            FCurrentCommandScaleFactor[AmpNumber] := 100.0E-6  ; // 100 uA/V
+            FCurrentCommandChannel[AmpNumber] := 0 ;
+
+            FGainTelegraphAvailable[AmpNumber] := False ;
+            FModeTelegraphAvailable[AmpNumber] := False ;
+            FNeedsGainTelegraphChannel[AmpNumber] := False ;
+            FNeedsModeTelegraphChannel[AmpNumber] :=  False ;
+            FModeSwitchedPrimaryChannel[AmpNumber] := False ;
+            FGainTelegraphChannel[AmpNumber] := DefGainTelegraphChannel[AmpNumber] ;
+            FModeTelegraphChannel[AmpNumber] := DefModeTelegraphChannel[AmpNumber] ;
+            end ;
+
+
         else begin
             FPrimaryOutputChannel[AmpNumber] := 2*AmpNumber ;
             FSecondaryOutputChannel[AmpNumber] := 2*AmpNumber + 1 ;
@@ -2624,6 +2682,7 @@ begin
           amHekaEPC9 : Result := GetHekaEPC9Gain(AmpNumber) ;
           amNPIELC03XS : Result := GetNPIELC03XSGain(AmpNumber,FGainTelegraphChannel[AmpNumber]) ;
           amDaganBVC700A : Result := 1.0 ;
+          amWPIEVC4000 : Result := 1.0 ;
           else Result := 1.0 ;
           end ;
      end ;
@@ -3121,6 +3180,13 @@ begin
                                                             ChanCalFactor,
                                                             ChanScale,
                                                             ADCInput ) ;
+
+          amWPIEVC4000 :  GetWPIEVC4000ChannelSettings( iChan,
+                                                        ChanName,
+                                                        ChanUnits,
+                                                        ChanCalFactor,
+                                                        ChanScale,
+                                                        ADCInput ) ;
 
           end ;
 
@@ -4237,9 +4303,10 @@ begin
           Units := MCTelegraphData[AmpNumber].PrimaryScaleFactorUnits ;
           ChanCalFactor := MCTelegraphData[AmpNumber].PrimaryScaleFactor ;
           ChanScale := MCTelegraphData[AmpNumber].PrimaryAlpha ;
+          MultiClampConvertScale( Units, ChanCalFactor, ChanUnits ) ;
           FPrimaryChannelScaleFactorX1Gain[AmpNumber] := ChanCalFactor ;
           FPrimaryChannelScaleFactor[AmpNumber] := ChanCalFactor*ChanScale ;
-
+          FPrimaryChannelUnits[AmpNumber] := ChanUnits ;
           end
        else if IsSecondaryChannel(iChan) then begin
 
@@ -4252,53 +4319,14 @@ begin
           Units := MCTelegraphData[AmpNumber].SecondaryScaleFactorUnits ;
           ChanCalFactor := MCTelegraphData[AmpNumber].SecondaryScaleFactor ;
           ChanScale := MCTelegraphData[AmpNumber].SecondaryAlpha ;
+          MultiClampConvertScale( Units, ChanCalFactor, ChanUnits ) ;
           FSecondaryChannelScaleFactorX1Gain[AmpNumber] := ChanCalFactor ;
           FSecondaryChannelScaleFactor[AmpNumber] := ChanCalFactor*ChanScale ;
+          FSecondaryChannelUnits[AmpNumber] := ChanUnits ;
           end ;
-
-       // Convert to WinWCP preferred units (mV, pA)
-
-       case Units of
-           MCTG_UNITS_VOLTS_PER_VOLT : Begin
-              ChanCalFactor := ChanCalFactor*0.001 ;
-              ChanUnits := 'mV' ;
-              end ;
-           MCTG_UNITS_VOLTS_PER_MILLIVOLT : Begin
-              ChanUnits := 'mV' ;
-              end ;
-           MCTG_UNITS_VOLTS_PER_MICROVOLT : Begin
-              ChanUnits := 'uV' ;
-              end ;
-           MCTG_UNITS_VOLTS_PER_AMP : Begin
-              ChanCalFactor := ChanCalFactor*1E-12 ;
-              ChanUnits := 'pA' ;
-              end ;
-           MCTG_UNITS_VOLTS_PER_MILLIAMP : Begin
-              ChanCalFactor := ChanCalFactor*1E-9 ;
-              ChanUnits := 'pA' ;
-              end ;
-           MCTG_UNITS_VOLTS_PER_MICROAMP : Begin
-              ChanCalFactor := ChanCalFactor*1E-6 ;
-              ChanUnits := 'pA' ;
-              end ;
-           MCTG_UNITS_VOLTS_PER_NANOAMP : Begin
-              ChanCalFactor := ChanCalFactor*1E-3 ;
-              ChanUnits := 'pA' ;
-              end ;
-           MCTG_UNITS_VOLTS_PER_PICOAMP : Begin
-              ChanCalFactor := ChanCalFactor ;
-              ChanUnits := 'pA' ;
-              end ;
-           else begin
-              ChanUnits := '?' ;
-              end ;
-           end ;
 
        if ChanScale = 0.0 then ChanScale := 1.0 ;
        if ChanCalFactor = 0.0 then ChanCalFactor := 1.0 ;
-
-       if IsPrimaryChannel(iChan) then FPrimaryChannelUnits[AmpNumber] := ChanUnits
-       else if IsSecondaryChannel(iChan) then FSecondaryChannelUnits[AmpNumber] := ChanUnits ;
 
        // Set voltage/current command scale factor
        if MCTelegraphData[AmpNumber].OperatingMode = MCTG_MODE_VCLAMP then begin
@@ -4323,6 +4351,51 @@ begin
        end ;
 
     end ;
+
+Procedure TAmplifier.MultiClampConvertScale(
+          Units : Integer ;                    // Multiclamp channel units code
+          var ChanCalFactor : Single ;         // Channel V/Units scale factor
+          var ChanUnits : string );            // WinWCP channel units
+// ---------------------------------------------------------------------------
+// Convert scaling from units used by Multiclamp to pA/mV units used by WinWCP
+// ---------------------------------------------------------------------------
+begin
+
+   case Units of
+        MCTG_UNITS_VOLTS_PER_VOLT : Begin
+              ChanCalFactor := ChanCalFactor*0.001 ;
+              ChanUnits := 'mV' ;
+              end ;
+        MCTG_UNITS_VOLTS_PER_MILLIVOLT : Begin
+              ChanUnits := 'mV' ;
+              end ;
+        MCTG_UNITS_VOLTS_PER_MICROVOLT : Begin
+              ChanUnits := 'uV' ;
+              end ;
+        MCTG_UNITS_VOLTS_PER_AMP : Begin
+              ChanCalFactor := ChanCalFactor*1E-12 ;
+              ChanUnits := 'pA' ;
+              end ;
+        MCTG_UNITS_VOLTS_PER_MILLIAMP : Begin
+              ChanCalFactor := ChanCalFactor*1E-9 ;
+              ChanUnits := 'pA' ;
+              end ;
+        MCTG_UNITS_VOLTS_PER_MICROAMP : Begin
+              ChanCalFactor := ChanCalFactor*1E-6 ;
+              ChanUnits := 'pA' ;
+              end ;
+        MCTG_UNITS_VOLTS_PER_NANOAMP : Begin
+              ChanCalFactor := ChanCalFactor*1E-3 ;
+              ChanUnits := 'pA' ;
+              end ;
+        MCTG_UNITS_VOLTS_PER_PICOAMP : Begin
+              ChanUnits := 'pA' ;
+              end ;
+        else begin
+              ChanUnits := '?' ;
+              end ;
+           end ;
+    end;
 
 
 function TAmplifier.GetTurboTecGain(
@@ -4517,7 +4590,7 @@ begin
 function TAmplifier.GetAMS2400GainCC(
          AmpNumber : Integer ) : single ;
 // ----------------------------------------------------------
-// Decode A-M Systems 2400 current gain from telegraph output
+// Decode A-M Systems 2400 voltage gain from telegraph output
 // Current-clamp mode
 // ----------------------------------------------------------
 const
@@ -5962,6 +6035,48 @@ begin
                     FSecondaryChannelScaleFactorX1Gain[AmpNumber] ;
        end ;
     end ;
+
+
+procedure TAmplifier.GetWPIEVC4000ChannelSettings(
+          iChan : Integer ;
+          var ChanName : String ;
+          var ChanUnits : String ;
+          var ChanCalFactor : single ;
+          var ChanScale : Single ;
+          var ADCInput : Integer
+          ) ;
+// ---------------------------------
+// Get WPI EVC-4000 channel settings
+// ---------------------------------
+var
+    AmpNumber : Integer ;
+begin
+
+    AmpNumber := AmpNumberOfChannel(iChan) ;
+    if AmpNumber >= MaxAmplifiers then Exit ;
+
+    if IsPrimaryChannel(iChan)then
+       begin
+       ChanName := 'Im' ;
+       AddAmplifierNumber( ChanName, iChan ) ;
+       ChanUnits := FPrimaryChannelUnits[AmpNumber] ;
+       ChanCalFactor := FPrimaryChannelScaleFactorX1Gain[AmpNumber] ;
+       ForceNonZero(FPrimaryChannelScaleFactorX1Gain[AmpNumber]) ;
+       ChanScale := FPrimaryChannelScaleFactor[AmpNumber] /
+                    FPrimaryChannelScaleFactorX1Gain[AmpNumber] ;
+       end
+    else if IsSecondaryChannel(iChan) then
+       begin
+       ChanName := 'Vm' ;
+       AddAmplifierNumber( ChanName, iChan ) ;
+       ChanUnits := FSecondaryChannelUnits[AmpNumber] ;
+       ChanCalFactor := FSecondaryChannelScaleFactorX1Gain[AmpNumber] ;
+       ForceNonZero(FSecondaryChannelScaleFactorX1Gain[AmpNumber]) ;
+       ChanScale := FSecondaryChannelScaleFactor[AmpNumber] /
+                    FSecondaryChannelScaleFactorX1Gain[AmpNumber] ;
+       end ;
+    end ;
+
 
 
 function TAmplifier.GetAxoclamp900AGain(
