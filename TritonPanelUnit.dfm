@@ -3,7 +3,7 @@ object TritonPanelFrm: TTritonPanelFrm
   Top = 11
   Caption = 'Tecella Patch Clamp '
   ClientHeight = 667
-  ClientWidth = 375
+  ClientWidth = 1107
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -152,7 +152,7 @@ object TritonPanelFrm: TTritonPanelFrm
             Caption = ' Junction Potential '
             TabOrder = 2
             object bAutoCompJunctionPot: TButton
-              Left = 8
+              Left = 15
               Top = 18
               Width = 130
               Height = 17
@@ -236,10 +236,6 @@ object TritonPanelFrm: TTritonPanelFrm
         object CapacityPage: TTabSheet
           Caption = 'Capacity'
           ImageIndex = 1
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object panCFast: TPanel
             Left = 1
             Top = 0
@@ -657,10 +653,6 @@ object TritonPanelFrm: TTritonPanelFrm
         object ResistancePage: TTabSheet
           Caption = 'Resistance'
           ImageIndex = 2
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object panRSeries: TPanel
             Left = 1
             Top = 2
@@ -1001,10 +993,6 @@ object TritonPanelFrm: TTritonPanelFrm
         object JunctionPotPage: TTabSheet
           Caption = 'Junction Pot.'
           ImageIndex = 3
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object panJunctionPot: TPanel
             Left = 1
             Top = 2
@@ -1131,10 +1119,6 @@ object TritonPanelFrm: TTritonPanelFrm
         object AdvancedTab: TTabSheet
           Caption = 'Adv.'
           ImageIndex = 4
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object GroupBox6: TGroupBox
             Left = 3
             Top = 29

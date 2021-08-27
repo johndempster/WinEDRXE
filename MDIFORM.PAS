@@ -405,6 +405,7 @@ unit Mdiform;
                    Save to File added to Edit menu, allowed displayed signals/plots to be saved to as CSV file
   V3.9.6  09.08.21 AmpModule.pas copied from WinWCP. Axoclamp 900A module updated (not tested yet with actual hardware
                    Sealtest.pas imported from WinWCP, Pulse rate now faster. Default holding potential for AO channels selected by tick now updated.
+  V3.9.7  27.08.21 Support for Tecella Triton X (16 channel patch clamp) added
 
   =======================================================================}
 
@@ -645,7 +646,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.9.6' ;
+     Version := 'V3.9.7' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }

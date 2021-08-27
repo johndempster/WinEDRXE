@@ -920,7 +920,8 @@ begin
      //if CDRFH.NumSamplesInFile > 0 then bUpdateGain.Enabled := False
      //                              else bUpdateGain.Enabled := True ;
 
-     if not Main.SESLabIO.ADCActive then begin
+     if not Main.SESLabIO.ADCActive then
+        begin
         { Start continuous A/D conversion into cyclic buffer }
         StartADC ;
         nTicks := TimeGetTime ;
@@ -931,7 +932,8 @@ begin
         //if bStop.Enabled then bStartStimulus.Click ;
 
         End
-     else begin
+     else
+        begin
 
         { * A/D running .. process samples * }
 
@@ -963,7 +965,8 @@ begin
 
 //     outputdebugString(PChar(format('%d %d %d',[WriteBufs.NumSamples,WriteBufs.NumSamplesPerBuf,NumNewScans]))) ;
         // Calculate computed channels
-        if NumNewScans >= 2 then begin
+        if NumNewScans >= 2 then
+           begin
            CalcComputedChannels ;
            // Update display
            DisplayLive( False ) ;
@@ -972,10 +975,12 @@ begin
         // If latest write block full .. write to file
         WriteBufs.ActiveBuf := WriteBufs.OldestScan div WriteBufs.NumSamplesPerBuf ;
 
-        if (WriteBufs.ActiveBuf <> WriteBufs.WriteBuf) then begin
+        if (WriteBufs.ActiveBuf <> WriteBufs.WriteBuf) then
+           begin
 
            // Write block to file (if recording)
-           if WriteBufs.Recording then begin
+           if WriteBufs.Recording then
+              begin
               FilePointer := (CDRFH.NumSamplesInFile*2) + CDRFH.NumBytesInHeader ;
               FileSeek( CDRFH.FileHandle, FilePointer, 0 ) ;
               if FileWrite( CDRFH.FileHandle,
@@ -1013,7 +1018,8 @@ begin
            end ;
 
         if WriteBufs.Recording and
-           (CDRFH.NumSamplesInFile >= WriteBufs.NumSamplesInFileRequired) then begin
+           (CDRFH.NumSamplesInFile >= WriteBufs.NumSamplesInFileRequired) then
+           begin
            { Restart recording if more records to be done }
            Dec(WriteBufs.NumRecordsToAcquire) ;
            if WriteBufs.NumRecordsToAcquire > 0 then bRecord.Click
@@ -1028,20 +1034,24 @@ begin
 
      // Start stimulus (if one requested)
      // (Note. Wait till some A/D samples have been collected)
-     if StimulatorStartRequired and (WriteBufs.LatestScan > 0) then begin
+     if StimulatorStartRequired and (WriteBufs.LatestScan > 0) then
+        begin
         StopStimulator ;
         StartStimulator ;
         StimulatorStartRequired := False ;
         end ;
 
      // Check for end of stimulus (non-repeating stimuli)
-     if bStopStimulus.Enabled and (not Stimulator.Prot.RepeatedProtocol) then begin
+     if bStopStimulus.Enabled and (not Stimulator.Prot.RepeatedProtocol) then
+        begin
         StimulusTime := (TimeGetTime - StimulusStartTime)*1E-3 ;
-        if StimulusTime >= Stimulator.TotalProtocolDuration then begin
+        if StimulusTime >= Stimulator.TotalProtocolDuration then
+           begin
            // Stop existing stimulus
            StopStimulator ;
            // Start next stimulus (if required)
-           if Stimulator.Prot.NextProtocolFileName <> '' then begin
+           if Stimulator.Prot.NextProtocolFileName <> '' then
+              begin
               ActiveStimFileName := Stimulator.Prot.NextProtocolFileName ;
               StimulatorStartRequired := True ;
               end ;
@@ -1049,7 +1059,8 @@ begin
         end ;
 
      // Update voltage and digital outputs
-     if Settings.UpdateOutputs then begin
+     if Settings.UpdateOutputs then
+        begin
         if not WriteBufs.Recording then UpdateOutputs ;
         end ;
 

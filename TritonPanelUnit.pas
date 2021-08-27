@@ -38,7 +38,8 @@ unit TritonPanelUnit;
 // 11.04.19 Now uses TritonRemoveArtifact() procedure to remove artifact remaining after C compensation
 // 16.04.19 Analogue and digital leak conductance now handled as components of the overall leak conductance
 //          rather than as advanced proerties.
-// 17.06.19 Copied from WinWCP
+// 18.08.19 Support for 16/32 channel Triton X added
+// 27.08.21 Auto compensation functions now stop A/D and D/A in both seal test and record forms
 
 interface
 
@@ -48,7 +49,7 @@ uses
   ComCtrls, xmldoc, xmlintf, strutils, ActiveX ;
 
 const
-    MaxTecellaChannels = 16 ;
+    MaxTecellaChannels = 32 ;
 
 type
   TTritonPanelFrm = class(TForm)
@@ -360,6 +361,8 @@ type
              TrackBar : TTrackBar            // Track bar
              ) : Integer ;                     // Returns Track bar position
 
+   procedure StopADCAndDAC ;
+
 
     // XML procedures
 
@@ -464,7 +467,7 @@ var
 
 implementation
 
-uses MDIForm, Sealtest;
+uses MDIForm, Sealtest, REC;
 
 {$R *.dfm}
 
@@ -1098,8 +1101,9 @@ var
     VHold,VStep,THold,TStep : single ;
 begin
 
-     // Stop seal test
-     if Main.FormExists( 'SealTestFrm' ) then SealTestFrm.StopADCAndDAC ;
+     // Stop A/D & D/A in other forms
+     StopADCAndDAC ;
+
      Screen.Cursor := crHourglass ;
      Main.StatusBar.SimpleText := 'WAIT: Cell capacity compensation in progress.' ;
 
@@ -1109,8 +1113,8 @@ begin
 
      // Get auto compensation holding and test pulse amplitudes and duration from current seal test settings
 
-     TStep := Min(Max(Settings.SealTest.PulseWidth, 0.01 ), 0.1 ) ;
-     THold := TStep ;
+//     TStep := Min(Max(Settings.SealTest.PulseWidth, 0.01 ), 0.1 ) ;
+//     THold := TStep ;
      case Settings.SealTest.Use of
           3 : begin
               VHold :=  Settings.SealTest.HoldingVoltage3 ;
@@ -1146,7 +1150,8 @@ begin
                                             ) ;
 
      // Update settings
-     for ch := 0 to Main.SESLabIO.TritonNumChannels-1 do begin
+     for ch := 0 to Main.SESLabIO.TritonNumChannels-1 do
+        begin
         Main.SESLABIO.TritonGetReg(TECELLA_REG_CFAST,ch,Value,FCFAST[ch],Units,Enabled) ;
 
         Main.SESLABIO.TritonGetreg(TECELLA_REG_CSLOW_A,ch,Value,CSLOW_A[ch],Units,
@@ -1328,7 +1333,6 @@ procedure TTritonPanelFrm.bCSlowAutoCompClick(Sender: TObject);
 // -------------------------------------------
 var
     ch : Integer ;
-    Enabled : Boolean ;
     Value : Single ;
     Units : String ;
     VHold,VStep,THold,TStep : single ;
@@ -1336,8 +1340,9 @@ begin
 
      //bClearCompensation.Click ;
 
-     // Stop seal test
-     if Main.FormExists( 'SealTestFrm' ) then SealTestFrm.StopADCAndDAC ;
+     // Stop A/D & D/A in other forms
+     StopADCAndDAC ;
+
      Screen.Cursor := crHourglass ;
      Main.StatusBar.SimpleText := 'WAIT: Cell capacity compensation in progress.' ;
 
@@ -1414,15 +1419,12 @@ procedure TTritonPanelFrm.bAutoCompArterfactClick(Sender: TObject);
 // Compensate any artefact remaining after capacity compensation
 // -------------------------------------------------------------
 var
-    ch : Integer ;
-    Enabled : Boolean ;
-    Value : Single ;
-    Units : String ;
     VHold,VStep,THold,TStep : single ;
 begin
 
-     // Stop seal test
-     if Main.FormExists( 'SealTestFrm' ) then SealTestFrm.StopADCAndDAC ;
+     // Stop A/D & D/A in other forms
+     StopADCAndDAC ;
+
      Screen.Cursor := crHourglass ;
      Main.StatusBar.SimpleText := 'WAIT: Arefact compensation in progress.' ;
 
@@ -1472,8 +1474,8 @@ var
     Units : string ;
 begin
 
-     // Stop seal test
-     if Main.FormExists( 'SealTestFrm' ) then SealTestFrm.StopADCAndDAC ;
+     // Stop A/D & D/A in other forms
+     StopADCAndDAC ;
 
      bAutoCompJunctionPot.Enabled := False ;
 
@@ -1507,16 +1509,12 @@ procedure TTritonPanelFrm.bAutoLeakCompClick(Sender: TObject);
 // ---------------------------
 var
     ch : Integer ;
-    Enabled : Boolean ;
     Value : Single ;
     Units : String ;
     VHold,VStep,THold,TStep : single ;
 begin
 
-     //bClearCompensation.Click ;
-
-     // Stop seal test
-     if Main.FormExists( 'SealTestFrm' ) then SealTestFrm.StopADCAndDAC ;
+     // Stop A/D & D/A in other forms
      Screen.Cursor := crHourglass ;
      Main.StatusBar.SimpleText := 'WAIT: Leak conductance compensation in progress.' ;
 
@@ -1727,7 +1725,7 @@ begin
 procedure TTritonPanelFrm.cbUserConfigChange(Sender: TObject);
 begin
      // Stop seal test recording form if it is open
-     if Main.FormExists( 'SealTestFrm') then SealTestFrm.StopADCandDAC ;
+     StopADCandDAC ;
 
      Screen.Cursor := crHourglass ;
      Main.StatusBar.SimpleText := 'WAIT: Calibrating patch clamp amplifier' ;
@@ -1813,8 +1811,9 @@ var
     ChanNum : Integer ;
 begin
 
-     // Stop seal test
-     if Main.FormExists( 'SealTestFrm' ) then SealTestFrm.StopADCAndDAC ;
+     // Stop A/D & D/A in other forms
+     StopADCAndDAC ;
+
      Screen.Cursor := crHourglass ;
      Main.StatusBar.SimpleText := 'WAIT: Cell zap in progress.' ;
 
@@ -1918,8 +1917,9 @@ procedure TTritonPanelFrm.bCalibrateClick(Sender: TObject);
 begin
 
      bCalibrate.Enabled := False ;
-     // Stop seal test recording form if it is open
-     if Main.FormExists( 'SealTestFrm') then SealTestFrm.StopADCandDAC ;
+
+     // Stop A/D & D/A in other forms
+     StopADCandDAC ;
 
      Screen.Cursor := crHourglass ;
      Main.StatusBar.SimpleText := 'WAIT: Calibrating patch clamp amplifier' ;
@@ -1933,6 +1933,17 @@ begin
      bCalibrate.Enabled := True ;
 
      end;
+
+
+procedure TTritonPanelFrm.StopADCandDAC ;
+// -----------------------------------------------
+// Stop A/D sampling and D/A update in other forms
+// -----------------------------------------------
+begin
+     if Main.FormExists( 'SealTestFrm') then SealTestFrm.StopADCandDAC ;
+     if Main.FormExists( 'RecordFrm') then RecordFrm.StopADCandDAC ;
+end;
+
 
 procedure TTritonPanelFrm.ckUseDigitalArtefactSubtractionClick(
   Sender: TObject);
