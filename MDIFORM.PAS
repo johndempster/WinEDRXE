@@ -406,7 +406,8 @@ unit Mdiform;
   V3.9.6  09.08.21 AmpModule.pas copied from WinWCP. Axoclamp 900A module updated (not tested yet with actual hardware
                    Sealtest.pas imported from WinWCP, Pulse rate now faster. Default holding potential for AO channels selected by tick now updated.
   V3.9.7  27.08.21 Support for Tecella Triton X (16 channel patch clamp) added
-
+  V3.9.8  24.11.21 Support for CED Micro 1401 Mk4 added. Digital stimulus pulses now work in Record To Disk window
+                   Stimulus protocol files now correctly listed in Save/Open dialog boxes of protocol editor
   =======================================================================}
 
 interface
@@ -646,7 +647,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.9.7' ;
+     Version := 'V3.9.8' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }

@@ -17,6 +17,7 @@ unit EditProtocolUnit;
 // 12.12.14 Changes to element parameters no longer lost when a new element dropped on waveform palette
 // 10.07.15 Open/SaveDialog.FileName now set to Main.VProtDirectory\*.xml file path to ensure dialog
 //          opens in that folder.
+// 24.11.21 Changed back to *.xml because files in folder were not being displayed
 
 interface
 
@@ -2186,7 +2187,7 @@ begin
 
      SaveDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofPathMustExist] ;
      SaveDialog.Title := 'Save Stimulus Protocol' ;
-     SaveDialog.FileName := Main.VProtDirectory + '*.xml' ;
+     SaveDialog.FileName := {Main.VProtDirectory + }'*.xml' ;
      SaveDialog.InitialDir := Main.VProtDirectory ;
 
      if SaveDialog.execute then begin
@@ -2210,7 +2211,7 @@ begin
         end ;
 
      OpenDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofPathMustExist] ;
-     OpenDialog.FileName := Main.VProtDirectory + '*.xml' ;
+     OpenDialog.FileName := {Main.VProtDirectory + }'*.xml' ;
      OpenDialog.InitialDir := Main.VProtDirectory ;
      OpenDialog.Title := 'Load Stimulus Protocol' ;
      if OpenDialog.execute then begin
