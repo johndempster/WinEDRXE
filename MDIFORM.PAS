@@ -408,6 +408,7 @@ unit Mdiform;
   V3.9.7  27.08.21 Support for Tecella Triton X (16 channel patch clamp) added
   V3.9.8  24.11.21 Support for CED Micro 1401 Mk4 added. Digital stimulus pulses now work in Record To Disk window
                    Stimulus protocol files now correctly listed in Save/Open dialog boxes of protocol editor
+  V3.9.9  16.01.22 COM Automation controls now working correctly again
   =======================================================================}
 
 interface
@@ -647,7 +648,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.9.8' ;
+     Version := 'V3.9.9' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }

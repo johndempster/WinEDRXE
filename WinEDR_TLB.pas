@@ -12,7 +12,7 @@ unit WinEDR_TLB;
 // ************************************************************************ //
 
 // $Rev: 52393 $
-// File generated on 17/06/2019 17:05:25 from Type Library described below.
+// File generated on 16/01/2022 15:46:38 from Type Library described below.
 
 // ************************************************************************  //
 // Type Lib: C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\WinEDR (1)
