@@ -95,6 +95,11 @@ unit EventDetector;
 //               Baseline type now set using drop-down list rather than radio buttons
 // 02.06.21 ... Events can now be aligned on either max. rate of rise or mid-point of rise
 //              Mid-points now detected more reliably.
+// 08.02.22 ... Rising edge detection buffer duration set to dead time to prevent detection point
+//              being shifted to previous event at high event frequencies.
+//              Event alignment point can now be left at detection threshold (as in pre 3.9 versions)
+//              Rate of rise and template displays no longer display junk data at end of file
+//              Control positions now set using anchors
 
 interface
 
@@ -160,20 +165,7 @@ type
   TEventDetFrm = class(TForm)
     Page: TPageControl;
     DetectEventsPage: TTabSheet;
-    DetectGrp: TGroupBox;
-    bDetect: TButton;
-    bAbort: TButton;
-    GroupBox8: TGroupBox;
-    rbAllRecords: TRadioButton;
-    rbRange: TRadioButton;
-    edRange: TRangeEdit;
-    CriteriaGrp: TGroupBox;
     sbDisplay: TScrollBar;
-    cbChannel: TComboBox;
-    Label6: TLabel;
-    GroupBox1: TGroupBox;
-    rbRateOfRise: TRadioButton;
-    rbPatternMatch: TRadioButton;
     EditEventsPage: TTabSheet;
     EditEventsGrp: TGroupBox;
     sbEditDisplay: TScrollBar;
@@ -197,24 +189,6 @@ type
     ExportGrp: TGroupBox;
     bExportToWCPFile: TButton;
     bSetPlotAxes: TButton;
-    GroupBox2: TGroupBox;
-    edThreshold: TValidatedEdit;
-    Label8: TLabel;
-    edTimeThreshold: TValidatedEdit;
-    lbTimeThreshold: TLabel;
-    bSetThresholdTo4SD: TButton;
-    ModePage: TNotebook;
-    rbThreshold: TRadioButton;
-    GroupBox7: TGroupBox;
-    edBaselineAveragingInterval: TValidatedEdit;
-    GroupBox9: TGroupBox;
-    Label10: TLabel;
-    edTauRise: TValidatedEdit;
-    edTauDecay: TValidatedEdit;
-    Label12: TLabel;
-    GroupBox10: TGroupBox;
-    edDeadTime: TValidatedEdit;
-    GroupBox11: TGroupBox;
     bExportNonEvents: TButton;
     HistPage: TTabSheet;
     plHist: TXYPlotDisplay;
@@ -317,7 +291,6 @@ type
     Label18: TLabel;
     bDoubleEditDisplayWidth: TButton;
     bEditDisplayWidthHalve: TButton;
-    Label23: TLabel;
     cktCursorAtDetectionPoint: TCheckBox;
     FrequencyAvgPan: TPanel;
     edAverageInterval: TValidatedEdit;
@@ -332,10 +305,42 @@ type
     Timer: TTimer;
     cbReviewChannel: TComboBox;
     Label11: TLabel;
-    Label25: TLabel;
-    ckEnableBaselineTracking: TCheckBox;
     bExportAnalysis: TButton;
     cbBaseline: TComboBox;
+    DetectGrp: TGroupBox;
+    bDetect: TButton;
+    bAbort: TButton;
+    GroupBox8: TGroupBox;
+    Label6: TLabel;
+    rbAllRecords: TRadioButton;
+    rbRange: TRadioButton;
+    edRange: TRangeEdit;
+    cbChannel: TComboBox;
+    CriteriaGrp: TGroupBox;
+    GroupBox1: TGroupBox;
+    rbRateOfRise: TRadioButton;
+    rbPatternMatch: TRadioButton;
+    rbThreshold: TRadioButton;
+    GroupBox2: TGroupBox;
+    Label8: TLabel;
+    lbTimeThreshold: TLabel;
+    edThreshold: TValidatedEdit;
+    edTimeThreshold: TValidatedEdit;
+    bSetThresholdTo4SD: TButton;
+    ModePage: TNotebook;
+    GroupBox7: TGroupBox;
+    Label25: TLabel;
+    edBaselineAveragingInterval: TValidatedEdit;
+    ckEnableBaselineTracking: TCheckBox;
+    GroupBox11: TGroupBox;
+    GroupBox9: TGroupBox;
+    Label10: TLabel;
+    Label12: TLabel;
+    edTauRise: TValidatedEdit;
+    edTauDecay: TValidatedEdit;
+    GroupBox10: TGroupBox;
+    Label23: TLabel;
+    edDeadTime: TValidatedEdit;
     gpEventAlignment: TGroupBox;
     cbEventAlignment: TComboBox;
     procedure FormShow(Sender: TObject);
@@ -849,6 +854,7 @@ begin
      cbEventAlignment.Clear ;
      cbEventAlignment.Items.Add('Max. rate of rise');
      cbEventAlignment.Items.Add('Mid-point of rise');
+     cbEventAlignment.Items.Add('Detection threshold');
      cbEventAlignment.ItemIndex := Settings.EventDetector.Alignment ;
 
      cbBaseline.ItemIndex := Settings.EventDetector.Baseline ;
@@ -1132,7 +1138,8 @@ begin
 
    scDisplay.xOffset := sbDisplay.Position ;
 
-   if rbThreshold.Checked then begin
+   if rbThreshold.Checked then
+      begin
       InitialiseRunningMean := True ;
       scDisplay.NumPoints := Threshold( sbDisplay.Position,
                                         scDisplay.MaxPoints,
@@ -1140,13 +1147,15 @@ begin
                                         ADC,
                                         DetBuf )
       end
-   else if rbRateOfRise.Checked then begin
+   else if rbRateOfRise.Checked then
+      begin
       scDisplay.NumPoints := RateOfRise( sbDisplay.Position,
                                          scDisplay.MaxPoints,
                                          ADC,
                                          DetBuf ) ;
       end
-   else begin
+   else
+      begin
       scDisplay.NumPoints := MatchTemplate( sbDisplay.Position,
                                             scDisplay.MaxPoints,
                                             ADC,
@@ -1211,7 +1220,8 @@ begin
        end ;
 
    // Load signal buffer Starting at StartAtSample
-   if YBuf <> Nil then ReadCDRBuffer(CdrFH,StartAtSample,YBuf^,NumPoints) ;
+   if YBuf <> Nil then Result := ReadCDRBuffer(CdrFH,StartAtSample,YBuf^,NumPoints) ;
+//   Result := Min(CDRFH.NumSamplesInFile - StartAtSample,NumPoints) ;
 
    FreeMem(Buf) ;
 
@@ -1402,7 +1412,7 @@ begin
       end ;
 
    // Load signal buffer Starting at StartAtSample
-   if YBuf <> Nil then ReadCDRBuffer(CdrFH,StartAtSample,YBuf^,NumPoints) ;
+   if YBuf <> Nil then Result := ReadCDRBuffer(CdrFH,StartAtSample,YBuf^,NumPoints) ;
 
    FreeMem(Buf) ;
 
@@ -1495,7 +1505,8 @@ var
 begin
 
    // Get a signal buffer post detection point
-   NPBuf := 200 ;
+   // Set no. samples in rising edge detection buffer equal to dead time
+   NPBuf := Min(Max(Round(edDeadTime.Value/CDRFH.dt),200),4) ;
    NPHalf := NPBuf div 2 ;
    iStartSample := Max(iDetectedAtSample - NPHalf,0) ;
    iEndSample := Min(iStartSample + NPBuf - 1, CDRFH.NumSamplesInFile - 1);
@@ -1517,7 +1528,6 @@ begin
    // Determine positive/negative-going polarity of signal from threshold value
    if edThreshold.Value >= 0.0 then Polarity := 1
                                else Polarity := -1 ;
-
 
    if cbEventAlignment.ItemIndex = AlignMaxRateOfRise then
       begin
@@ -1575,7 +1585,12 @@ begin
 
       Result := iStartSample + iYMidAt
 
-      end ;
+      end
+   else
+     begin
+     // Leave aligned at detection threshold
+     Result := iDetectedAtSample ;
+     end;
 
    FreeMem(Buf) ;
    FreeMem(DBuf) ;
@@ -1622,38 +1637,17 @@ procedure TEventDetFrm.FormResize(Sender: TObject);
 begin
      // Adjust size of tabs page to form size
 
-     Page.Height := Max(ClientHeight - Page.Top - 5,2) ;
-     Page.Width := Max(ClientWidth - Page.Left - 5,2) ;
-
-     // Set sizes of controls on Detect Events page
-
-     DetectGrp.Height := Max(DetectEventsPage.Height -  DetectGrp.Top - 2,2) ;
-
-     DetDisplayPanel.Top := DetectEventsPage.ClientHeight - DetDisplayPanel.Height - 5 ;
-
-     sbDisplay.Top := DetDisplayPanel.Top - sbDisplay.Height - 2 ;
-
      scDisplay.Width := Max( DetectEventsPage.Width - scDisplay.Left - 2,2) ;
      scDetDisplay.Width := scDisplay.Width ;
-     sbDisplay.Width := scDisplay.Width ;
+//     sbDisplay.Width := scDisplay.Width ;
 
      scDisplay.Height := Max( (2*(sbDisplay.Top - scDisplay.Top)) div 3,2) ;
      scDetDisplay.Top := scDisplay.Top + scDisplay.Height + 2 ;
      scDetDisplay.Height := Max( sbDisplay.Top - scDetDisplay.Top - 1,2) ;
 
      scDetDisplay.Left := scDisplay.Left ;
-     sbDisplay.Left := scDisplay.Left ;
 
      // Display points label and box
-     DetDisplayPanel.Left := sbDisplay.Left + sbDisplay.Width - DetDisplayPanel.Width ;
-
-     // Set vertical positions of controls on edit page
-     EventFilterGrp.Top := EditEventsPage.Height - EventFilterGrp.Height - 2 ;
-     EventFilterGrp.Width := scDisplay.Width ;
-
-     EditDisplayWidthPanel.Top := EventFilterGrp.Top - EditDisplayWidthPanel.Height -4 ;
-
-     sbEditDisplay.Top := EditDisplayWidthPanel.Top - sbEditDisplay.Height - 1 ;
 
      scMarkDisplay.Height := Max( (sbEditDisplay.Top - scEditDisplay.Top) div 5,2) ;
      scMarkDisplay.Top := sbEditDisplay.Top - scMarkDisplay.Height ;
@@ -1662,24 +1656,14 @@ begin
      // Set horizontal positions/sizes of controls
      scEditDisplay.Width := Max(DetectEventsPage.Width - scEditDisplay.Left - 2,2) ;
      scMarkDisplay.Width := scEditDisplay.Width ;
-     sbEditDisplay.Width := scEditDisplay.Width ;
-     EditDisplayWidthPanel.Left := sbEditDisplay.Left + sbEditDisplay.Width
-                                 - EditDisplayWidthPanel.Width ;
-
-     EditEventsGrp.Height := DetectEventsPage.Height -  EditEventsGrp.Top - 2 ;
 
      // Set sizes of controls on X/Y Plot page
 
-     XYPlotGrp.Height := Max( DetectEventsPage.Height -  XYPlotGrp.Top - 2,2) ;
      plPlot.Width := Max( XYPlotPage.ClientWidth - plPlot.Left - 5,2) ;
      plPlot.Height := Max( XYPlotPage.ClientHeight - plPlot.Top - 5,2) ;
 
      // Set sizes of controls on histogram page
-     HistGrp.Height := Max( HistPage.Height -  HistGrp.Top - 2,2) ;
      meHistResults.Height := Max( HistGrp.Height - meHistResults.Top - 5,2) ;
-
-     HistResultsGrp.Top := HistPage.Height - HistResultsGrp.Height - 2 ;
-     HistResultsGrp.Width := Max( HistPage.Width - HistResultsGrp.Left - 5,2) ;
      lbHistResults.Width := Max( HistResultsGrp.Width - lbHistResults.Left - 5,2) ;
 
      plHist.Width := Max( HistPage.Width - plHist.Left - 2,2) ;
@@ -1689,10 +1673,6 @@ begin
 
      // Set sizes of controls on average page
 
-     AverageGrp.Height := Max( AveragePage.ClientHeight -  AverageGrp.Top - 2,2) ;
-
-     AverageResultsGrp.Top := AveragePage.ClientHeight - AverageResultsGrp.Height - 2 ;
-     AverageResultsGrp.Width := Max(AveragePage.ClientWidth - AverageResultsGrp.Left - 5,2) ;
      lbAvgFitResults.Width := Max(AverageResultsGrp.Width - lbAvgFitResults.Left - 5,2) ;
 
      scAverageDisplay.Height := Max(AverageResultsGrp.Top - scAverageDisplay.Top - 2,2) ;
@@ -1803,11 +1783,6 @@ begin
            scDetDisplay.xOffset := 0 ;
            scDetDisplay.Invalidate ;
 
-           { Initialise detected event line }
-//           scDetDisplay.ClearLines ;
-//           iLine := scDetDisplay.CreateLine( 0, clRed, psSolid, 1 ) ;
-//           scDetDisplay.AddPointToLine( iLine, 0, 0 ) ;
-
            NewBufferNeeded := False ;
            i := 0 ;
 
@@ -1843,7 +1818,7 @@ begin
                       end;
                  // Find mid-point of signal rising edge
                 iEventSample := FindMidPointOfRise(iSample) ;
-  //              iEventSample := iSample ;
+      //          iEventSample := iSample ;
                  Events[NumEvents] := Max(iEventSample,0) ;
                  Inc(NumEvents) ;
                  end ;

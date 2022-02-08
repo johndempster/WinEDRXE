@@ -6,6 +6,7 @@ unit EPC9PanelUnit;
 // 11.03.14 Filter settings now work
 // 12.03.14 Final working version A
 // 24.03.14 Cslow and RS compensation turned off during auto Cfast to avoid access violations
+// 29.01.22 Main.SESLabIO.EPC9Amplifier no longer set in cbChannelChanging method since it is set in EPC9UpdateSettings
 
 interface
 
@@ -126,26 +127,26 @@ type
     procedure bClearRSCompensationClick(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure udVPOffsetChangingEx(Sender: TObject; var AllowChange: Boolean;
-      NewValue: SmallInt; Direction: TUpDownDirection);
+      NewValue: Integer; Direction: TUpDownDirection);
     procedure udVLiquidJunctionChangingEx(Sender: TObject;
-      var AllowChange: Boolean; NewValue: SmallInt;
+      var AllowChange: Boolean; NewValue: Integer;
       Direction: TUpDownDirection);
     procedure udVHoldChangingEx(Sender: TObject; var AllowChange: Boolean;
-      NewValue: SmallInt; Direction: TUpDownDirection);
+      NewValue: Integer; Direction: TUpDownDirection);
     procedure udRSCompensationChangingEx(Sender: TObject;
-      var AllowChange: Boolean; NewValue: SmallInt;
+      var AllowChange: Boolean; NewValue: Integer;
       Direction: TUpDownDirection);
     procedure udGLeakChangingEx(Sender: TObject; var AllowChange: Boolean;
-      NewValue: SmallInt; Direction: TUpDownDirection);
+      NewValue: Integer; Direction: TUpDownDirection);
     procedure udCSLowChangingEx(Sender: TObject; var AllowChange: Boolean;
-      NewValue: SmallInt; Direction: TUpDownDirection);
+      NewValue: Integer; Direction: TUpDownDirection);
     procedure udGSeriesChangingEx(Sender: TObject; var AllowChange: Boolean;
-      NewValue: SmallInt; Direction: TUpDownDirection);
-    procedure udCFastChangingEx(Sender: TObject; var AllowChange: Boolean;
-      NewValue: SmallInt; Direction: TUpDownDirection);
+      NewValue: Integer; Direction: TUpDownDirection);
     procedure udCFastTauChangingEx(Sender: TObject; var AllowChange: Boolean;
-      NewValue: SmallInt; Direction: TUpDownDirection);
+      NewValue: Integer; Direction: TUpDownDirection);
     procedure FormActivate(Sender: TObject);
+    procedure udCFastChangingEx(Sender: TObject; var AllowChange: Boolean;
+      NewValue: Integer; Direction: TUpDownDirection);
   private
     { Private declarations }
     SettingsFileName : String ;
@@ -173,6 +174,8 @@ type
     CCTrackTau : Array[0..MaxEPC9Channels] of Integer ;
     ExtStimPath : Array[0..MaxEPC9Channels] of Integer ;
     EnableStimFilter : Array[0..MaxEPC9Channels] of Boolean ;
+//    CurrentADCINPUT : Array[0..MaxEPC9Channels] of Integer ;
+//    VoltageADCINPUT : Array[0..MaxEPC9Channels] of Integer ;
 
     // XML procedures
 
@@ -317,6 +320,13 @@ begin
     cbExtStimPath.Items.Add('DAC') ;
     cbExtStimPath.Items.Add('Input') ;
 
+    // Current and voltage input channels
+//    cbCurrentChannel.Clear ;
+//    for i := 0 to 7 do cbCurrentChannel.Items.Add(format('ADC%d',[i])) ;
+//    cbVoltageChannel.Items.Assign(cbCurrentChannel.Items);
+//    cbCurrentChannel.ItemIndex := 0 ;
+//    cbVoltageChannel.ItemIndex := 3 ;
+
      //Update patch clamp
      UpdateEPC9Settings(cbChannel.ItemIndex) ;
 
@@ -369,7 +379,7 @@ begin
 
 
 procedure TEPC9PanelFrm.udCFastChangingEx(Sender: TObject;
-  var AllowChange: Boolean; NewValue: SmallInt; Direction: TUpDownDirection);
+  var AllowChange: Boolean; NewValue: Integer; Direction: TUpDownDirection);
 // -------------------------------
 // CFast Up/down button pressed
 // -------------------------------
@@ -386,7 +396,7 @@ begin
 
 
 procedure TEPC9PanelFrm.udCFastTauChangingEx(Sender: TObject;
-  var AllowChange: Boolean; NewValue: SmallInt; Direction: TUpDownDirection);
+  var AllowChange: Boolean; NewValue: Integer; Direction: TUpDownDirection);
 // -------------------------------
 // CFastTau Up/down button pressed
 // -------------------------------
@@ -400,6 +410,7 @@ begin
      CFastTau[cbChannel.ItemIndex] := Main.SESLabIO.EPC9CfastTau ;
      edCfastTau.Value := CFastTau[cbChannel.ItemIndex] ;
      end;
+
 
 procedure TEPC9PanelFrm.UpdateEPC9Settings(
           iAmp : Integer)  ;
@@ -432,6 +443,8 @@ begin
        Main.SESLabIO.EPC9VPOffset :=  VPOffset[iAmp] ;
        Main.SESLabIO.EPC9VLiquidJunction := VLiquidJunction[iAmp] ;
        Main.SESLabIO.EPC9VHold := VHold[iAmp] ;
+//       Main.SESLabIO.EPC9VoltageADCInput := VoltageADCInput[iAmp];
+//       Main.SESLabIO.EPC9CurrentADCInput := CurrentADCInput[iAmp];
        Main.SESLabIO.EPC9FlushCache ;
 
 //       if RestartSealTest then SealTestFrm.StartADCAndDAC ;
@@ -659,7 +672,7 @@ procedure TEPC9PanelFrm.cbChannelChange(Sender: TObject);
 // Amplifier changed
 // -----------------
 begin
-    Main.SESLabIO.EPC9Amplifier := cbChannel.ItemIndex + 1 ;
+//    Main.SESLabIO.EPC9Amplifier := cbChannel.ItemIndex + 1 ;
     UpdateEPC9Settings(cbChannel.ItemIndex) ;
     UpdatePanelSettings ;
     end;
@@ -931,8 +944,8 @@ begin
 
     // Initialise settings
     for i := 0 to MaxEPC9Channels-1 do begin
-        Gain[i] := 0 ;
-        Mode[i] := 0 ;
+       Gain[i] := 0 ;
+       Mode[i] := 0 ;
        CFAST[i] := 0.0 ;
        CFASTTAU[i] := 1E-6 ;
        CSLOWRANGE[i] := 0 ;
@@ -952,6 +965,8 @@ begin
        CCTrackTau[i] := 0 ;
        ExtStimPath[i] := 1 ;
        EnableStimFilter[i] := False ;
+//       CurrentADCINPUT[i] := 0 ;
+//       VoltageADCINPUT[i] := 3 ;
        end;
 
      GentleModeChange := False ;
@@ -1042,6 +1057,8 @@ begin
          AddElementInt( iNode, 'CCGAIN', CCGain[i]);
          AddElementInt( iNode, 'CCTRACKTAU', CCTrackTau[i]);
          AddElementInt( iNode, 'EXTSTIMPATH', ExtStimPath[i]);
+//         AddElementInt( iNode, 'CURRENTADCINPUT', CurrentADCINPUT[i]);
+//         AddElementInt( iNode, 'VOLTAGEADCINPUT', VoltageADCINPUT[i]);
          end ;
 
      s := TStringList.Create;
@@ -1057,7 +1074,7 @@ begin
 
 
 procedure TEPC9PanelFrm.udCSLowChangingEx(Sender: TObject;
-  var AllowChange: Boolean; NewValue: SmallInt; Direction: TUpDownDirection);
+  var AllowChange: Boolean; NewValue: Integer; Direction: TUpDownDirection);
 // -------------------------------
 // CSlow Up/down button pressed
 // -------------------------------
@@ -1074,7 +1091,7 @@ begin
 
 
 procedure TEPC9PanelFrm.udGLeakChangingEx(Sender: TObject;
-  var AllowChange: Boolean; NewValue: SmallInt; Direction: TUpDownDirection);
+  var AllowChange: Boolean; NewValue: Integer; Direction: TUpDownDirection);
 // -------------------------------
 // GLeak Up/down button pressed
 // -------------------------------
@@ -1091,7 +1108,7 @@ begin
 
 
 procedure TEPC9PanelFrm.udGSeriesChangingEx(Sender: TObject;
-  var AllowChange: Boolean; NewValue: SmallInt; Direction: TUpDownDirection);
+  var AllowChange: Boolean; NewValue: Integer; Direction: TUpDownDirection);
 // -------------------------------
 // GSeries Up/down button pressed
 // -------------------------------
@@ -1107,7 +1124,7 @@ begin
      end;
 
 procedure TEPC9PanelFrm.udRSCompensationChangingEx(Sender: TObject;
-  var AllowChange: Boolean; NewValue: SmallInt; Direction: TUpDownDirection);
+  var AllowChange: Boolean; NewValue: Integer; Direction: TUpDownDirection);
 // -------------------------------
 // RS Compensation Up/down button pressed
 // -------------------------------
@@ -1123,7 +1140,7 @@ begin
      end ;
 
 procedure TEPC9PanelFrm.udVHoldChangingEx(Sender: TObject;
-  var AllowChange: Boolean; NewValue: SmallInt; Direction: TUpDownDirection);
+  var AllowChange: Boolean; NewValue: Integer; Direction: TUpDownDirection);
 // -------------------------------
 // VHold Up/down button pressed
 // -------------------------------
@@ -1140,7 +1157,7 @@ begin
 
 
 procedure TEPC9PanelFrm.udVLiquidJunctionChangingEx(Sender: TObject;
-  var AllowChange: Boolean; NewValue: SmallInt; Direction: TUpDownDirection);
+  var AllowChange: Boolean; NewValue: Integer; Direction: TUpDownDirection);
 // -------------------------------
 // VLiquidJunction Up/down button pressed
 // -------------------------------
@@ -1157,7 +1174,7 @@ begin
 
 
 procedure TEPC9PanelFrm.udVPOffsetChangingEx(Sender: TObject;
-  var AllowChange: Boolean; NewValue: SmallInt; Direction: TUpDownDirection);
+  var AllowChange: Boolean; NewValue: Integer; Direction: TUpDownDirection);
 // -------------------------------
 // VPOffset Up/down button pressed
 // -------------------------------
@@ -1242,6 +1259,8 @@ begin
          GetElementInt( iNode, 'CCGAIN', CCGain[i]);
          GetElementInt( iNode, 'CCTRACKTAU', CCTrackTau[i]);
          GetElementInt( iNode, 'EXTSTIMPATH', ExtStimPath[i]);
+//         GetElementInt( iNode, 'CURRENTADCINPUT', CurrentADCINPUT[i]);
+//         GetElementInt( iNode, 'VOLTAGEADCINPUT', VoltageADCINPUT[i]);
          end ;
         Inc(NodeIndex) ;
         end ;

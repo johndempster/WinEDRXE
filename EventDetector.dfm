@@ -2,8 +2,8 @@ object EventDetFrm: TEventDetFrm
   Left = 855
   Top = 131
   Caption = 'Event Detection'
-  ClientHeight = 865
-  ClientWidth = 862
+  ClientHeight = 854
+  ClientWidth = 885
   Color = clBtnFace
   Font.Charset = ANSI_CHARSET
   Font.Color = clWindowText
@@ -21,21 +21,31 @@ object EventDetFrm: TEventDetFrm
   OnKeyDown = FormKeyDown
   OnResize = FormResize
   OnShow = FormShow
+  DesignSize = (
+    885
+    854)
   PixelsPerInch = 96
   TextHeight = 15
   object Page: TPageControl
     Left = 8
-    Top = 0
-    Width = 839
-    Height = 817
+    Top = 8
+    Width = 869
+    Height = 838
     ActivePage = DetectEventsPage
+    Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 0
     OnChange = PageChange
+    ExplicitHeight = 817
     object DetectEventsPage: TTabSheet
       Caption = 'Detect Events'
+      ExplicitLeft = 0
+      ExplicitHeight = 787
+      DesignSize = (
+        861
+        808)
       object scDisplay: TScopeDisplay
-        Left = 224
-        Top = 8
+        Left = 221
+        Top = 3
         Width = 399
         Height = 107
         OnCursorChange = scDisplayCursorChange
@@ -117,18 +127,95 @@ object EventDetFrm: TEventDetFrm
         DisplaySelected = False
         FontSize = 8
       end
+      object sbDisplay: TScrollBar
+        Left = 221
+        Top = 764
+        Width = 637
+        Height = 17
+        Anchors = [akLeft, akRight, akBottom]
+        PageSize = 0
+        TabOrder = 0
+        OnChange = sbDisplayChange
+        ExplicitTop = 743
+        ExplicitWidth = 607
+      end
+      object DetDisplayPanel: TPanel
+        Left = 713
+        Top = 782
+        Width = 145
+        Height = 23
+        Anchors = [akRight, akBottom]
+        BevelOuter = bvNone
+        TabOrder = 1
+        ExplicitLeft = 683
+        ExplicitTop = 761
+        object Label18: TLabel
+          Left = 9
+          Top = 2
+          Width = 31
+          Height = 15
+          Alignment = taRightJustify
+          Caption = 'Width'
+        end
+        object edDetDisplayWidth: TValidatedEdit
+          Left = 60
+          Top = 1
+          Width = 65
+          Height = 20
+          OnKeyPress = edDetDisplayWidthKeyPress
+          AutoSize = False
+          Text = ' 0.1667 s'
+          Value = 10.001980781555180000
+          Scale = 0.016666699200868610
+          Units = 's'
+          NumberFormat = '%.4g'
+          LoLimit = 10.000000000000000000
+          HiLimit = 1.000000015047466E29
+        end
+        object bTDisplayDouble: TButton
+          Left = 126
+          Top = 2
+          Width = 16
+          Height = 18
+          Caption = '4'
+          Font.Charset = SYMBOL_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -16
+          Font.Name = 'Webdings'
+          Font.Style = [fsBold]
+          ParentFont = False
+          TabOrder = 1
+          OnClick = bTDisplayDoubleClick
+        end
+        object bTDisplayHalf: TButton
+          Left = 43
+          Top = 2
+          Width = 16
+          Height = 18
+          Caption = '3'
+          Font.Charset = SYMBOL_CHARSET
+          Font.Color = clWindowText
+          Font.Height = -16
+          Font.Name = 'Webdings'
+          Font.Style = [fsBold]
+          ParentFont = False
+          TabOrder = 2
+          OnClick = bTDisplayHalfClick
+        end
+      end
       object DetectGrp: TGroupBox
         Left = 6
-        Top = 0
+        Top = 3
         Width = 209
-        Height = 593
+        Height = 802
+        Anchors = [akLeft, akTop, akBottom]
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clBlack
         Font.Height = -12
         Font.Name = 'Arial'
         Font.Style = []
         ParentFont = False
-        TabOrder = 0
+        TabOrder = 2
         object bDetect: TButton
           Left = 9
           Top = 13
@@ -251,7 +338,7 @@ object EventDetFrm: TEventDetFrm
           end
         end
         object CriteriaGrp: TGroupBox
-          Left = 3
+          Left = 8
           Top = 151
           Width = 193
           Height = 410
@@ -438,8 +525,6 @@ object EventDetFrm: TEventDetFrm
               Left = 0
               Top = 0
               Caption = 'Threshold'
-              ExplicitWidth = 0
-              ExplicitHeight = 0
               object GroupBox7: TGroupBox
                 Left = 4
                 Top = 4
@@ -505,8 +590,6 @@ object EventDetFrm: TEventDetFrm
               Left = 0
               Top = 0
               Caption = 'RateOfRise'
-              ExplicitWidth = 0
-              ExplicitHeight = 0
               object GroupBox11: TGroupBox
                 Left = 4
                 Top = 0
@@ -665,84 +748,15 @@ object EventDetFrm: TEventDetFrm
           end
         end
       end
-      object sbDisplay: TScrollBar
-        Left = 221
-        Top = 298
-        Width = 409
-        Height = 17
-        PageSize = 0
-        TabOrder = 1
-        OnChange = sbDisplayChange
-      end
-      object DetDisplayPanel: TPanel
-        Left = 288
-        Top = 410
-        Width = 145
-        Height = 23
-        BevelOuter = bvNone
-        TabOrder = 2
-        object Label18: TLabel
-          Left = 9
-          Top = 2
-          Width = 31
-          Height = 15
-          Alignment = taRightJustify
-          Caption = 'Width'
-        end
-        object edDetDisplayWidth: TValidatedEdit
-          Left = 60
-          Top = 1
-          Width = 65
-          Height = 20
-          OnKeyPress = edDetDisplayWidthKeyPress
-          AutoSize = False
-          Text = ' 0.1667 s'
-          Value = 10.001980781555180000
-          Scale = 0.016666699200868610
-          Units = 's'
-          NumberFormat = '%.4g'
-          LoLimit = 10.000000000000000000
-          HiLimit = 1.000000015047466E29
-        end
-        object bTDisplayDouble: TButton
-          Left = 126
-          Top = 2
-          Width = 16
-          Height = 18
-          Caption = '4'
-          Font.Charset = SYMBOL_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -16
-          Font.Name = 'Webdings'
-          Font.Style = [fsBold]
-          ParentFont = False
-          TabOrder = 1
-          OnClick = bTDisplayDoubleClick
-        end
-        object bTDisplayHalf: TButton
-          Left = 43
-          Top = 2
-          Width = 16
-          Height = 18
-          Caption = '3'
-          Font.Charset = SYMBOL_CHARSET
-          Font.Color = clWindowText
-          Font.Height = -16
-          Font.Name = 'Webdings'
-          Font.Style = [fsBold]
-          ParentFont = False
-          TabOrder = 2
-          OnClick = bTDisplayHalfClick
-        end
-      end
     end
     object EditEventsPage: TTabSheet
       Caption = 'Review/Edit Events'
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
+      ExplicitLeft = 12
+      ExplicitHeight = 787
+      DesignSize = (
+        861
+        808)
       object scMarkDisplay: TScopeDisplay
         Left = 224
         Top = 118
@@ -829,12 +843,14 @@ object EventDetFrm: TEventDetFrm
         FontSize = 8
       end
       object EditDisplayWidthPanel: TPanel
-        Left = 320
-        Top = 280
+        Left = 568
+        Top = 679
         Width = 281
         Height = 25
+        Anchors = [akRight, akBottom]
         BevelOuter = bvNone
         TabOrder = 3
+        ExplicitTop = 658
         object lbEditDisplayPoints: TLabel
           Left = 6
           Top = 2
@@ -908,11 +924,13 @@ object EventDetFrm: TEventDetFrm
         end
       end
       object EditEventsGrp: TGroupBox
-        Left = 8
-        Top = 2
+        Left = 4
+        Top = 4
         Width = 209
-        Height = 775
+        Height = 796
+        Anchors = [akLeft, akTop, akBottom]
         TabOrder = 0
+        ExplicitHeight = 775
         object Label14: TLabel
           Left = 8
           Top = 16
@@ -1419,21 +1437,25 @@ object EventDetFrm: TEventDetFrm
         end
       end
       object sbEditDisplay: TScrollBar
-        Left = 224
-        Top = 258
-        Width = 417
+        Left = 219
+        Top = 658
+        Width = 630
         Height = 17
+        Anchors = [akLeft, akRight, akBottom]
         PageSize = 0
         TabOrder = 1
         OnChange = sbEditDisplayChange
+        ExplicitTop = 637
       end
       object EventFilterGrp: TGroupBox
-        Left = 240
-        Top = 384
-        Width = 577
+        Left = 219
+        Top = 698
+        Width = 630
         Height = 105
+        Anchors = [akLeft, akRight, akBottom]
         Caption = ' Event Filter '
         TabOrder = 2
+        ExplicitTop = 677
         object GroupBox4: TGroupBox
           Left = 312
           Top = 12
@@ -1639,10 +1661,11 @@ object EventDetFrm: TEventDetFrm
     object XYPlotPage: TTabSheet
       Caption = 'X-Y Plot'
       ImageIndex = 2
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
+      ExplicitWidth = 831
+      ExplicitHeight = 787
+      DesignSize = (
+        861
+        808)
       object plPlot: TXYPlotDisplay
         Left = 224
         Top = 8
@@ -1684,10 +1707,11 @@ object EventDetFrm: TEventDetFrm
         MetafileHeight = 400
       end
       object XYPlotGrp: TGroupBox
-        Left = 8
-        Top = 2
+        Left = 4
+        Top = 4
         Width = 209
-        Height = 479
+        Height = 801
+        Anchors = [akLeft, akTop, akBottom]
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clBlack
         Font.Height = -12
@@ -1948,10 +1972,11 @@ object EventDetFrm: TEventDetFrm
     object HistPage: TTabSheet
       Caption = 'Histogram'
       ImageIndex = 3
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
+      ExplicitWidth = 831
+      ExplicitHeight = 787
+      DesignSize = (
+        861
+        808)
       object plHist: TXYPlotDisplay
         Left = 224
         Top = 16
@@ -1993,10 +2018,11 @@ object EventDetFrm: TEventDetFrm
         MetafileHeight = 400
       end
       object HistResultsGrp: TGroupBox
-        Left = 224
-        Top = 218
-        Width = 407
+        Left = 219
+        Top = 598
+        Width = 625
         Height = 207
+        Anchors = [akLeft, akRight, akBottom]
         Caption = ' Curve fitting '
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clBlack
@@ -2005,11 +2031,12 @@ object EventDetFrm: TEventDetFrm
         Font.Style = []
         ParentFont = False
         TabOrder = 0
+        ExplicitTop = 577
         object lbHistResults: THTMLLabel
-          Left = 144
-          Top = 16
-          Width = 255
-          Height = 183
+          Left = 160
+          Top = 21
+          Width = 449
+          Height = 172
           Caption = 'Label'
           Alignment = taLeftJustify
           LineSpacing = 1.000000000000000000
@@ -2048,10 +2075,11 @@ object EventDetFrm: TEventDetFrm
         end
       end
       object HistGrp: TGroupBox
-        Left = 9
-        Top = 0
+        Left = 4
+        Top = 4
         Width = 209
-        Height = 529
+        Height = 801
+        Anchors = [akLeft, akTop, akBottom]
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clBlack
         Font.Height = -13
@@ -2059,6 +2087,7 @@ object EventDetFrm: TEventDetFrm
         Font.Style = []
         ParentFont = False
         TabOrder = 1
+        ExplicitHeight = 780
         object GroupBox12: TGroupBox
           Left = 8
           Top = 8
@@ -2090,7 +2119,7 @@ object EventDetFrm: TEventDetFrm
           object cbHistVar: TComboBox
             Left = 8
             Top = 43
-            Width = 177
+            Width = 174
             Height = 23
             Hint = 'Variable to be compiled into histogram'
             Style = csDropDownList
@@ -2344,14 +2373,15 @@ object EventDetFrm: TEventDetFrm
       Caption = 'Average'
       ImageIndex = 4
       ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
+      ExplicitHeight = 787
+      DesignSize = (
+        861
+        808)
       object scAverageDisplay: TScopeDisplay
         Left = 224
         Top = 8
         Width = 409
-        Height = 107
+        Height = 397
         OnMouseUp = scAverageDisplayMouseUp
         OnCursorChange = scAverageDisplayCursorChange
         CursorChangeInProgress = False
@@ -2391,11 +2421,15 @@ object EventDetFrm: TEventDetFrm
         FontSize = 8
       end
       object AverageGrp: TGroupBox
-        Left = 8
-        Top = 0
+        Left = 4
+        Top = 4
         Width = 209
-        Height = 457
+        Height = 801
+        Anchors = [akLeft, akTop, akBottom]
         TabOrder = 0
+        DesignSize = (
+          209
+          801)
         object GroupBox19: TGroupBox
           Left = 8
           Top = 64
@@ -2523,9 +2557,11 @@ object EventDetFrm: TEventDetFrm
           Left = 8
           Top = 208
           Width = 193
-          Height = 201
+          Height = 222
+          Anchors = [akLeft, akTop, akBottom]
           Caption = ' Event Analysis '
           TabOrder = 2
+          ExplicitHeight = 201
           object meAverageResults: TMemo
             Left = 8
             Top = 16
@@ -2569,9 +2605,10 @@ object EventDetFrm: TEventDetFrm
       end
       object AverageResultsGrp: TGroupBox
         Left = 224
-        Top = 248
-        Width = 433
+        Top = 594
+        Width = 625
         Height = 211
+        Anchors = [akLeft, akRight, akBottom]
         Caption = ' Curve fitting '
         Font.Charset = DEFAULT_CHARSET
         Font.Color = clBlack
@@ -2580,10 +2617,11 @@ object EventDetFrm: TEventDetFrm
         Font.Style = []
         ParentFont = False
         TabOrder = 1
+        ExplicitTop = 573
         object lbAvgFitResults: THTMLLabel
-          Left = 144
-          Top = 16
-          Width = 281
+          Left = 160
+          Top = 23
+          Width = 449
           Height = 185
           Caption = 'Label'
           Alignment = taLeftJustify
@@ -2669,6 +2707,6 @@ object EventDetFrm: TEventDetFrm
     Interval = 100
     OnTimer = TimerTimer
     Left = 248
-    Top = 584
+    Top = 560
   end
 end

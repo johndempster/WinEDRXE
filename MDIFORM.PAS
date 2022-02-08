@@ -409,6 +409,8 @@ unit Mdiform;
   V3.9.8  24.11.21 Support for CED Micro 1401 Mk4 added. Digital stimulus pulses now work in Record To Disk window
                    Stimulus protocol files now correctly listed in Save/Open dialog boxes of protocol editor
   V3.9.9  16.01.22 COM Automation controls now working correctly again
+  V4.0.0  06.02.22 Event Detector; Misalignment of mid-point of rise no longer misaligned for high frequency events
+                   Event alignment point can now be left at detection point
   =======================================================================}
 
 interface
@@ -648,7 +650,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V3.9.9' ;
+     Version := 'V4.0.0' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
