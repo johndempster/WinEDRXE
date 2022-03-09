@@ -100,6 +100,7 @@ unit EventDetector;
 //              Event alignment point can now be left at detection threshold (as in pre 3.9 versions)
 //              Rate of rise and template displays no longer display junk data at end of file
 //              Control positions now set using anchors
+// 09.03.22 ... Set Ampl. = 4*SD button now works (was setting wrong detection windows cursor
 
 interface
 
@@ -1432,7 +1433,6 @@ var
     DBuf : PSmallIntArray ;
     DescentCount,MaxDescentCount : Integer ;
     iStartSample,iEndSample : Integer ;
-    DOne : Boolean ;
 begin
 
    // Get a signal buffer post detection point
@@ -1695,7 +1695,7 @@ procedure TEventDetFrm.bDetectClick(Sender: TObject);
 // Detect events
 // -------------
 var
-    iEnd,iSample,y,StartAtSample,EndAtSample,iEventSample : Integer ;
+    iEnd,iSample,StartAtSample,EndAtSample,iEventSample : Integer ;
     DeadSamples : Integer ;
     i,OverThresholdCount,TimeThreshold,ThresholdLevel, Polarity : Integer ;
     Done,NewBufferNeeded, UpdateStatusBar, InitialiseRunningMean : Boolean ;
@@ -2520,14 +2520,7 @@ begin
    NumAvgRequired := Round( edZeroNumAvg.Value) ;
    iZeroGap := Round( edZeroGap.Value) ;
 
-   if cbBaseline.ItemIndex = BaselineAtStart then
-      begin
-      // Baseline at start of event window
-      // ---------------------------------
-      iStart := iZeroGap ;
-      iEnd := NumAvgRequired-1 ;
-      end
-   else if cbBaseline.ItemIndex = BaselineAtEvent then
+   if cbBaseline.ItemIndex = BaselineAtEvent then
       begin
       // Baseline at start of event
       // --------------------------
@@ -2546,6 +2539,14 @@ begin
 
       iEnd := Max(iEnd - iZeroGap,0) ;
       iStart := Max(iEnd - NumAvgRequired + 1,0) ;
+
+      end
+   else
+      begin
+      // Baseline at start of event window or fixed
+      // ------------------------------------------
+      iStart := iZeroGap ;
+      iEnd := NumAvgRequired-1 ;
       end ;
 
    // Calculate baseline average
@@ -3594,7 +3595,8 @@ begin
     // Calculate mean value
     Sum := 0.0 ;
     j := Channel[cbChannel.ItemIndex].ChannelOffset ;
-    for i := 0 to scDetDisplay.MaxPoints-1 do begin
+    for i := 0 to scDetDisplay.MaxPoints-1 do
+        begin
         Sum := Sum + DetBuf^[j] ;
         j := j + CdrFH.NumChannels ;
         end ;
@@ -3603,7 +3605,8 @@ begin
     // Calculate sum of squares
     Sum := 0.0 ;
     j := Channel[cbChannel.ItemIndex].ChannelOffset ;
-    for i := 0 to scDetDisplay.MaxPoints-1 do begin
+    for i := 0 to scDetDisplay.MaxPoints-1 do
+        begin
         Sum := Sum + (DetBuf^[j] - Mean)*(DetBuf^[j] - Mean) ;
         j := j + CdrFH.NumChannels ;
         end ;
@@ -3614,7 +3617,7 @@ begin
     // Set threshold cursor
     edThreshold.Value := SD*4.0 ;
     Settings.EventDetector.yThreshold := edThreshold.Value ;
-    scDetDisplay.HorizontalCursors[0] := Round(edThreshold.Value) ;
+    scDetDisplay.HorizontalCursors[ThresholdCursor] := Round(edThreshold.Value) ;
 
     end;
 

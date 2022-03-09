@@ -616,7 +616,7 @@ procedure TSealTestFrm.TimerTimer(Sender: TObject);
   ---------------------}
 
 var
-   ch,T,t1,t2 : Integer ;
+   ch,T : Integer ;
    OldADCUnits : Array[0..MaxChannels-1] of String ;
    OldADCName : Array[0..MaxChannels-1] of String ;
    Changed : Boolean ;
@@ -794,7 +794,6 @@ procedure TSealTestFrm.SetClampMode ;
 var
     Units : String ;
     Scale : Single ;
-  ch: Integer;
 begin
 
     ClampMode[cbAmplifier.ItemIndex] := Amplifier.ClampMode[cbAmplifier.ItemIndex] ;
@@ -851,8 +850,6 @@ procedure TSealTestFrm.ShowAmplifierChannels ;
 // Display channels for current selected amplifier, hide others
 // ------------------------------------------------------------
 var
-    iAmp : Integer ;
-    IsVisible : Boolean ;
   ch: Integer;
 begin
 {    for iAmp := 0 to cbAmplifier.Items.Count-1 do

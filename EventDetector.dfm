@@ -35,11 +35,8 @@ object EventDetFrm: TEventDetFrm
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 0
     OnChange = PageChange
-    ExplicitHeight = 817
     object DetectEventsPage: TTabSheet
       Caption = 'Detect Events'
-      ExplicitLeft = 0
-      ExplicitHeight = 787
       DesignSize = (
         861
         808)
@@ -136,8 +133,6 @@ object EventDetFrm: TEventDetFrm
         PageSize = 0
         TabOrder = 0
         OnChange = sbDisplayChange
-        ExplicitTop = 743
-        ExplicitWidth = 607
       end
       object DetDisplayPanel: TPanel
         Left = 713
@@ -147,8 +142,6 @@ object EventDetFrm: TEventDetFrm
         Anchors = [akRight, akBottom]
         BevelOuter = bvNone
         TabOrder = 1
-        ExplicitLeft = 683
-        ExplicitTop = 761
         object Label18: TLabel
           Left = 9
           Top = 2
@@ -752,8 +745,6 @@ object EventDetFrm: TEventDetFrm
     object EditEventsPage: TTabSheet
       Caption = 'Review/Edit Events'
       ImageIndex = 1
-      ExplicitLeft = 12
-      ExplicitHeight = 787
       DesignSize = (
         861
         808)
@@ -850,7 +841,6 @@ object EventDetFrm: TEventDetFrm
         Anchors = [akRight, akBottom]
         BevelOuter = bvNone
         TabOrder = 3
-        ExplicitTop = 658
         object lbEditDisplayPoints: TLabel
           Left = 6
           Top = 2
@@ -930,7 +920,6 @@ object EventDetFrm: TEventDetFrm
         Height = 796
         Anchors = [akLeft, akTop, akBottom]
         TabOrder = 0
-        ExplicitHeight = 775
         object Label14: TLabel
           Left = 8
           Top = 16
@@ -1445,7 +1434,6 @@ object EventDetFrm: TEventDetFrm
         PageSize = 0
         TabOrder = 1
         OnChange = sbEditDisplayChange
-        ExplicitTop = 637
       end
       object EventFilterGrp: TGroupBox
         Left = 219
@@ -1455,7 +1443,6 @@ object EventDetFrm: TEventDetFrm
         Anchors = [akLeft, akRight, akBottom]
         Caption = ' Event Filter '
         TabOrder = 2
-        ExplicitTop = 677
         object GroupBox4: TGroupBox
           Left = 312
           Top = 12
@@ -1661,8 +1648,6 @@ object EventDetFrm: TEventDetFrm
     object XYPlotPage: TTabSheet
       Caption = 'X-Y Plot'
       ImageIndex = 2
-      ExplicitWidth = 831
-      ExplicitHeight = 787
       DesignSize = (
         861
         808)
@@ -1972,8 +1957,6 @@ object EventDetFrm: TEventDetFrm
     object HistPage: TTabSheet
       Caption = 'Histogram'
       ImageIndex = 3
-      ExplicitWidth = 831
-      ExplicitHeight = 787
       DesignSize = (
         861
         808)
@@ -2031,7 +2014,6 @@ object EventDetFrm: TEventDetFrm
         Font.Style = []
         ParentFont = False
         TabOrder = 0
-        ExplicitTop = 577
         object lbHistResults: THTMLLabel
           Left = 160
           Top = 21
@@ -2087,7 +2069,6 @@ object EventDetFrm: TEventDetFrm
         Font.Style = []
         ParentFont = False
         TabOrder = 1
-        ExplicitHeight = 780
         object GroupBox12: TGroupBox
           Left = 8
           Top = 8
@@ -2372,8 +2353,6 @@ object EventDetFrm: TEventDetFrm
     object AveragePage: TTabSheet
       Caption = 'Average'
       ImageIndex = 4
-      ExplicitLeft = 0
-      ExplicitHeight = 787
       DesignSize = (
         861
         808)
@@ -2561,7 +2540,6 @@ object EventDetFrm: TEventDetFrm
           Anchors = [akLeft, akTop, akBottom]
           Caption = ' Event Analysis '
           TabOrder = 2
-          ExplicitHeight = 201
           object meAverageResults: TMemo
             Left = 8
             Top = 16
@@ -2617,7 +2595,6 @@ object EventDetFrm: TEventDetFrm
         Font.Style = []
         ParentFont = False
         TabOrder = 1
-        ExplicitTop = 573
         object lbAvgFitResults: THTMLLabel
           Left = 160
           Top = 23
