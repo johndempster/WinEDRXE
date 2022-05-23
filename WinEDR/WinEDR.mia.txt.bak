@@ -293,8 +293,8 @@ else
   Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\tritonplus.bit to $TARGETDIR$
   Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\Vp500.bin to $TARGETDIR$
   Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\WinEDR.exe to $TARGETDIR$
-  Create Shortcut $DESKTOPDIR$\WinEDR V4.0.0 to $TARGETDIR$\WinEDR.exe
-  Create Shortcut $SHORTCUTFOLDER$\WinEDR V4.0.0 to $TARGETDIR$\WinEDR.exe
+  Create Shortcut $DESKTOPDIR$\WinEDR V4.0.1 to $TARGETDIR$\WinEDR.exe
+  Create Shortcut $SHORTCUTFOLDER$\WinEDR V4.0.1 to $TARGETDIR$\WinEDR.exe
   Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\winusb.dll to $TARGETDIR$
   Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\cpd64.exe to $TARGETDIR$\Digidata 1200 Support Win 2000,XT
   Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\SESComponentsXE\Digidata 1200 Support (Win 2000)\Install Digidata 1200 Driver (Windows NT,2000,XP).bat to $TARGETDIR$\Digidata 1200 Support Win 2000,XT

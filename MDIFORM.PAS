@@ -412,6 +412,7 @@ unit Mdiform;
   V4.0.0  06.02.22 Event Detector; Misalignment of mid-point of rise no longer misaligned for high frequency events
                    Event alignment point can now be left at detection point
   V4.0.1  09.03.22 Event Detector: Set Ampl. = 4*SD button now works
+  V4.0.2  25.05.22 Ext. Trigger now works with Tecella Pico 2 patch clamp
   =======================================================================}
 
 interface
@@ -651,7 +652,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V4.0.1' ;
+     Version := 'V4.0.2' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
