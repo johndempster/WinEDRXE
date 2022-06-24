@@ -11,7 +11,9 @@ unit Global;
   20.04.11 ... THistogram size increased to 4000
   14.08.14 ... ProgDirectory etc. moved to Main.
   09.01.16 ... IonName and Ion Units added to TFluorescenceSettings
-  15.03.21 ... TEventDetector TauRise and TauDecay settings added  }
+  15.03.21 ... TEventDetector TauRise and TauDecay settings added
+  22.06.22 ... TEventDetector.AmpSDScale added
+  }
 
 interface
 
@@ -251,6 +253,7 @@ TEventDetector = record
                RisingEdgeWindow : Integer ;
                AvgFrequencyInterval : Single ;
                EnableBaselineTracking : Boolean ;
+               AmpSDScale : Single ;
                end ;
 
 TPageSettings = record

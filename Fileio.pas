@@ -66,6 +66,7 @@ unit Fileio;
                'DETEBT=', Settings.EventDetector.EnableBaselineTracking added to EDR and INI files
   26.09.18 ... 'DETDM=', Settings.EventDetector.DetectionMode ) added to EDR file
   15.03.21 ... 'DETTAUR=' Settings.EventDetector.TauRise and 'DETTAUD=' Settings.EventDetector.TauDecay added to EDR file
+  22.06.22 ... 'DETAMPSDSCALE=', Settings.EventDetector.AmpSDScale added to INI and EDR file
   }
 
 
@@ -233,6 +234,7 @@ begin
      AppendInt( Header, 'DETDECFR=', Settings.EventDetector.TDecayFrom ) ;
      AppendInt( Header, 'DETREW=', Settings.EventDetector.RisingEdgeWindow ) ;
      AppendLogical( Header, 'DETEBT=', Settings.EventDetector.EnableBaselineTracking ) ;
+     AppendFloat( Header, 'DETAMPSDSCALE=', Settings.EventDetector.AmpSDScale ) ;
 
      AppendInt( Header, 'VARRS=', Settings.Variance.RecordSize ) ;
      AppendInt( Header, 'VAROV=', Settings.Variance.RecordOverlap ) ;
@@ -405,6 +407,7 @@ begin
           ReadInt( Header, 'DETDECFR=', Settings.EventDetector.TDecayFrom ) ;
           ReadInt( Header, 'DETREW=', Settings.EventDetector.RisingEdgeWindow ) ;
           ReadLogical( Header, 'DETEBT=', Settings.EventDetector.EnableBaselineTracking ) ;
+          ReadFloat( Header, 'DETAMPSDSCALE=', Settings.EventDetector.AmpSDScale ) ;
 
           ReadInt( Header, 'VARRS=', Settings.Variance.RecordSize ) ;
           ReadInt( Header, 'VAROV=', Settings.Variance.RecordOverlap ) ;
@@ -586,6 +589,7 @@ begin
      ReadInt( Header, 'DETREW=', Settings.EventDetector.RisingEdgeWindow ) ;
      ReadFloat( Header, 'DETAVFI=', Settings.EventDetector.AvgFrequencyInterval ) ;
      ReadLogical( Header, 'DETEBT=', Settings.EventDetector.EnableBaselineTracking ) ;
+     ReadFloat( Header, 'DETAMPSDSCALE=', Settings.EventDetector.AmpSDScale ) ;
 
      { Number of records required (in free run/ext. trigger modes}
      ReadInt( Header, 'NRQ=', Settings.NumTriggerSweeps ) ;
@@ -831,6 +835,7 @@ begin
      AppendInt( Header, 'DETREW=', Settings.EventDetector.RisingEdgeWindow ) ;
      AppendFloat( Header, 'DETAVFI=', Settings.EventDetector.AvgFrequencyInterval ) ;
      AppendLogical( Header, 'DETEBT=', Settings.EventDetector.EnableBaselineTracking ) ;
+     AppendFloat( Header, 'DETAMPSDSCALE=', Settings.EventDetector.AmpSDScale ) ;
 
      AppendInt( Header, 'VARRS=', Settings.Variance.RecordSize ) ;
      AppendInt( Header, 'VAROV=', Settings.Variance.RecordOverlap ) ;

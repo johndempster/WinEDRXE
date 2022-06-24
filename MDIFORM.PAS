@@ -413,6 +413,8 @@ unit Mdiform;
                    Event alignment point can now be left at detection point
   V4.0.1  09.03.22 Event Detector: Set Ampl. = 4*SD button now works
   V4.0.2  25.05.22 Ext. Trigger now works with Tecella Pico 2 patch clamp
+  V4.0.3  22.06.22 Event Detector: Set SD x button multiple of S.D. can now be set by user
+                   mid-point alignment algorithm improved to make it more robust with noisy waveforms.
   =======================================================================}
 
 interface
@@ -652,7 +654,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V4.0.2' ;
+     Version := 'V4.0.3' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
@@ -738,6 +740,7 @@ begin
      Settings.EventDetector.AvgFrequencyInterval := 1.0 ;
      Settings.EventDetector.EnableBaselineTracking := True ;
      Settings.EventDetector.Alignment := 0 ;
+     Settings.EventDetector.AmpSDScale := 4.0 ;
 
      Settings.DwellTimes.ChanNum := 0 ;
      Settings.DwellTimes.RecordSize := 512 ;

@@ -101,6 +101,8 @@ unit EventDetector;
 //              Rate of rise and template displays no longer display junk data at end of file
 //              Control positions now set using anchors
 // 09.03.22 ... Set Ampl. = 4*SD button now works (was setting wrong detection windows cursor
+// 24.06.22 ... Set SD x button multiple of S.D. can now be set by user
+//              Mid-point of rise alignment algorithm improved to be more robust with noisy signals
 
 interface
 
@@ -344,6 +346,7 @@ type
     edDeadTime: TValidatedEdit;
     gpEventAlignment: TGroupBox;
     cbEventAlignment: TComboBox;
+    edAmpSDScale: TValidatedEdit;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormResize(Sender: TObject);
@@ -517,9 +520,9 @@ type
               iDetectedAtSample : Integer          // (IN) Point threshold crossed
               ) : Integer ;                        // (RET) Point of peak templatre match
 
-   function  FindMidPointOfRise(
-             iDetectedAtSample : Integer          // (IN) Point threshold crossed
-             ) : Integer ;                        // (RET) Point of peak rate of rise
+   function  SetAlignmentPoint(
+             iDetectedAtSample : Integer          // (IN) Point at which detection threshold crossed
+             ) : Integer ;                        // (RET) Standardised detection point
 
     procedure DisplayEvent;
     procedure LoadEventList ;
@@ -838,6 +841,9 @@ begin
 
      // Time threshold
      EdTimeThreshold.Value := Settings.EventDetector.tThreshold ;
+
+     // SD amplitude threshold multiplier
+     edAmpSDScale.Value := Settings.EventDetector.AmpSDScale ;
 
      // Detection channel
      cbChannel.ItemIndex := Max(Min(Settings.EventDetector.Channel,CDRFH.NumChannels-1),0) ;
@@ -1488,25 +1494,29 @@ begin
     end ;
 
 
-function  TEventDetFrm.FindMidPointOfRise(
-          iDetectedAtSample : Integer          // (IN) Point threshold crossed
-          ) : Integer ;                        // (RET) Point of peak rate of rise
+function  TEventDetFrm.SetAlignmentPoint(
+          iDetectedAtSample : Integer          // (IN) Point detection threshold crossed
+          ) : Integer ;                        // (RET) Alignment point
 // -----------------------------------------------------------
-// Find point on signal rising edge with greatest rate of rise
+// Set alignment point in detected waveform to:
+// Mid-point of rise
+// Max. rate of rise
+// Original detection point
 // -----------------------------------------------------------
 var
     iStartSample,iEndSample : Integer ;
     i,j,NPBuf,NPHalf,iStart,iEnd : Integer ;
-    yMax,yMin,y,yMid,Polarity,yMaxAt,yMinAt : Integer ;
+    yMax,yMin,y,yMid,yZero,Polarity,yMaxAt,yMinAt : Integer ;
+    Sum : single ;
     Buf : PSmallIntArray ;
     DBuf : PSmallIntArray ;
-    iPeakRateOfRise,iYMidAt : Integer ;
+    iPeakRateOfRise,iYMidAt,yDiff,yMinDiff : Integer ;
     Done : Boolean ;
 begin
 
    // Get a signal buffer post detection point
    // Set no. samples in rising edge detection buffer equal to dead time
-   NPBuf := Min(Max(Round(edDeadTime.Value/CDRFH.dt),200),4) ;
+   NPBuf := Max(Round(edDeadTime.Value/CDRFH.dt),40) ;
    NPHalf := NPBuf div 2 ;
    iStartSample := Max(iDetectedAtSample - NPHalf,0) ;
    iEndSample := Min(iStartSample + NPBuf - 1, CDRFH.NumSamplesInFile - 1);
@@ -1554,34 +1564,47 @@ begin
       // Align by mid-point of rise
       // --------------------------
       // Find Min./Max. of signal rising edge
+
+      // Calculate zero level
+      iStart := 0 ;
+      iEnd := NPHalf div 2 ;
+      Sum := 0.0 ;
+      for i := iStart to iEnd do Sum := Sum + Buf^[i] ;
+      yZero := Round(Sum/(iEnd - iStart + 1));
+
+      // Calculate waveform Peak
+
       iStart := 0 ;
       iEnd := NPBuf-1 ;
-      yMin := High(Integer) ;
-      yMax := Low(Integer) ;
+      yMax := 0 ;
       for i := iStart to iEnd do
           begin
-          y := Buf^[i];
-          if y >= yMax then
-             begin
-             YMax := y ;
-             YMaxAt := i ;
-             end;
-          if y <= yMin then
-             begin
-             YMin := y ;
-             YMinAt := i ;
-             end;
+          y := (Buf^[i] - yZero)*Polarity ;
+          if y >= yMax then yMax := y ;
           end;
 
-      // Find mid-point of rising edge
-      yMid := (YMax + YMin) div 2 ;
-      iYMidAt := NPHalf ;
-      iStart := Min(YMaxAt,YMinAt);
-      iEnd := Max(YMaxAt,YMinAt);
-      for i := iStart to iEnd-1 do
-          begin
-          if ((Buf^[i] - YMid)*(Buf^[i+1] - YMid)) <= 0 then iYMidAt := i ;
-          end;
+      // Find mid-point of rising edge by starting at detection point
+      // and incrementing or decrementing until mid-point crossed
+
+      yMid := YMax div 2 ;
+      iyMidAt := NPHalf ;
+      y := (Buf^[iyMidAt] - yZero)*Polarity ;
+      if y < yMid then
+         begin
+         // Increment until mid-point crossed
+         repeat
+             y := (Buf^[iyMidAt] - yZero)*Polarity ;
+             if y < yMid then Inc(iyMidAt) ;
+         until (y >= yMid) or (iyMidAt <= 0) ;
+         end
+      else if y > yMid then
+         begin
+         // Decrement until mid-point crossed
+         repeat
+             y := (Buf^[iyMidAt] - yZero)*Polarity ;
+             if y > yMid then Dec(iyMidAt) ;
+         until (y <= yMid) or (iyMidAt >= (npBuf-1) ) ;
+         end;
 
       Result := iStartSample + iYMidAt
 
@@ -1727,6 +1750,9 @@ begin
      DeadSamples := Round( edDeadTime.Value / CdrFH.dt ) ;
      Settings.EventDetector.DeadTime := edDeadTime.Value ;
 
+     // S.D. amplitude multiplier
+     Settings.EventDetector.AmpSDScale := edAmpSDScale.Value ;
+
      { Range of samples to be scanned for events }
      if rbAllRecords.Checked then
         begin
@@ -1816,9 +1842,11 @@ begin
                       i := i - TimeThreshold ;
                       InitialiseRunningMean := True ;
                       end;
-                 // Find mid-point of signal rising edge
-                iEventSample := FindMidPointOfRise(iSample) ;
+
+                 // Set alignment point
+                iEventSample := SetAlignmentPoint(iSample) ;
       //          iEventSample := iSample ;
+
                  Events[NumEvents] := Max(iEventSample,0) ;
                  Inc(NumEvents) ;
                  end ;
@@ -3615,7 +3643,7 @@ begin
     SD := Sqrt( Sum/(scDetDisplay.MaxPoints-1) ) ;
 
     // Set threshold cursor
-    edThreshold.Value := SD*4.0 ;
+    edThreshold.Value := SD*edAmpSDSCale.Value ;
     Settings.EventDetector.yThreshold := edThreshold.Value ;
     scDetDisplay.HorizontalCursors[ThresholdCursor] := Round(edThreshold.Value) ;
 

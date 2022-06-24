@@ -213,7 +213,7 @@ object EventDetFrm: TEventDetFrm
           Left = 9
           Top = 13
           Width = 145
-          Height = 21
+          Height = 23
           Hint = 'Start scanning for events'
           Caption = 'Detect Events'
           Font.Charset = DEFAULT_CHARSET
@@ -410,10 +410,10 @@ object EventDetFrm: TEventDetFrm
             end
           end
           object GroupBox2: TGroupBox
-            Left = 8
+            Left = 13
             Top = 86
             Width = 177
-            Height = 95
+            Height = 107
             Caption = ' Thresholds '
             Font.Charset = DEFAULT_CHARSET
             Font.Color = clBlack
@@ -440,7 +440,7 @@ object EventDetFrm: TEventDetFrm
             end
             object lbTimeThreshold: TLabel
               Left = 8
-              Top = 44
+              Top = 72
               Width = 76
               Height = 19
               Alignment = taRightJustify
@@ -472,7 +472,7 @@ object EventDetFrm: TEventDetFrm
             end
             object edTimeThreshold: TValidatedEdit
               Left = 88
-              Top = 44
+              Top = 72
               Width = 81
               Height = 21
               Hint = 
@@ -489,12 +489,14 @@ object EventDetFrm: TEventDetFrm
               HiLimit = 1.000000015047466E30
             end
             object bSetThresholdTo4SD: TButton
-              Left = 10
-              Top = 70
-              Width = 159
-              Height = 17
-              Hint = 'Set threshold to 4x standard deviation of detection criterion'
-              Caption = 'Set Ampl. = 4 x S.D.'
+              Left = 56
+              Top = 44
+              Width = 79
+              Height = 23
+              Hint = 
+                'Set threshold to multiple of standard deviation of detection cri' +
+                'terion'
+              Caption = 'Set to S.D. x'
               Font.Charset = DEFAULT_CHARSET
               Font.Color = clBlack
               Font.Height = -12
@@ -506,10 +508,28 @@ object EventDetFrm: TEventDetFrm
               TabOrder = 2
               OnClick = bSetThresholdTo4SDClick
             end
+            object edAmpSDScale: TValidatedEdit
+              Left = 136
+              Top = 45
+              Width = 33
+              Height = 21
+              Hint = 
+                'Duration of time that threshold has to be exceeded before detect' +
+                'ion is accepted'
+              OnKeyPress = edTimeThresholdKeyPress
+              AutoSize = False
+              ShowHint = True
+              Text = ' 4 '
+              Value = 4.000000000000000000
+              Scale = 1.000000000000000000
+              NumberFormat = '%.3g'
+              LoLimit = -1.000000015047466E30
+              HiLimit = 1.000000015047466E30
+            end
           end
           object ModePage: TNotebook
             Left = 7
-            Top = 187
+            Top = 200
             Width = 183
             Height = 73
             PageIndex = 2
@@ -518,6 +538,8 @@ object EventDetFrm: TEventDetFrm
               Left = 0
               Top = 0
               Caption = 'Threshold'
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object GroupBox7: TGroupBox
                 Left = 4
                 Top = 4
@@ -583,6 +605,8 @@ object EventDetFrm: TEventDetFrm
               Left = 0
               Top = 0
               Caption = 'RateOfRise'
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object GroupBox11: TGroupBox
                 Left = 4
                 Top = 0
@@ -597,7 +621,7 @@ object EventDetFrm: TEventDetFrm
               Caption = 'Template'
               object GroupBox9: TGroupBox
                 Left = 1
-                Top = 3
+                Top = 0
                 Width = 177
                 Height = 70
                 Caption = ' Template '
@@ -675,7 +699,7 @@ object EventDetFrm: TEventDetFrm
           end
           object GroupBox10: TGroupBox
             Left = 8
-            Top = 326
+            Top = 340
             Width = 177
             Height = 43
             Font.Charset = DEFAULT_CHARSET
@@ -721,7 +745,7 @@ object EventDetFrm: TEventDetFrm
           end
           object gpEventAlignment: TGroupBox
             Left = 8
-            Top = 266
+            Top = 280
             Width = 177
             Height = 52
             Caption = ' Event Alignment '
@@ -745,6 +769,10 @@ object EventDetFrm: TEventDetFrm
     object EditEventsPage: TTabSheet
       Caption = 'Review/Edit Events'
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       DesignSize = (
         861
         808)
@@ -1648,6 +1676,10 @@ object EventDetFrm: TEventDetFrm
     object XYPlotPage: TTabSheet
       Caption = 'X-Y Plot'
       ImageIndex = 2
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       DesignSize = (
         861
         808)
@@ -1957,6 +1989,10 @@ object EventDetFrm: TEventDetFrm
     object HistPage: TTabSheet
       Caption = 'Histogram'
       ImageIndex = 3
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       DesignSize = (
         861
         808)
@@ -2353,6 +2389,10 @@ object EventDetFrm: TEventDetFrm
     object AveragePage: TTabSheet
       Caption = 'Average'
       ImageIndex = 4
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       DesignSize = (
         861
         808)
