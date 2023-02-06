@@ -415,6 +415,7 @@ unit Mdiform;
   V4.0.2  25.05.22 Ext. Trigger now works with Tecella Pico 2 patch clamp
   V4.0.3  22.06.22 Event Detector: Set SD x button multiple of S.D. can now be set by user
                    mid-point alignment algorithm improved to make it more robust with noisy waveforms.
+  V4.0.4  06.02.23 Rec.pas Continuous recording option added which overrides RecordingDuration
   =======================================================================}
 
 interface
@@ -654,7 +655,7 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V4.0.3' ;
+     Version := 'V4.0.4' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
       { Get directory which contains EDR program }
@@ -746,6 +747,7 @@ begin
      Settings.DwellTimes.RecordSize := 512 ;
      Settings.DwellTimes.Threshold := 0.5 ;
 
+     Settings.ContinuousRecording := True ;
      Settings.NumTriggerSweeps := 1 ;
      Settings.RecordDuration := 10. ;
      Settings.DisplayDuration := 10.0 ;

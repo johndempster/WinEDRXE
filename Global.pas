@@ -13,6 +13,7 @@ unit Global;
   09.01.16 ... IonName and Ion Units added to TFluorescenceSettings
   15.03.21 ... TEventDetector TauRise and TauDecay settings added
   22.06.22 ... TEventDetector.AmpSDScale added
+  01/02/23 ... ContinuousRecording flag added to Settings
   }
 
 interface
@@ -408,6 +409,7 @@ TSettings = record
           EventDetector : TEventDetector ;
           NumTriggerSweeps : Integer ;
           NumChannels : Integer ;
+          ContinuousRecording: Boolean ;
           RecordDuration : Single ;
           ADCSamplingInterval : Single ;
           ADCVoltageRangeIndex : Integer ;

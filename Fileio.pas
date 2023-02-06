@@ -542,6 +542,9 @@ begin
      // Record duration
      ReadFloat( Header, 'RECDUR=', Settings.RecordDuration ) ;
 
+     // Continuous Recording flag (overrides Settings.RecordDuration setting)
+     ReadLogical( Header, 'RECCONT=', Settings.ContinuousRecording ) ;
+
      { Get default no. channels }
      ReadInt( Header, 'NC=', Settings.NumChannels ) ;
      Settings.NumChannels := Max( 1,Settings.NumChannels ) ;
@@ -792,6 +795,8 @@ begin
 
      // Record duration
      AppendFloat( Header, 'RECDUR=', Settings.RecordDuration ) ;
+
+     AppendLogical( Header, 'RECCONT=', Settings.ContinuousRecording ) ;
 
      AppendLogical( Header, 'STARTSTIMREC=', Settings.StartStimulusOnRecord ) ;
 

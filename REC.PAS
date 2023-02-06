@@ -89,6 +89,7 @@ unit Rec;
               secondary channel analogue input for be changed in CC mode
               for Axopatch 200 and AMS-2400
   24.04.18 .. Option to start stimulus protocol when recording started added
+  06.02.23 .. Continuous recording option added which overrides RecordingDuration
   ==============================================================================}
 interface
 
@@ -231,7 +232,6 @@ type
     rbTDisplayUnitsMins: TRadioButton;
     cbStimProgram: TComboBox;
     RecordPanel: TPanel;
-    Label1: TLabel;
     Label3: TLabel;
     Label5: TLabel;
     edRecordDuration: TValidatedEdit;
@@ -290,6 +290,8 @@ type
     ckResistance: TCheckBox;
     bSpecial: TButton;
     ckStartStimOnRecord: TCheckBox;
+    rbContinuousRecording: TRadioButton;
+    rbRecordingDuration: TRadioButton;
     procedure TimerTimer(Sender: TObject);
     procedure bRecordClick(Sender: TObject);
     procedure FormResize(Sender: TObject);
@@ -351,6 +353,8 @@ type
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
     procedure ckStartStimOnRecordClick(Sender: TObject);
+    procedure rbContinuousRecordingClick(Sender: TObject);
+    procedure rbRecordingDurationClick(Sender: TObject);
   private
     { Private declarations }
     NewAmplifierGain : Boolean ;
@@ -500,7 +504,7 @@ begin
 
      ii := 0 ;
      Initialised := False ;
-//     Settings.NumChannels := 4 ;
+
      Resize ;
 
      // Exit if no interface selected
@@ -576,6 +580,10 @@ begin
 
      edRecordDuration.Value := Settings.RecordDuration ;
      edNumTriggerSweeps.Value := Settings.NumTriggerSweeps ;
+
+     // Set continuous recording flags
+     rbContinuousRecording.Checked := Settings.ContinuousRecording ;
+     rbRecordingDuration.Checked := not Settings.ContinuousRecording ;
 
      TimerBusy := False ;
 
@@ -993,11 +1001,20 @@ begin
                                      + CDRFH.dt*(WriteBufs.NumSamplesPerBuf div CDRFH.NumChannels) ;
               lbRecording.Visible := not lbRecording.Visible ;
 
-              RecordingStatus := format( 'Recording: %.1f/%.1f s (%d Kb) ',
+              if Settings.ContinuousRecording then
+                 begin
+                 RecordingStatus := format( 'Recording: %.1fs (%d Kb) ',
+                                             [WriteBufs.TAcquired  ,
+                                              CDRFH.NumSamplesInFile div 512]) ;
+                 end
+              else
+                 begin
+                 RecordingStatus := format( 'Recording: %.1f/%.1f s (%d Kb) ',
                                            [WriteBufs.TAcquired,
                                             Settings.RecordDuration,
-                                            CDRFH.NumSamplesInFile div 512
-                                            ]) ;
+                                            CDRFH.NumSamplesInFile div 512]) ;
+                 end;
+
               Main.StatusBar.SimpleText := SweepStatus + RecordingStatus + StimulusStatus ;
               Caption := 'Record to Disk: ' + SweepStatus + RecordingStatus + StimulusStatus ;
               end ;
@@ -1005,7 +1022,8 @@ begin
            // Fill buffer with empty flags
            i := WriteBufs.BufStart[WriteBufs.WriteBuf] ;
            iEnd := WriteBufs.BufEnd[WriteBufs.WriteBuf] ;
-           while i <= iEnd do begin
+           while i <= iEnd do
+                 begin
                  ADC^[i] := EmptyFlag ;
                  Inc(i) ;
                  ADC^[i] := -EmptyFlag ;
@@ -1018,7 +1036,8 @@ begin
            end ;
 
         if WriteBufs.Recording and
-           (CDRFH.NumSamplesInFile >= WriteBufs.NumSamplesInFileRequired) then
+           (CDRFH.NumSamplesInFile >= WriteBufs.NumSamplesInFileRequired) and
+           (not Settings.ContinuousRecording) then
            begin
            { Restart recording if more records to be done }
            Dec(WriteBufs.NumRecordsToAcquire) ;
@@ -2365,6 +2384,15 @@ begin
      end;
 
 
+procedure TRecordFrm.rbContinuousRecordingClick(Sender: TObject);
+//
+// Continuous recording flag clicked
+//
+begin
+  Settings.ContinuousRecording := rbContinuousRecording.Checked ;
+end;
+
+
 procedure TRecordFrm.rbExtTriggerClick(Sender: TObject);
 { ------------------------------------
   Set trigger mode to External trigger
@@ -3319,13 +3347,23 @@ begin
     end;
 
 
+procedure TRecordFrm.rbRecordingDurationClick(Sender: TObject);
+// ----------------------------------------------
+// User defined recording duration option clicked
+// ----------------------------------------------
+begin
+  Settings.ContinuousRecording := not rbRecordingDuration.Checked ;
+end;
+
+
 procedure TRecordFrm.scDisplayMouseUp(Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 // ----------------------
 // Set channel zero level
 // ----------------------
 begin
-     if (Button = mbRight) and (scDisplay.ActiveHorizontalCursor >=0) then begin
+     if (Button = mbRight) and (scDisplay.ActiveHorizontalCursor >=0) then
+        begin
         // If right-mouse button down, display zero baseline level selection dialog box
         ZeroFrm.ChSel := scDisplay.ActiveHorizontalCursor ;
         ZeroFrm.NewZeroAt := Round(scDisplay.ScreenCoordToX( ZeroFrm.ChSel, X )) ;
