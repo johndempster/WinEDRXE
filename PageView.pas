@@ -20,7 +20,7 @@ interface
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
   Dialogs, StdCtrls, ScopeDisplay, ValidatedEdit,
-  global, fileio, RangeEdit, math, SESLabIO ;
+  RangeEdit, math, SESLabIO ;
 
 const
      MaxLines = 16 ;
@@ -84,7 +84,7 @@ var
 
 implementation
 
-uses Mdiform, PrintPageView, Printers , Zero;
+uses Mdiform, PrintPageView, Printers , Zero, EDRFileUnit;
 
 {$R *.dfm}
 
@@ -101,15 +101,15 @@ begin
 
      // Fill channel selection list
      cbChannel.Clear ;
-     for ch := 0 to CdrFH.NumChannels-1 do
-         cbChannel.items.add( format('Ch.%d %s',[ch,Channel[ch].ADCName]) ) ;
+     for ch := 0 to EDRFile.cdrfh.NumChannels-1 do
+         cbChannel.items.add( format('Ch.%d %s',[ch,EDRFile.Channel[ch].ADCName]) ) ;
      cbChannel.ItemIndex := 0 ;
 
      // Get settings
-     edLinesPerPage.Value := Settings.PageViewLinesPerPage ;
-     edLineDuration.Value := Settings.PageViewLineDuration ;
+     edLinesPerPage.Value := EDRFile.Settings.PageViewLinesPerPage ;
+     edLineDuration.Value := EDRFile.Settings.PageViewLineDuration ;
 
-     ckFixedZeroLevels.Checked := Settings.FixedZeroLevels ;
+     ckFixedZeroLevels.Checked := EDRFile.Settings.FixedZeroLevels ;
 
      edLineDuration.Value := 1.0 ;
 
@@ -134,25 +134,25 @@ begin
      // Fill channel selection list
      Keep := cbChannel.ItemIndex ;
      cbChannel.Clear ;
-     for ch := 0 to CdrFH.NumChannels-1 do
-         cbChannel.items.add( format('Ch.%d %s',[ch,Channel[ch].ADCName]) ) ;
-     cbChannel.ItemIndex := Min(Keep,CdrFH.NumChannels-1) ;
+     for ch := 0 to EDRFile.cdrfh.NumChannels-1 do
+         cbChannel.items.add( format('Ch.%d %s',[ch,EDRFile.Channel[ch].ADCName]) ) ;
+     cbChannel.ItemIndex := Min(Keep,EDRFile.cdrfh.NumChannels-1) ;
 
-     edLineDuration.LoLimit := 50.0*CDRFH.dt ;
-     edLineDuration.HiLimit := CdrFH.RecordDuration ;
+     edLineDuration.LoLimit := 50.0*EDRFile.cdrfh.dt ;
+     edLineDuration.HiLimit := EDRFile.cdrfh.RecordDuration ;
 
      // Set upper limit of page start
-     edStartTime.HiLimit := CdrFH.RecordDuration ;
-     sbDisplay.Max := Round( CdrFH.RecordDuration/CdrFH.dt ) ;
-     sbDisplay.LargeChange := Round(edLineDuration.Value/CDRFH.dt) ;
-     scDisplay.TScale := CdrFH.dt ;
+     edStartTime.HiLimit := EDRFile.cdrfh.RecordDuration ;
+     sbDisplay.Max := Round( EDRFile.cdrfh.RecordDuration/EDRFile.cdrfh.dt ) ;
+     sbDisplay.LargeChange := Round(edLineDuration.Value/EDRFile.cdrfh.dt) ;
+     scDisplay.TScale := EDRFile.cdrfh.dt ;
 
      // Update global settings
-     Settings.PageViewLinesPerPage := Round(edLinesPerPage.Value) ;
-     Settings.PageViewLineDuration := Round(edLineDuration.Value) ;
+     EDRFile.Settings.PageViewLinesPerPage := Round(edLinesPerPage.Value) ;
+     EDRFile.Settings.PageViewLineDuration := Round(edLineDuration.Value) ;
 
      // Update file identification information line
-     edIdent.Text := CdrFH.IdentLine ;
+     edIdent.Text := EDRFile.cdrfh.IdentLine ;
 
      DisplayPage ;
 
@@ -199,14 +199,14 @@ begin
     NumLines := Round(edLinesPerPage.Value) ;
 
     // No. of multi-channel scans to be displayed
-    MaxScans := CDRFH.NumSamplesInFile div CDRFH.NumChannels ;
-    edLineDuration.Value := Min( edLineDuration.Value, Max(1.0,CDRFH.RecordDuration));
-    scDisplay.MaxPoints := Round(edLineDuration.Value/CDRFH.dt) ;
-    NumScans := Max( Round(edLineDuration.Value/CDRFH.dt),1 ) ;
+    MaxScans := EDRFile.cdrfh.NumSamplesInFile div EDRFile.cdrfh.NumChannels ;
+    edLineDuration.Value := Min( edLineDuration.Value, Max(1.0,EDRFile.cdrfh.RecordDuration));
+    scDisplay.MaxPoints := Round(edLineDuration.Value/EDRFile.cdrfh.dt) ;
+    NumScans := Max( Round(edLineDuration.Value/EDRFile.cdrfh.dt),1 ) ;
     scDisplay.NumPoints := NumScans ;
     scDisplay.xMin := 0 ;
     scDisplay.xMax := scDisplay.NumPoints - 1  ;
-    scDisplay.TScale := CdrFH.dt ;
+    scDisplay.TScale := EDRFile.cdrfh.dt ;
     scDisplay.NumChannels := Round(edLinesPerPage.Value) ;
 
     // Allocate memory buffer
@@ -214,12 +214,12 @@ begin
     DispBuf := GetMemory( scDisplay.MaxPoints*scDisplay.NumChannels*2) ;
     scDisplay.SetDataBuf( DispBuf ) ;
 
-    ADC := GetMemory( NumScans*CDRFH.NumChannels*2 ) ;
+    ADC := GetMemory( NumScans*EDRFile.cdrfh.NumChannels*2 ) ;
 
      // Set up signal display area }
-     scDisplay.MaxADCValue := Channel[cbChannel.ItemIndex].ADCMaxValue ;
-     scDisplay.MinADCValue := -Channel[cbChannel.ItemIndex].ADCMaxValue - 1 ;
-     scDisplay.DisplayGrid := Settings.DisplayGrid ;
+     scDisplay.MaxADCValue := EDRFile.Channel[cbChannel.ItemIndex].ADCMaxValue ;
+     scDisplay.MinADCValue := -EDRFile.Channel[cbChannel.ItemIndex].ADCMaxValue - 1 ;
+     scDisplay.DisplayGrid := EDRFile.Settings.DisplayGrid ;
      scDisplay.DisableChannelVisibilityButton := True ;
 
      scDisplay.xMin := 0 ;
@@ -229,20 +229,20 @@ begin
      // (Each line encoded as a channel within the display)
 
      for ch := 0 to scDisplay.NumChannels-1 do begin
-         scDisplay.ChanUnits[ch] := Channel[cbChannel.ItemIndex].ADCUnits ;
+         scDisplay.ChanUnits[ch] := EDRFile.Channel[cbChannel.ItemIndex].ADCUnits ;
          scDisplay.ChanName[ch] := '' ;
-         scDisplay.yMin[ch] := Channel[cbChannel.ItemIndex].yMin ;
-         scDisplay.yMax[ch] := Channel[cbChannel.ItemIndex].yMax ;
-         scDisplay.ChanScale[ch] := Channel[cbChannel.ItemIndex].ADCScale ;
-         scDisplay.ChanUnits[ch] := Channel[cbChannel.ItemIndex].ADCUnits ;
-         scDisplay.ChanZero[ch] := Channel[cbChannel.ItemIndex].ADCZero ;
+         scDisplay.yMin[ch] := EDRFile.Channel[cbChannel.ItemIndex].yMin ;
+         scDisplay.yMax[ch] := EDRFile.Channel[cbChannel.ItemIndex].yMax ;
+         scDisplay.ChanScale[ch] := EDRFile.Channel[cbChannel.ItemIndex].ADCScale ;
+         scDisplay.ChanUnits[ch] := EDRFile.Channel[cbChannel.ItemIndex].ADCUnits ;
+         scDisplay.ChanZero[ch] := EDRFile.Channel[cbChannel.ItemIndex].ADCZero ;
          scDisplay.ChanOffsets[ch] := ch ;
          scDisplay.ChanColor[ch] := clBlue ;
          scDisplay.ChanVisible[ch] := True ;
          end ;
 
-     scDisplay.TScale := CdrFH.dt*Settings.TScale ;
-     scDisplay.TUnits := Settings.TUnits ;
+     scDisplay.TScale := EDRFile.cdrfh.dt*EDRFile.Settings.TScale ;
+     scDisplay.TUnits := EDRFile.Settings.TUnits ;
 
      // Enable/disable zero level cursors
      scDisplay.ClearHorizontalCursors ;
@@ -255,20 +255,20 @@ begin
     // Add each line to be displayed into a scDisplay channel
     // ------------------------------------------------------
 
-    StartScan := Round( edStartTime.Value/CDRFH.dt ) ;
+    StartScan := Round( edStartTime.Value/EDRFile.cdrfh.dt ) ;
     for Line := 0 to NumLines-1 do begin
 
         // Read data from file
-        FilePointer := CDRFH.NumBytesInHeader + StartScan*CDRFH.NumChannels*2 ;
-        FileSeek( CDRFH.FileHandle, FilePointer, 0 ) ;
-        for i := 0 to (NumScans*CDRFH.NumChannels)-1 do ADC^[i] := 0 ;
-        FileRead(CDRFH.FileHandle,ADC^,NumScans*CDRFH.NumChannels*2) ;
+        FilePointer := EDRFile.cdrfh.NumBytesInHeader + StartScan*EDRFile.cdrfh.NumChannels*2 ;
+        FileSeek( EDRFile.cdrfh.FileHandle, FilePointer, 0 ) ;
+        for i := 0 to (NumScans*EDRFile.cdrfh.NumChannels)-1 do ADC^[i] := 0 ;
+        FileRead(EDRFile.cdrfh.FileHandle,ADC^,NumScans*EDRFile.cdrfh.NumChannels*2) ;
 
-        j := Channel[cbChannel.ItemIndex].ChannelOffset ;
+        j := EDRFile.Channel[cbChannel.ItemIndex].ChannelOffset ;
         k := Line ;
         for i := 0 to NumScans-1 do begin
             DispBuf[k] := ADC^[j] ;
-            j := j + CDRFH.NumChannels ;
+            j := j + EDRFile.cdrfh.NumChannels ;
             k := k + NumLines ;
             end;
 
@@ -280,7 +280,7 @@ begin
     // Update horizontal cursors
     if ckShowZeroLevels.Checked then begin
        for Line := 0 to scDisplay.NumChannels-1 do begin
-           scDisplay.HorizontalCursors[Line] := Channel[cbChannel.ItemIndex].ADCZero ;
+           scDisplay.HorizontalCursors[Line] := EDRFile.Channel[cbChannel.ItemIndex].ADCZero ;
            end ;
        end ;
 
@@ -290,7 +290,7 @@ begin
     for Line := 0 to scDisplay.NumChannels-1 do begin
         if ckShowLineTimes.Checked then begin
            scDisplay.ChanName[Line] := format('t=%.4gs',[t]) ;
-           t := t + scDisplay.MaxPoints*CDRfh.dt ;
+           t := t + scDisplay.MaxPoints*EDRFile.cdrfh.dt ;
            end
         else scDisplay.ChanName[Line] := '   ' ;
        end ;
@@ -306,7 +306,7 @@ procedure TPageViewFrm.sbDisplayChange(Sender: TObject);
 // Update display when slider bar changed
 // --------------------------------------
 begin
-     edStartTime.Value := sbDisplay.Position*CDRfh.dt ;
+     edStartTime.Value := sbDisplay.Position*EDRFile.cdrfh.dt ;
      DisplayPage ;
      end;
 
@@ -345,20 +345,20 @@ begin
      for ch := 0 to scDisplay.NumChannels-1 do begin
 
           { Get signal baseline cursor }
-          if Settings.FixedZeroLevels then begin
-             if scDisplay.HorizontalCursors[ch] <> Channel[cbChannel.ItemIndex].ADCZero then
-                scDisplay.HorizontalCursors[ch] := Channel[cbChannel.ItemIndex].ADCZero ;
+          if EDRFile.Settings.FixedZeroLevels then begin
+             if scDisplay.HorizontalCursors[ch] <> EDRFile.Channel[cbChannel.ItemIndex].ADCZero then
+                scDisplay.HorizontalCursors[ch] := EDRFile.Channel[cbChannel.ItemIndex].ADCZero ;
              end
           else begin
-             Channel[cbChannel.ItemIndex].ADCZero := Round(scDisplay.HorizontalCursors[ch]) ;
+             EDRFile.Channel[cbChannel.ItemIndex].ADCZero := Round(scDisplay.HorizontalCursors[ch]) ;
              end ;
 
-         if scDisplay.yMin[ch] <> Channel[cbChannel.ItemIndex].yMin then begin
-            Channel[cbChannel.ItemIndex].yMin := scDisplay.yMin[ch] ;
+         if scDisplay.yMin[ch] <> EDRFile.Channel[cbChannel.ItemIndex].yMin then begin
+            EDRFile.Channel[cbChannel.ItemIndex].yMin := scDisplay.yMin[ch] ;
             YChanged := True ;
             end ;
-         if scDisplay.yMax[ch] <> Channel[cbChannel.ItemIndex].yMax then begin
-            Channel[cbChannel.ItemIndex].yMax := scDisplay.yMax[ch] ;
+         if scDisplay.yMax[ch] <> EDRFile.Channel[cbChannel.ItemIndex].yMax then begin
+            EDRFile.Channel[cbChannel.ItemIndex].yMax := scDisplay.yMax[ch] ;
             YChanged := True ;
             end ;
          if YChanged then Break ;
@@ -367,8 +367,8 @@ begin
      // Update all lines with same display region
      if YChanged then begin
         for ch := 0 to scDisplay.NumChannels-1 do begin
-            scDisplay.yMin[ch] := Channel[cbChannel.ItemIndex].yMin ;
-            scDisplay.yMax[ch] := Channel[cbChannel.ItemIndex].yMax ;
+            scDisplay.yMin[ch] := EDRFile.Channel[cbChannel.ItemIndex].yMin ;
+            scDisplay.yMax[ch] := EDRFile.Channel[cbChannel.ItemIndex].yMax ;
             end ;
         scDisplay.Invalidate ;
         end ;
@@ -379,15 +379,15 @@ begin
         YChanged := False ;
         for ch := 0 to scDisplay.NumChannels-1 do
             if scDisplay.HorizontalCursors[ch]
-               <> Channel[cbChannel.ItemIndex].ADCZero then begin
-               Channel[cbChannel.ItemIndex].ADCZero := Round(scDisplay.HorizontalCursors[ch]) ;
+               <> EDRFile.Channel[cbChannel.ItemIndex].ADCZero then begin
+               EDRFile.Channel[cbChannel.ItemIndex].ADCZero := Round(scDisplay.HorizontalCursors[ch]) ;
                YChanged := True ;
                Break ;
                end ;
         if YChanged then begin
            for i := 0 to scDisplay.NumChannels-1 do begin
-               scDisplay.HorizontalCursors[i] := Channel[cbChannel.ItemIndex].ADCZero ;
-               scDisplay.ChanZero[i] := Channel[cbChannel.ItemIndex].ADCZero ;
+               scDisplay.HorizontalCursors[i] := EDRFile.Channel[cbChannel.ItemIndex].ADCZero ;
+               scDisplay.ChanZero[i] := EDRFile.Channel[cbChannel.ItemIndex].ADCZero ;
                end ;
            scDisplay.Invalidate ;      
            end ;
@@ -402,7 +402,7 @@ procedure TPageViewFrm.edIdentChange(Sender: TObject);
   -------------------------------------------}
 begin
      { Update ident line if it is changed }
-     //CdrFH.IdentLine := edIdent.text ;
+     //EDRFile.cdrfh.IdentLine := edIdent.text ;
      //SaveCDRHeader(CdrFH) ;
      end;
 
@@ -444,7 +444,7 @@ begin
 
      // Set default page display range (current page)
      PrintPageViewFrm.StartTime := edStartTime.Value ;
-     PrintPageViewFrm.EndTime := edStartTime.Value + PageDuration - CDRFH.dt ;
+     PrintPageViewFrm.EndTime := edStartTime.Value + PageDuration - EDRFile.cdrfh.dt ;
 
      // Display printing settings dialog
      PrintPageViewFrm.ShowModal ;
@@ -471,8 +471,8 @@ begin
              PrintPageViewFrm.Display.ClearPrinterTitle ;
              PrintPageViewFrm.Display.AddPrinterTitleLine(
              format('File : %s (Page %d/%d, T=%.4g s)',
-             [cdrFH.FileName,iPage,NumPages,edStartTime.Value] )) ;
-             PrintPageViewFrm.Display.AddPrinterTitleLine( CdrFH.IdentLine ) ;
+             [EDRFile.cdrfh.FileName,iPage,NumPages,edStartTime.Value] )) ;
+             PrintPageViewFrm.Display.AddPrinterTitleLine( EDRFile.cdrfh.IdentLine ) ;
              PrintPageViewFrm.Display.Print ;
 
              Inc(iPage) ;
@@ -505,7 +505,7 @@ begin
 
      // Set default page display range (current page)
      PrintPageViewFrm.StartTime := edStartTime.Value ;
-     PrintPageViewFrm.EndTime := edStartTime.Value + PageDuration - CDRFH.dt ;
+     PrintPageViewFrm.EndTime := edStartTime.Value + PageDuration - EDRFile.cdrfh.dt ;
 
      PrintPageViewFrm.ShowModal ;
 
@@ -522,9 +522,9 @@ procedure TPageViewFrm.ChangeDisplayGrid ;
   Update grid pattern on oscilloscope display
   -------------------------------------------- }
 begin
-     scDisplay.MaxADCValue := Channel[0].ADCMaxValue ;
-     scDisplay.MinADCValue := -Channel[0].ADCMaxValue -1 ;
-     scDisplay.DisplayGrid := Settings.DisplayGrid ;
+     scDisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+     scDisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue -1 ;
+     scDisplay.DisplayGrid := EDRFile.Settings.DisplayGrid ;
 
      scDisplay.Invalidate ;
      end ;
@@ -599,7 +599,7 @@ procedure TPageViewFrm.ckFixedZeroLevelsClick(Sender: TObject);
 // Enable/Disable fixed zero levels
 // --------------------------------
 begin
-     Settings.FixedZeroLevels := ckFixedZeroLevels.Checked ;
+     EDRFile.Settings.FixedZeroLevels := ckFixedZeroLevels.Checked ;
      end;
 
 procedure TPageViewFrm.scDisplayMouseUp(Sender: TObject;
@@ -613,26 +613,26 @@ begin
      if (Button = mbRight) and (scDisplay.ActiveHorizontalCursor >=0) then begin
         // If right-mouse button down, display zero baseline level selection dialog box
         ZeroFrm.ChSel := cbChannel.ItemIndex ;
-        ZeroFrm.ZeroLevel := Round(Channel[ZeroFrm.ChSel].ADCZero) ;
-        ZeroFrm.ChanName := Channel[ZeroFrm.ChSel].ADCName ;
+        ZeroFrm.ZeroLevel := Round(EDRFile.Channel[ZeroFrm.ChSel].ADCZero) ;
+        ZeroFrm.ChanName := EDRFile.Channel[ZeroFrm.ChSel].ADCName ;
         ZeroFrm.NewZeroAt := Round(scDisplay.ScreenCoordToX( ZeroFrm.ChSel, X )) ;
         ZeroFrm.Left := PageViewFrm.Left + Main.Left + 10 + scDisplay.Left + X;
         ZeroFrm.Top := PageViewFrm.Top + Main.Top + 10 + scDisplay.Top + Y ;
         ZeroFrm.ShowModal ;
-        Channel[ZeroFrm.ChSel].ADCZero := ZeroFrm.ZeroLevel ;
-        Channel[ZeroFrm.ChSel].ADCZero := Max(-Channel[ZeroFrm.ChSel].ADCMaxValue-1,ZeroFrm.ZeroLevel) ;
-        Channel[ZeroFrm.ChSel].ADCZero := Min(Channel[ZeroFrm.ChSel].ADCMaxValue,ZeroFrm.ZeroLevel) ;
-        Channel[ZeroFrm.ChSel].ADCZeroAt := -1 ;
-        SaveCDRHeader( CDRfH ) ;
+        EDRFile.Channel[ZeroFrm.ChSel].ADCZero := ZeroFrm.ZeroLevel ;
+        EDRFile.Channel[ZeroFrm.ChSel].ADCZero := Max(-EDRFile.Channel[ZeroFrm.ChSel].ADCMaxValue-1,ZeroFrm.ZeroLevel) ;
+        EDRFile.Channel[ZeroFrm.ChSel].ADCZero := Min(EDRFile.Channel[ZeroFrm.ChSel].ADCMaxValue,ZeroFrm.ZeroLevel) ;
+        EDRFile.Channel[ZeroFrm.ChSel].ADCZeroAt := -1 ;
+        EDRFile.SaveHeader( EDRFile.CDRfH ) ;
         for ch := 0 to scDisplay.NumChannels-1 do
-            scDisplay.HorizontalCursors[ch] := Channel[ZeroFrm.ChSel].ADCZero ;
+            scDisplay.HorizontalCursors[ch] := EDRFile.Channel[ZeroFrm.ChSel].ADCZero ;
         end
      end;
 
 
 procedure TPageViewFrm.FormActivate(Sender: TObject);
 begin
-     ckFixedZeroLevels.Checked := Settings.FixedZeroLevels ;
+     ckFixedZeroLevels.Checked := EDRFile.Settings.FixedZeroLevels ;
      end;
 
 end.

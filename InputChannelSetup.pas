@@ -46,7 +46,7 @@ unit InputChannelSetup;
 interface
 
 uses WinTypes, WinProcs, Classes, Graphics, Forms, Controls, Buttons,
-  StdCtrls, Spin, ExtCtrls, shared, sysUtils, Grids, Dialogs, Global, FileIo,
+  StdCtrls, Spin, ExtCtrls, sysUtils, Grids, Dialogs,
   maths, ValEdit, ValidatedEdit, math, ComCtrls, strutils ;
 
 type
@@ -162,7 +162,7 @@ var
 
 implementation
 
-uses Mdiform, AmpModule, seslabio , TritonPanelUnit;
+uses Mdiform, AmpModule, seslabio , TritonPanelUnit, EDRFileUnit;
 
 {$R *.DFM}
 
@@ -180,7 +180,7 @@ begin
      AmpNumberonDisplay := -1 ;
 
      { Set time units radio buttons }
-     if Settings.TUnits = 's' then rbTSecs.checked := true
+     if EDRFile.Settings.TUnits = 's' then rbTSecs.checked := true
                               else rbTmsecs.checked := true ;
 
      // List of available analog input channels
@@ -484,17 +484,17 @@ begin
 
 procedure TInputChannelSetupFrm.rbTmsecsClick(Sender: TObject);
 begin
-     Settings.TUnits := 'ms' ;
-     Settings.TScale := SecsToms ;
-     Settings.TUnscale := MsToSecs ;
+     EDRFile.Settings.TUnits := 'ms' ;
+     EDRFile.Settings.TScale := SecsToms ;
+     EDRFile.Settings.TUnscale := MsToSecs ;
      end;
 
 
 procedure TInputChannelSetupFrm.rbTSecsClick(Sender: TObject);
 begin
-     Settings.TUnits := 's' ;
-     Settings.TScale := 1. ;
-     Settings.TUnscale := 1. ;
+     EDRFile.Settings.TUnits := 's' ;
+     EDRFile.Settings.TScale := 1. ;
+     EDRFile.Settings.TUnscale := 1. ;
      end;
 
 
@@ -526,7 +526,7 @@ begin
         UpdateChannelSettings ;
 
         if Amplifier.AmplifierType[0] = amTriton then begin
-            Settings.NumChannels := Min(Settings.NumChannels,2) ;
+            EDRFile.Settings.NumChannels := Min(EDRFile.Settings.NumChannels,2) ;
             if Main.FormExists( 'TritonPanelFrm' ) then TritonPanelFrm.UpdateTritonSettings ;
             // Update channels with amplifier settings
             for ch := 0 to 15 {Main.SESLabIO.ADCMaxChannels-1}  do begin
@@ -543,9 +543,9 @@ begin
             end ;
 
         // Add Names of channels to list
-        ChannelNames.Clear ;
-        for ch := 0 to Settings.NumChannels-1 do
-            ChannelNames.Add( format('Ch.%d %s',[ch,Main.SESLabIO.ADCChannelName[ch]]) ) ;
+        EDRFile.ChannelNames.Clear ;
+        for ch := 0 to EDRFile.Settings.NumChannels-1 do
+            EDRFile.ChannelNames.Add( format('Ch.%d %s',[ch,Main.SESLabIO.ADCChannelName[ch]]) ) ;
 
         // Initialise channel display settings to minimum magnification
         for ch := 0 to 15 {Main.SESLabIO.ADCMaxChannels-1}  do begin
@@ -732,8 +732,8 @@ var
 begin
 
      SaveDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofPathMustExist] ;
-     SaveDialog.InitialDir := Main.SettingsDirectory ;
-     SetCurrentDir(Main.SettingsDirectory) ;
+     SaveDialog.InitialDir := EDRFile.SettingsDirectory ;
+     SetCurrentDir(EDRFile.SettingsDirectory) ;
      SaveDialog.Title := 'Save Amplifier/Input Channel Settings' ;
      SaveDialog.FileName := '*.xml' ;
      SaveDialog.Filter := ' XML Files (*.XML)';
@@ -769,8 +769,8 @@ procedure TInputChannelSetupFrm.bLoadSettingsClick(Sender: TObject);
 begin
      OpenDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofPathMustExist] ;
      OpenDialog.FileName := '*.xml' ;
-     OpenDialog.InitialDir := Main.SettingsDirectory ;
-     SetCurrentDir(Main.SettingsDirectory) ;
+     OpenDialog.InitialDir := EDRFile.SettingsDirectory ;
+     SetCurrentDir(EDRFile.SettingsDirectory) ;
      OpenDialog.Title := 'Load Amplifier/Input Channel Settings' ;
      OpenDialog.Filter := ' XML Files (*.XML)';
 

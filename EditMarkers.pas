@@ -8,7 +8,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, Grids, StdCtrls;
+  Dialogs, Grids, StdCtrls, EDRFileUnit;
 
 type
   TEditMarkersFrm = class(TForm)
@@ -33,7 +33,7 @@ var
 
 implementation
 
-uses MDIForm, shared, global, maths, fileio, math ;
+uses MDIForm, maths, math ;
 
 {$R *.dfm}
 
@@ -47,23 +47,23 @@ var
 begin
 
      // File ident
-     edIdent.Text := CDRFH.IdentLine ;
+     edIdent.Text := EDRFile.CDRFH.IdentLine ;
 
-     if MarkerList.Count > 1 then begin
+     if EDRFile.MarkerList.Count > 1 then begin
         Table.FixedRows := 1 ;
-        Table.RowCount := MarkerList.Count + 1 ;
+        Table.RowCount := EDRFile.MarkerList.Count + 1 ;
         end
      else begin
         Table.FixedRows := 0 ;
         Table.RowCount := 1 ;
         end ;
 
-     Table.Cells[0,0] := 'Time (' + Settings.TUnits + ')' ;
+     Table.Cells[0,0] := 'Time (' + EDRFile.Settings.TUnits + ')' ;
      Table.Cells[1,0] := 'Text' ;
-     for i := 0 to MarkerList.Count-1 do begin
-         t := Single(MarkerList.Objects[i]) ;
+     for i := 0 to EDRFile.MarkerList.Count-1 do begin
+         t := Single(EDRFile.MarkerList.Objects[i]) ;
          Table.Cells[0,i+1] := format( '%.4g',[t]) ;
-         Table.Cells[1,i+1] := MarkerList.Strings[i] ;
+         Table.Cells[1,i+1] := EDRFile.MarkerList.Strings[i] ;
          end ;
 
 
@@ -79,22 +79,22 @@ var
      t : Single ;
 begin
 
-     MarkerList.Clear ;
+     EDRFile.MarkerList.Clear ;
      for i := 1 to Table.RowCount-1 do begin
          t := ExtractFloat( Table.Cells[0,i], -1.0 ) ;
          if t >= 0.0 then begin
-            MarkerList.AddObject( Table.Cells[1,i], TObject(t) ) ;
+            EDRFile.MarkerList.AddObject( Table.Cells[1,i], TObject(t) ) ;
             end ;
          end ;
 
      // Update ident. line
-     if edIdent.Text <> CDRFH.IdentLine then begin
-        CDRFH.IdentLine := edIdent.Text ;
-        WriteToLogFile(' Ident. changed: ' +  CDRFH.IdentLine ) ;
+     if edIdent.Text <> EDRFile.CDRFH.IdentLine then begin
+        EDRFile.CDRFH.IdentLine := edIdent.Text ;
+        EDRFile.WriteToLogFile(' Ident. changed: ' +  EDRFile.CDRFH.IdentLine ) ;
         end ;
 
      // Save file header
-     SaveCDRHeader( CDRFH ) ;
+     EDRFile.SaveHeader( EDRFile.CDRFH ) ;
 
      end;
 

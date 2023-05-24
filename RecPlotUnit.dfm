@@ -51,10 +51,10 @@ object RecPlotFrm: TRecPlotFrm
     PrinterFontName = 'Arial'
     PrinterLineWidth = 1
     PrinterMarkerSize = 5
-    PrinterLeftMargin = 13
-    PrinterRightMargin = 13
-    PrinterTopMargin = 13
-    PrinterBottomMargin = 13
+    PrinterLeftMargin = 12
+    PrinterRightMargin = 12
+    PrinterTopMargin = 12
+    PrinterBottomMargin = 12
     PrinterDisableColor = False
     MetafileWidth = 500
     MetafileHeight = 400

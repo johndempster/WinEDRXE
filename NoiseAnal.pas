@@ -46,7 +46,7 @@ interface
 uses
   SysUtils, WinTypes, WinProcs, Messages, Classes, Graphics, Controls,
   Forms, Dialogs, ExtCtrls, StdCtrls, Spin, TabNotBk, ClipBrd,
-  global, shared, maths, Grids, setfitpa, printers, fileio,
+  EDRFileUnit, maths, Grids, setfitpa, printers,
   setblock, ComCtrls, RangeEdit, ValEdit, ScopeDisplay, XYPlotDisplay,
   ValidatedEdit, math, system.strutils  ;
 
@@ -435,18 +435,18 @@ begin
      { Fill AC and DC channel selection lists }
      cbACChannel.Clear ;
      cbDCChannel.Clear ;
-     for ch := 0 to CdrFH.NumChannels-1 do begin
-          cbACChannel.items.add( format('Ch.%d %s',[ch,Channel[ch].ADCName]) ) ;
-          cbDCChannel.items.add( format('Ch.%d %s',[ch,Channel[ch].ADCName]) ) ;
+     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
+          cbACChannel.items.add( format('Ch.%d %s',[ch,EDRFile.Channel[ch].ADCName]) ) ;
+          cbDCChannel.items.add( format('Ch.%d %s',[ch,EDRFile.Channel[ch].ADCName]) ) ;
           end ;
      cbACChannel.ItemIndex := 0 ;
-     cbDCChannel.ItemIndex := Min(1,CdrFH.NumChannels-1) ;
+     cbDCChannel.ItemIndex := Min(1,EDRFIle.Cdrfh.NumChannels-1) ;
      ACChan := cbACChannel.ItemIndex ;
      DCChan := cbDCChannel.ItemIndex ;
 
      { Set size of variance/FFT record }
-     Data.RecordOverlap := Settings.Variance.RecordOverlap ;
-     Data.RecordSize := Settings.Variance.RecordSize ;
+     Data.RecordOverlap := EDRFile.Settings.Variance.RecordOverlap ;
+     Data.RecordSize := EDRFile.Settings.Variance.RecordSize ;
      SetRecordSize( Data.RecordSize, False ) ;
 
      { Initial axis variable selections for variance plot }
@@ -507,7 +507,7 @@ begin
      // Start on Variance Records page
      Page.ActivePage := DataTab ;
 
-     ckFixedZeroLevels.Checked := Settings.FixedZeroLevels ;
+     ckFixedZeroLevels.Checked := EDRFile.Settings.FixedZeroLevels ;
 
      GetRecord ;
 
@@ -553,28 +553,28 @@ var
    ch : integer ;
 begin
      { Continuous record display channel }
-     scDisplay.MaxADCValue := Channel[0].ADCMaxValue ;
-     scDisplay.MinADCValue := -Channel[0].ADCMaxValue -1 ;
-     scDisplay.DisplayGrid := Settings.DisplayGrid ;
+     scDisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+     scDisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue -1 ;
+     scDisplay.DisplayGrid := EDRFile.Settings.DisplayGrid ;
 
      scDisplay.MaxPoints := Data.RecordSize ;
      scDisplay.NumPoints := scDisplay.MaxPoints ;
-     scDisplay.NumChannels := CdrFH.NumChannels ;
+     scDisplay.NumChannels := EDRFIle.Cdrfh.NumChannels ;
      scDisplay.xMin := 0 ;
      scDisplay.xMax := scDisplay.NumPoints  ;
      scDisplay.DisableChannelVisibilityButton := True ;
 
      { Set channel information }
      scDisplay.ClearHorizontalCursors ;
-     for ch := 0 to CdrFH.NumChannels-1 do begin
-         scDisplay.ChanUnits[ch] := Channel[ch].ADCUnits ;
-         scDisplay.ChanName[ch] := Channel[ch].ADCName ;
-         scDisplay.ChanScale[ch] := Channel[ch].ADCScale ;
-         scDisplay.ChanUnits[ch] := Channel[ch].ADCUnits ;
-         scDisplay.ChanZero[ch] := Channel[ch].ADCZero ;
-         scDisplay.ChanOffsets[ch] := Channel[ch].ChannelOffset ;
-         scDisplay.yMin[ch] := Channel[ch].yMin ;
-         scDisplay.yMax[ch] := Channel[ch].yMax ;
+     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
+         scDisplay.ChanUnits[ch] := EDRFile.Channel[ch].ADCUnits ;
+         scDisplay.ChanName[ch] := EDRFile.Channel[ch].ADCName ;
+         scDisplay.ChanScale[ch] := EDRFile.Channel[ch].ADCScale ;
+         scDisplay.ChanUnits[ch] := EDRFile.Channel[ch].ADCUnits ;
+         scDisplay.ChanZero[ch] := EDRFile.Channel[ch].ADCZero ;
+         scDisplay.ChanOffsets[ch] := EDRFile.Channel[ch].ChannelOffset ;
+         scDisplay.yMin[ch] := EDRFile.Channel[ch].yMin ;
+         scDisplay.yMax[ch] := EDRFile.Channel[ch].yMax ;
          scDisplay.ChanVisible[ch] := False ;
          scDisplay.ChanColor[ch] := clBlue ;
          scDisplay.AddHorizontalCursor(ch,clRed,True,'z') ;
@@ -589,8 +589,8 @@ begin
      scDisplay.ChanVisible[DCChan] := True ;
      scDisplay.ChanName[DCChan] := scDisplay.ChanName[DCChan] + '(DC)';
 
-     scDisplay.TScale := CdrFH.dt*Settings.TScale ;
-     scDisplay.TUnits := Settings.TUnits + ' ' ;
+     scDisplay.TScale := EDRFIle.Cdrfh.dt*EDRFile.Settings.TScale ;
+     scDisplay.TUnits := EDRFile.Settings.TUnits + ' ' ;
 
      end ;
 
@@ -606,7 +606,7 @@ begin
     edRecord.LoValue := Data.RecordNum + 1 ;
     edRecord.HiValue := Data.MaxRecord + 1 ;
 
-    ReadRecord( Data.RecordNum, ADC^, Channel[ACChan].xMin, Channel[ACChan].xMax ) ;
+    ReadRecord( Data.RecordNum, ADC^, EDRFile.Channel[ACChan].xMin, EDRFile.Channel[ACChan].xMax ) ;
     { Set Min/Max limits of DC axis }
 
     DisplayMeanAndVariance ;
@@ -617,8 +617,8 @@ begin
     if RecordStatus^[Data.RecordNum].RecType = Background then cbRecType.ItemIndex := 1
                                                           else cbRecType.ItemIndex := 0 ;
 
-    Time := Data.RecordNum*Data.RecordOffset*CDRFH.dt ;
-    scDisplay.xOffset := Round(Time/CDRFH.dt) ;
+    Time := Data.RecordNum*Data.RecordOffset*EDRFIle.Cdrfh.dt ;
+    scDisplay.xOffset := Round(Time/EDRFIle.Cdrfh.dt) ;
     edTime.Text := format('%.4g s',[Time]);
     { Re-plot channels }
 
@@ -639,38 +639,38 @@ begin
 
     { Calculate mean signal level of DC Channel }
     Sum := 0.0 ;
-    j := Channel[DCChan].ChannelOffset ;
+    j := EDRFile.Channel[DCChan].ChannelOffset ;
     for i := 0 to Data.RecordSize-1 do begin
-        Sum := Sum + (ADC^[j] - Channel[DCChan].ADCZero) ;
-        j := j + CdrFH.NumChannels ;
+        Sum := Sum + (ADC^[j] - EDRFile.Channel[DCChan].ADCZero) ;
+        j := j + EDRFIle.Cdrfh.NumChannels ;
         end ;
 
-    MeanDC := (Sum/Data.RecordSize) * Channel[DCChan].ADCScale ;
-    edMean.text := format( ' %.4g %s',[MeanDC,Channel[DCChan].ADCUnits] ) ;
+    MeanDC := (Sum/Data.RecordSize) * EDRFile.Channel[DCChan].ADCScale ;
+    edMean.text := format( ' %.4g %s',[MeanDC,EDRFile.Channel[DCChan].ADCUnits] ) ;
 
     { Calculate signal variance of AC Channel }
     { First, calculate mean level }
     Sum := 0.0 ;
-    j := Channel[ACChan].ChannelOffset ;
+    j := EDRFile.Channel[ACChan].ChannelOffset ;
     for i := 0 to Data.RecordSize-1 do begin
         Sum := Sum + (ADC^[j]) ;
-        j := j + CdrFH.NumChannels ;
+        j := j + EDRFIle.Cdrfh.NumChannels ;
         end ;
     MeanAC := Sum / Data.RecordSize ;
 
     // Update AC channel zero level if it is difference from DC channel
-    if DCChan <> ACChan then Channel[ACChan].ADCZero := Round(MeanAC) ;
+    if DCChan <> ACChan then EDRFile.Channel[ACChan].ADCZero := Round(MeanAC) ;
 
     { Next, calculate variance }
     Sum := 0.0 ;
-    j := Channel[ACChan].ChannelOffset ;
+    j := EDRFile.Channel[ACChan].ChannelOffset ;
     for i := 0 to Data.RecordSize-1 do begin
         Sum := Sum + (ADC^[j] - MeanAC)*(ADC^[j] - MeanAC) ;
-        j := j + CdrFH.NumChannels ;
+        j := j + EDRFIle.Cdrfh.NumChannels ;
         end ;
-    VarianceAC := (Sum/Data.RecordSize)*Channel[ACChan].ADCScale*
-                  Channel[ACChan].ADCScale ;
-    edVariance.text := format( ' %.4g %s^2', [VarianceAC,Channel[DCChan].ADCUnits] ) ;
+    VarianceAC := (Sum/Data.RecordSize)*EDRFile.Channel[ACChan].ADCScale*
+                  EDRFile.Channel[ACChan].ADCScale ;
+    edVariance.text := format( ' %.4g %s^2', [VarianceAC,EDRFile.Channel[DCChan].ADCUnits] ) ;
     end ;
 
 
@@ -684,7 +684,7 @@ procedure TNoiseAnalFrm.ReadRecord(
   -------------------------------------}
 begin
     { Read data record }
-    ReadCDRBuffer(CdrFH,Rec*Data.RecordOffset,Buf,Data.RecordSize) ;
+    EDRFile.ReadBuffer(EDRFile.CdrFH,Rec*Data.RecordOffset,Buf,Data.RecordSize) ;
     xMin := Rec*Data.RecordOffset ;
     xMax := xMin + Data.RecordSize ;
     end ;
@@ -709,7 +709,7 @@ begin
      repeat
        n := n*2 ;
        // Determine number of records in data file
-       NumRecords := CdrFH.NumSamplesInFile div (n*CdrFH.NumChannels) ;
+       NumRecords := EDRFIle.Cdrfh.NumSamplesInFile div (n*EDRFIle.Cdrfh.NumChannels) ;
        until ((n >= NewSize) or (n = MaxRecordSize) or (NumRecords < 4))
        and (NumRecords < MaxRecords) ;
 
@@ -818,9 +818,9 @@ begin
      { Save record status data to file }
      RecordStatusFile( rsfSave ) ;
 
-     Settings.Variance.RecordSize := Data.RecordSize ;
-     Settings.Variance.RecordOverlap := Data.RecordOverlap ;
-     SaveCDRHeader( cdrFH ) ;
+     EDRFile.Settings.Variance.RecordSize := Data.RecordSize ;
+     EDRFile.Settings.Variance.RecordOverlap := Data.RecordOverlap ;
+     EDRFile.SaveHeader( EDRFile.cdrFH ) ;
 
      HeapBuffers( Deallocate ) ;
 
@@ -949,39 +949,39 @@ begin
 
             { Calculate mean signal level of DC Channel }
             Sum := 0.0 ;
-            j := Channel[DCChan].ChannelOffset ;
+            j := EDRFile.Channel[DCChan].ChannelOffset ;
             for i := 0 to Data.RecordSize-1 do begin
-                Sum := Sum + (ADC^[j] - Channel[DCChan].ADCZero) ;
-                j := j + CdrFH.NumChannels ;
+                Sum := Sum + (ADC^[j] - EDRFile.Channel[DCChan].ADCZero) ;
+                j := j + EDRFIle.Cdrfh.NumChannels ;
                 end ;
-            DCMean^[Rec] := (Sum/Data.RecordSize) * Channel[DCChan].ADCScale ;
+            DCMean^[Rec] := (Sum/Data.RecordSize) * EDRFile.Channel[DCChan].ADCScale ;
 
             { Calculate signal variance of AC Channel }
             { First, calculate mean level }
             Sum := 0.0 ;
-            j := Channel[ACChan].ChannelOffset ;
+            j := EDRFile.Channel[ACChan].ChannelOffset ;
             for i := 0 to Data.RecordSize-1 do begin
                 Sum := Sum + (ADC^[j]) ;
-                j := j + CdrFH.NumChannels ;
+                j := j + EDRFIle.Cdrfh.NumChannels ;
                 end ;
             MeanAC := Sum / Data.RecordSize ;
 
             // Update AC channel zero level (if AC channel is different from DC)
-            if DCChan <> ACChan then Channel[ACChan].ADCZero := Round(MeanAC) ;
+            if DCChan <> ACChan then EDRFile.Channel[ACChan].ADCZero := Round(MeanAC) ;
 
             { Next, calculate variance and skew }
             Sum2 := 0.0 ;
             Sum3 := 0.0 ;
-            j := Channel[ACChan].ChannelOffset ;
+            j := EDRFile.Channel[ACChan].ChannelOffset ;
             for i := 0 to Data.RecordSize-1 do begin
                 y := (ADC^[j] - MeanAC) ;
                 Sum2 := Sum2 + y*y ;
                 Sum3 := Sum3 + y*y*y ;
-                j := j + CdrFH.NumChannels ;
+                j := j + EDRFIle.Cdrfh.NumChannels ;
                 end ;
-            ACVariance^[Rec] := (Sum2/Data.RecordSize)*Channel[ACChan].ADCScale*Channel[ACChan].ADCScale ;
-            ACSkew^[Rec] := (Sum3/Data.RecordSize)*Channel[ACChan].ADCScale
-                            *Channel[ACChan].ADCScale*Channel[ACChan].ADCScale ;
+            ACVariance^[Rec] := (Sum2/Data.RecordSize)*EDRFile.Channel[ACChan].ADCScale*EDRFile.Channel[ACChan].ADCScale ;
+            ACSkew^[Rec] := (Sum3/Data.RecordSize)*EDRFile.Channel[ACChan].ADCScale
+                            *EDRFile.Channel[ACChan].ADCScale*EDRFile.Channel[ACChan].ADCScale ;
 
             { Compute the median power frequency of the fluctuations }
             if (cbVarXAxis.ItemIndex = vMedianFrequency) or
@@ -1210,18 +1210,18 @@ begin
         i := 0 ;
         while i < Data.RecordSize-1 do begin
             {Create line of text }
-            j := i*CdrFH.NumChannels + Channel[DCChan].ChannelOffset ;
+            j := i*EDRFIle.Cdrfh.NumChannels + EDRFile.Channel[DCChan].ChannelOffset ;
             Line := format( '%8.5g', [x] )  ;
-            Line := Line + chr(9) + format( '%8.5g', [ADC^[j]*Channel[DCChan].ADCScale] ) ;
+            Line := Line + chr(9) + format( '%8.5g', [ADC^[j]*EDRFile.Channel[DCChan].ADCScale] ) ;
             if DCChan <> ACChan then begin
-               Line := Line + chr(9) + format( '%8.5g', [ADC^[j]*Channel[ACChan].ADCScale] ) ;
+               Line := Line + chr(9) + format( '%8.5g', [ADC^[j]*EDRFile.Channel[ACChan].ADCScale] ) ;
                end ;
             Line := Line + chr(13) + chr(10) ;
             { Add line to copy buffer }
             StrPCopy( Line0, Line ) ;
             CopyBuf0 := StrCat( CopyBuf0, Line0 ) ;
             { Increment to next sample }
-            x := x + CdrFH.dt*iSkip ;
+            x := x + EDRFIle.Cdrfh.dt*iSkip ;
             i := i + iSkip ;
             end ;
 
@@ -1248,7 +1248,7 @@ begin
      case ItemIndex of
           vRecordNum : Result := Rec ;
           vTime : Result := (((Rec-1)*Data.RecordOffset) + Data.RecordSize)
-                            *CdrFH.dt*Settings.TScale ;
+                            *EDRFIle.Cdrfh.dt*EDRFile.Settings.TScale ;
           { Signal mean DC level }
           vMeanDC : Result := DCMean^[Rec] ;
           { Standard Deviation of signal }
@@ -1274,11 +1274,11 @@ function TNoiseAnalFrm.GetVariableUnits( ItemIndex : Integer ) : string ;
 begin
      case ItemIndex of
           vRecordNum : Result := '' ;
-          vTime : Result := Settings.TUnits ;
-          vMeanDC : Result := Channel[DCChan].ADCUnits ;
-          vStDev : Result := Channel[ACChan].ADCUnits ;
-          vVariance : Result := Channel[ACChan].ADCUnits + '^2' ;
-          vSkew : Result := Channel[ACChan].ADCUnits + '^3' ;
+          vTime : Result := EDRFile.Settings.TUnits ;
+          vMeanDC : Result := EDRFile.Channel[DCChan].ADCUnits ;
+          vStDev : Result := EDRFile.Channel[ACChan].ADCUnits ;
+          vVariance : Result := EDRFile.Channel[ACChan].ADCUnits + '^2' ;
+          vSkew : Result := EDRFile.Channel[ACChan].ADCUnits + '^3' ;
           vMedianFrequency : Result := 'Hz' ;
           else Result := '' ;
           end ;
@@ -1493,8 +1493,8 @@ begin
            AvgSkew := 0.0 ;
            end ;
 
-        TauRise := Settings.Variance.TauRise ;
-        TauDecay := Settings.Variance.TauDecay ;
+        TauRise := EDRFile.Settings.Variance.TauRise ;
+        TauDecay := EDRFile.Settings.Variance.TauDecay ;
 
         I2 := ((TauRise - TauDecay)*(TauRise - TauDecay)) / (2.0*(TauRise + TauDecay)) ;
         Alpha := 1.0 / TauRise ;
@@ -1508,10 +1508,10 @@ begin
 
         erSpecResults.Lines.Clear ;
         erSpecResults.Lines.Add( format(' Avg. Variance = %.4g %s^2',
-                             [AvgVariance,Channel[ACChan].ADCUnits] ) ) ;
+                             [AvgVariance,EDRFile.Channel[ACChan].ADCUnits] ) ) ;
 
         erSpecResults.Lines.Add( format(' Avg. Skew = %.4g %s^3',
-                             [AvgSkew,Channel[ACChan].ADCUnits] ) ) ;
+                             [AvgSkew,EDRFile.Channel[ACChan].ADCUnits] ) ) ;
 
         erSpecResults.Lines.Add( format(' MEPC Frequency = %f /s',
                                         [MEPCFrequency] ) ) ;
@@ -1582,7 +1582,7 @@ begin
     plSpecPlot.xAxisAutoRange := True ;
     plSpecPlot.yAxisAutoRange := True ;
     plSpecPlot.xAxisLabel := 'Hz' ;
-    plSpecPlot.yAxisLabel := Channel[ACChan].ADCUnits + '^2' ;
+    plSpecPlot.yAxisLabel := EDRFile.Channel[ACChan].ADCUnits + '^2' ;
     plSpecPlot.MaxPointsPerLine := Max(PowerSpectrum^.NumPoints,NumFitPoints) ;
 
     { Plot main spectrum }
@@ -1649,7 +1649,7 @@ begin
         Spectrum.AvgDCMean := 0.0 ;
 
         npFFT := Data.RecordSize div 2 ;
-        dFreq := 1.0 / (Spectrum.RecordSize*CdrFH.dt) ;
+        dFreq := 1.0 / (Spectrum.RecordSize*EDRFIle.Cdrfh.dt) ;
         for i := 0 to npFFT-1 do begin
             Spectrum.Power[i] := 0.0 ;
             Spectrum.Frequency[i] := (i+1)*dFreq ;
@@ -1664,29 +1664,29 @@ begin
 
                { Calculate mean signal level of DC Channel }
                Sum := 0.0 ;
-               j := Channel[DCChan].ChannelOffset ;
+               j := EDRFile.Channel[DCChan].ChannelOffset ;
                for i := 0 to Spectrum.RecordSize-1 do begin
-                   Sum := Sum + (ADC^[j] - Channel[DCChan].ADCZero) ;
-                   j := j + CdrFH.NumChannels ;
+                   Sum := Sum + (ADC^[j] - EDRFile.Channel[DCChan].ADCZero) ;
+                   j := j + EDRFIle.Cdrfh.NumChannels ;
                    end ;
                Spectrum.AvgDCMean := Spectrum.AvgDCMean +
-                                  (Sum/Spectrum.RecordSize) * Channel[DCChan].ADCScale ;
+                                  (Sum/Spectrum.RecordSize) * EDRFile.Channel[DCChan].ADCScale ;
 
                { Calculate mean signal level of AC Channel }
                Sum := 0.0 ;
-               j := Channel[ACChan].ChannelOffset ;
+               j := EDRFile.Channel[ACChan].ChannelOffset ;
                for i := 0 to Spectrum.RecordSize-1 do begin
                    Sum := Sum + (ADC^[j]) ;
-                   j := j + CdrFH.NumChannels ;
+                   j := j + EDRFIle.Cdrfh.NumChannels ;
                    end ;
                MeanAC := Sum / Spectrum.RecordSize ;
 
                { Copy signal to be transformed into FFT buffer,
                  after subtracting DC level }
-               j := Channel[ACChan].ChannelOffset ;
+               j := EDRFile.Channel[ACChan].ChannelOffset ;
                for i := 1 to Spectrum.RecordSize do begin
-                   FFT^[i] := (ADC^[j] - Round(MeanAC))*Channel[ACChan].ADCScale ;
-                   j := j + CdrFH.NumChannels ;
+                   FFT^[i] := (ADC^[j] - Round(MeanAC))*EDRFile.Channel[ACChan].ADCScale ;
+                   j := j + EDRFIle.Cdrfh.NumChannels ;
                    end ;
 
                { Subtract linear trend from signal, if required }
@@ -1735,7 +1735,7 @@ begin
         { Average spectral time periods }
         if Spectrum.NumAveraged > 0 then begin
            Denom := (Spectrum.NumAveraged*Spectrum.RecordSize*VarianceCorrection)
-                    /(2.0*CdrFH.DT) ;
+                    /(2.0*EDRFIle.Cdrfh.DT) ;
            for i := 0 to Spectrum.NumPoints-1 do begin
                Spectrum.Power[i] := Spectrum.Power[i] / Denom ;
                end ;
@@ -1764,7 +1764,7 @@ begin
 
               SpecResults.Add( format(' Total variance = %.4g %s^2',
                                       [PowerSpectrum^.Variance,
-                                      Channel[ACChan].ADCUnits]) ) ;
+                                      EDRFile.Channel[ACChan].ADCUnits]) ) ;
               SpecFunc.CopyResultsToRichEdit( SpecResults, erSpecResults ) ;
 
               if RecType = Test then s := 'Test'
@@ -2120,7 +2120,7 @@ begin
         { Select type of equation to be fitted }
         SpecFunc.Setup( TEqnType(cbSpecEquation.Items.Objects[cbSpecEquation.ItemIndex]),
                         'Hz',
-                        Channel[ACChan].ADCUnits)  ;
+                        EDRFile.Channel[ACChan].ADCUnits)  ;
         if SpecFunc.Equation = None then OK := False ;
 
         if OK then begin
@@ -2242,7 +2242,7 @@ begin
                               *SpecFunc.Parameters[1]) /
                               (2.0*PowerSpectrum^.AvgDCMean) ;
                     SpecResults.Add( format(' I^-u = %.4g %s',
-                                             [IUnit,Channel[ACChan].ADCUnits]) ) ;
+                                             [IUnit,EDRFile.Channel[ACChan].ADCUnits]) ) ;
                     end ;
 
                 { Sum of 2 Lorentzians }
@@ -2257,19 +2257,19 @@ begin
                                *SpecFunc.Parameters[3]) ) /
                                (2.0*PowerSpectrum^.AvgDCMean) ;
                    SpecResults.Add( format(' I^-u = %.4g %s',
-                                            [IUnit,Channel[ACChan].ADCUnits]) ) ;
+                                            [IUnit,EDRFile.Channel[ACChan].ADCUnits]) ) ;
                     end ;
 
                 { MEPC noise spectrum }
                 MEPCNoise : begin
-                   Settings.Variance.TauRise := 1.0 /
+                   EDRFile.Settings.Variance.TauRise := 1.0 /
                                                 (2.0*Pi*SpecFunc.Parameters[2]) ;
                    SpecResults.Add( format(' ^st^-R = %.4g ms',
-                                    [Settings.Variance.TauRise*SecsToMs]) ) ;
-                   Settings.Variance.TauDecay := 1.0 /
+                                    [EDRFile.Settings.Variance.TauRise*SecsToMs]) ) ;
+                   EDRFile.Settings.Variance.TauDecay := 1.0 /
                                                  (2.0*Pi*SpecFunc.Parameters[1]) ;
                    SpecResults.Add( format(' ^st^-D = %.4g ms',
-                                    [Settings.Variance.TauDecay*SecsToMs]) ) ;
+                                    [EDRFile.Settings.Variance.TauDecay*SecsToMs]) ) ;
                    end ;
 
                 end ;
@@ -2277,7 +2277,7 @@ begin
            { Residual standard deviation }
            SpecResults.Add( format(' Residual S.D. = %.4g %s^2',
                                     [SpecFunc.ResidualSD,
-                                    Channel[ACChan].ADCUnits] ) ) ;
+                                    EDRFile.Channel[ACChan].ADCUnits] ) ) ;
            { Statistical degrees of freedom }
            SpecResults.Add( format(' Degrees of freedom = %d ',
                                     [SpecFunc.DegreesOfFreedom]) ) ;
@@ -2453,8 +2453,8 @@ begin
        if PrintGraphFrm.ModalResult = mrOK then begin
           { Add title information to plot }
           plVarPlot.ClearPrinterTitle ;
-          plVarPlot.AddPrinterTitleLine( 'File ... ' + cdrFH.FileName ) ;
-          plVarPlot.AddPrinterTitleLine( CdrFH.IdentLine ) ;
+          plVarPlot.AddPrinterTitleLine( 'File ... ' + EDRFIle.Cdrfh.FileName ) ;
+          plVarPlot.AddPrinterTitleLine( EDRFIle.Cdrfh.IdentLine ) ;
           for i := 0 to erVarResults.Lines.Count-1 do
               plVarPlot.AddPrinterTitleLine( VarResults[i] ) ;
           { Plot graph to printer }
@@ -2470,8 +2470,8 @@ begin
        if PrintGraphFrm.ModalResult = mrOK then begin
           { Add title information to plot }
           plAmpHist.ClearPrinterTitle ;
-          plAmpHist.AddPrinterTitleLine( 'File ... ' + cdrFH.FileName ) ;
-          plAmpHist.AddPrinterTitleLine( CdrFH.IdentLine ) ;
+          plAmpHist.AddPrinterTitleLine( 'File ... ' + EDRFIle.Cdrfh.FileName ) ;
+          plAmpHist.AddPrinterTitleLine( EDRFIle.Cdrfh.IdentLine ) ;
           { Plot graph to printer }
           plAmpHist.Print ;
           end ;
@@ -2485,8 +2485,8 @@ begin
        if PrintGraphFrm.ModalResult = mrOK then begin
           { Add title information to plot }
           plSpecPlot.ClearPrinterTitle ;
-          plSpecPlot.AddPrinterTitleLine( 'File ... ' + cdrFH.FileName ) ;
-          plSpecPlot.AddPrinterTitleLine( CdrFH.IdentLine ) ;
+          plSpecPlot.AddPrinterTitleLine( 'File ... ' + EDRFIle.Cdrfh.FileName ) ;
+          plSpecPlot.AddPrinterTitleLine( EDRFIle.Cdrfh.IdentLine ) ;
           for i := 0 to erSpecResults.Lines.Count-1 do
               plSpecPlot.AddPrinterTitleLine( SpecResults[i] ) ;
           { Plot graph to printer }
@@ -2501,8 +2501,8 @@ begin
         PrintRecFrm.ShowModal ;
         if PrintRecFrm.ModalResult = mrOK then begin
            scDisplay.ClearPrinterTitle ;
-           scDisplay.AddPrinterTitleLine( 'File : ' + cdrFH.FileName ) ;
-           scDisplay.AddPrinterTitleLine( CdrFH.IdentLine ) ;
+           scDisplay.AddPrinterTitleLine( 'File : ' + EDRFIle.Cdrfh.FileName ) ;
+           scDisplay.AddPrinterTitleLine( EDRFIle.Cdrfh.IdentLine ) ;
            scDisplay.Print ;
            end ;
         end ;
@@ -2571,27 +2571,27 @@ begin
      { Create default data file name }
      if Page.ActivePage = DataTab then
         Main.SaveDialog.FileName := AnsiReplaceText(
-                                    LowerCase(ExtractFileName(CdrFH.FileName)),
+                                    LowerCase(ExtractFileName(EDRFIle.Cdrfh.FileName)),
                                    '.edr',
                                    format('.%d.csv',
                                   [sbRecord.Position+1] ));
 
       if Page.ActivePage = AmpHistTab then
           Main.SaveDialog.FileName := AnsiReplaceText(
-                                      LowerCase(ExtractFileName(CdrFH.FileName)),
+                                      LowerCase(ExtractFileName(EDRFIle.Cdrfh.FileName)),
                                       '.edr',
                                      '.amphist.csv');
 
       if Page.ActivePage = VarianceTab then
          Main.SaveDialog.FileName := AnsiReplaceText(
-                                     LowerCase(ExtractFileName(CdrFH.FileName)),
+                                     LowerCase(ExtractFileName(EDRFIle.Cdrfh.FileName)),
                                      '.edr',
                                     format('.event.%s.%s.csv',
                                     [plVarPlot.XAxisLabel,plVarPlot.YAxisLabel])) ;
 
       if Page.ActivePage = SpectrumTab then
          Main.SaveDialog.FileName := AnsiReplaceText(
-                                     LowerCase(ExtractFileName(CdrFH.FileName)),
+                                     LowerCase(ExtractFileName(EDRFIle.Cdrfh.FileName)),
                                      '.edr',
                                      '.spectrum.csv');
 
@@ -2657,7 +2657,7 @@ begin
      shLine.Visible := True ;
 
      lbArea.Top := lbSpecFit0.Top + lbSpecFit0.Height - (lbArea.Height div 3) ;
-     lbArea.caption := format(' %.4g %s ',[Variance,Channel[ACChan].ADCUnits+'^2'] ) ;
+     lbArea.caption := format(' %.4g %s ',[Variance,EDRFile.Channel[ACChan].ADCUnits+'^2'] ) ;
      lbArea.Left := shLine.Left + (shLine.Width - lbArea.Width) div 2 ;
      lbArea.visible := true ;
 
@@ -2710,7 +2710,7 @@ begin
 
 procedure TNoiseAnalFrm.FormActivate(Sender: TObject);
 begin
-     ckFixedZeroLevels.Checked := Settings.FixedZeroLevels ;
+     ckFixedZeroLevels.Checked := EDRFile.Settings.FixedZeroLevels ;
      end;
 
 
@@ -2738,8 +2738,8 @@ procedure  TNoiseAnalFrm.ZoomOutAll ;
   Set minimum display magnification
   --------------------------------- }
 begin
-     scDisplay.MaxADCValue := Channel[0].ADCMaxValue ;
-     scDisplay.MinADCValue := -Channel[0].ADCMaxValue -1 ;
+     scDisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+     scDisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue -1 ;
      scDisplay.ZoomOut ;
      end ;
 
@@ -2765,7 +2765,7 @@ var
 begin
 
      { Create name of record status file }
-     FileName := ChangeFileExt( CdrFH.FileName, '.rec' ) ;
+     FileName := ChangeFileExt( EDRFIle.Cdrfh.FileName, '.rec' ) ;
 
      { Open/create file }
      if FileExists(FileName) then begin
@@ -2813,23 +2813,23 @@ var
 begin
 
      { Update vertical display magnification so that changes are retained }
-     for ch := 0 to CdrFH.NumChannels-1 do if scDisplay.ChanVisible[ch] then begin
+     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do if scDisplay.ChanVisible[ch] then begin
 
           { Get signal baseline cursor }
-          if Settings.FixedZeroLevels then begin
-             if scDisplay.HorizontalCursors[ch] <> Channel[ch].ADCZero then
-                scDisplay.HorizontalCursors[ch] := Channel[ch].ADCZero ;
+          if EDRFile.Settings.FixedZeroLevels then begin
+             if scDisplay.HorizontalCursors[ch] <> EDRFile.Channel[ch].ADCZero then
+                scDisplay.HorizontalCursors[ch] := EDRFile.Channel[ch].ADCZero ;
              end
           else begin
-             Channel[ch].ADCZero := Round(scDisplay.HorizontalCursors[ch]) ;
+             EDRFile.Channel[ch].ADCZero := Round(scDisplay.HorizontalCursors[ch]) ;
              end ;
 
-         Channel[ch].yMin := scDisplay.YMin[ch] ;
-         Channel[ch].yMax := scDisplay.YMax[ch] ;
+         EDRFile.Channel[ch].yMin := scDisplay.YMin[ch] ;
+         EDRFile.Channel[ch].yMax := scDisplay.YMax[ch] ;
          end ;
 
      { Get signal baseline cursor }
-     //Channel[DCChan].ADCZero := scDisplay.HorizontalCursors[DataCursors.DCZero] ;
+     //EDRFile.Channel[DCChan].ADCZero := scDisplay.HorizontalCursors[DataCursors.DCZero] ;
 
      DisplayMeanAndVariance ;
 
@@ -2841,12 +2841,12 @@ procedure TNoiseAnalFrm.ChangeDisplayGrid ;
   Update grid pattern on oscilloscope display
   -------------------------------------------- }
 begin
-     scDisplay.MaxADCValue := Channel[0].ADCMaxValue ;
-     scDisplay.MinADCValue := -Channel[0].ADCMaxValue -1 ;
-     scDisplay.DisplayGrid := Settings.DisplayGrid ;
+     scDisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+     scDisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue -1 ;
+     scDisplay.DisplayGrid := EDRFile.Settings.DisplayGrid ;
 
-     scDisplay.TScale := CdrFH.dt*Settings.TScale ;
-     scDisplay.TUnits := Settings.TUnits + ' ' ;
+     scDisplay.TScale := EDRFIle.Cdrfh.dt*EDRFile.Settings.TScale ;
+     scDisplay.TUnits := EDRFile.Settings.TUnits + ' ' ;
      scDisplay.Invalidate ;
      end ;
 
@@ -2887,15 +2887,15 @@ begin
      if not BinRangePanel.Visible then begin
 
         NumBins := Round(edNumBins.Value) ;
-        BinRangeLo := (-Channel[SelectedChan].ADCMaxValue -1
-                      - Channel[SelectedChan].ADCZero)*Channel[SelectedChan].ADCScale ;
-        BinRangeHi := (Channel[SelectedChan].ADCMaxValue
-                    - Channel[SelectedChan].ADCZero)*Channel[SelectedChan].ADCScale ;
+        BinRangeLo := (-EDRFile.Channel[SelectedChan].ADCMaxValue -1
+                      - EDRFile.Channel[SelectedChan].ADCZero)*EDRFile.Channel[SelectedChan].ADCScale ;
+        BinRangeHi := (EDRFile.Channel[SelectedChan].ADCMaxValue
+                    - EDRFile.Channel[SelectedChan].ADCZero)*EDRFile.Channel[SelectedChan].ADCScale ;
         edBinsUpper.Value := BinRangeHi ;
         edBinsLower.Value := BinRangeLo ;
         edBinWidth.Value := (BinRangeHi - BinRangeLo) / NumBins ;
         BinRangePanel.Visible := True ;
-        edBinWidth.Units := Channel[SelectedChan].ADCUnits ;
+        edBinWidth.Units := EDRFile.Channel[SelectedChan].ADCUnits ;
         edBinsLower.Units := edBinWidth.Units ;
         edBinsUpper.Units := edBinWidth.Units ;
         end ;
@@ -2924,15 +2924,15 @@ begin
             ReadRecord(Rec, ADC^, xMin, xMax ) ;
 
             // Add points in record to histogram
-            j := Channel[SelectedChan].ChannelOffset ;
-            yScale := Channel[SelectedChan].ADCScale ;
-            yZero := Channel[SelectedChan].ADCZero ;
+            j := EDRFile.Channel[SelectedChan].ChannelOffset ;
+            yScale := EDRFile.Channel[SelectedChan].ADCScale ;
+            yZero := EDRFile.Channel[SelectedChan].ADCZero ;
             for i := 0 to Data.RecordSize-1 do begin
                 y := (ADC^[j] - yZero)*yScale ;
                 iBin := Round((y - BinRangeLo)/BinWidth) ;
                 iBin := Max(Min(iBin,NumBins-1),0);
                 Bins[iBin] := Bins[iBin] + 1.0 ;
-                j := j + CdrFH.NumChannels ;
+                j := j + EDRFIle.Cdrfh.NumChannels ;
                 end ;
             Inc(NumDone) ;
             end ;
@@ -2962,8 +2962,8 @@ begin
      plAmpHist.xAxisMax := BinRangeLo + BinWidth*NumBins ;
      plAmpHist.XAxisTick := (plAmpHist.xAxisMax - plAmpHist.xAxisMin) / 5.0 ;
      plAmpHist.yAxisAutoRange := True ;
-     plAmpHist.xAxisLabel := Channel[SelectedChan].ADCName
-                             +'(' + Channel[SelectedChan].ADCUnits + ')' ;
+     plAmpHist.xAxisLabel := EDRFile.Channel[SelectedChan].ADCName
+                             +'(' + EDRFile.Channel[SelectedChan].ADCUnits + ')' ;
      plAmpHist.yAxisLabel := '%' ;
      plAmpHist.CreateHistogram( 0 ) ;
 
@@ -3009,8 +3009,8 @@ begin
      plAmpHist.GetBin( 0, plAmpHist.FindNearestIndex(0,0), Lo, Mid, Hi, y ) ;
 
      // Adjust channel zero level
-     Channel[SelChan].ADCZero := Round(Mid/Channel[SelChan].ADCScale)
-                                 + Channel[SelChan].ADCZero ;
+     EDRFile.Channel[SelChan].ADCZero := Round(Mid/EDRFile.Channel[SelChan].ADCScale)
+                                 + EDRFile.Channel[SelChan].ADCZero ;
 
      // Update histogram
      bNewAmpHist.Click ;
@@ -3025,7 +3025,7 @@ var
     i : Integer ;
 begin
      for i := 0 to erVarResults.Lines.Count-1 do
-         WriteToLogFile( erVarResults.Lines[i] ) ;
+         EDRFile.WriteToLogFile( erVarResults.Lines[i] ) ;
      end;
 
 procedure TNoiseAnalFrm.bSaveToLogSpectrumClick(Sender: TObject);
@@ -3036,7 +3036,7 @@ var
     i : Integer ;
 begin
      for i := 0 to erSpecResults.Lines.Count-1 do
-         WriteToLogFile( erSpecResults.Lines[i] ) ;
+         EDRFile.WriteToLogFile( erSpecResults.Lines[i] ) ;
      end;
 
 procedure TNoiseAnalFrm.edBinsUpperKeyPress(Sender: TObject;
@@ -3106,7 +3106,7 @@ procedure TNoiseAnalFrm.ckFixedZeroLevelsClick(Sender: TObject);
 // Enable/Disable fixed zero levels
 // --------------------------------
 begin
-     Settings.FixedZeroLevels := ckFixedZeroLevels.Checked ;
+     EDRFile.Settings.FixedZeroLevels := ckFixedZeroLevels.Checked ;
      end;
 
 procedure TNoiseAnalFrm.scDisplayMouseUp(Sender: TObject;
@@ -3118,18 +3118,18 @@ begin
      if (Button = mbRight) and (scDisplay.ActiveHorizontalCursor >=0) then begin
         // If right-mouse button down, display zero baseline level selection dialog box
         ZeroFrm.ChSel := scDisplay.ActiveHorizontalCursor ;
-        ZeroFrm.ZeroLevel := Channel[ZeroFrm.ChSel].ADCZero ;
-        ZeroFrm.ChanName := Channel[ZeroFrm.ChSel].ADCName ;
+        ZeroFrm.ZeroLevel := EDRFile.Channel[ZeroFrm.ChSel].ADCZero ;
+        ZeroFrm.ChanName := EDRFile.Channel[ZeroFrm.ChSel].ADCName ;
         ZeroFrm.NewZeroAt := Round(scDisplay.ScreenCoordToX( ZeroFrm.ChSel, X )) ;
         ZeroFrm.Left := NoiseAnalFrm.Left + Main.Left + 10 + scDisplay.Left + X;
         ZeroFrm.Top := NoiseAnalFrm.Top + Main.Top + 10 + scDisplay.Top + Y ;
         ZeroFrm.ShowModal ;
-        Channel[ZeroFrm.ChSel].ADCZero := ZeroFrm.ZeroLevel ;
-        Channel[ZeroFrm.ChSel].ADCZero := Max(-Channel[ZeroFrm.ChSel].ADCMaxValue-1,ZeroFrm.ZeroLevel) ;
-        Channel[ZeroFrm.ChSel].ADCZero := Min(Channel[ZeroFrm.ChSel].ADCMaxValue,ZeroFrm.ZeroLevel) ;
-        Channel[ZeroFrm.ChSel].ADCZeroAt := -1 ;
-        SaveCDRHeader( CDRfH ) ;
-        scDisplay.HorizontalCursors[ZeroFrm.ChSel] := Channel[ZeroFrm.ChSel].ADCZero ;
+        EDRFile.Channel[ZeroFrm.ChSel].ADCZero := ZeroFrm.ZeroLevel ;
+        EDRFile.Channel[ZeroFrm.ChSel].ADCZero := Max(-EDRFile.Channel[ZeroFrm.ChSel].ADCMaxValue-1,ZeroFrm.ZeroLevel) ;
+        EDRFile.Channel[ZeroFrm.ChSel].ADCZero := Min(EDRFile.Channel[ZeroFrm.ChSel].ADCMaxValue,ZeroFrm.ZeroLevel) ;
+        EDRFile.Channel[ZeroFrm.ChSel].ADCZeroAt := -1 ;
+        EDRFile.SaveHeader( EDRFile.CDRfH ) ;
+        scDisplay.HorizontalCursors[ZeroFrm.ChSel] := EDRFile.Channel[ZeroFrm.ChSel].ADCZero ;
         end
      end;
 

@@ -114,7 +114,7 @@ var
 
 implementation
 
-uses Mdiform, fileio ;
+uses Mdiform, EDRFileUnit;
 
 {$R *.DFM}
 
@@ -128,13 +128,13 @@ begin
      Top := Main.Top + 60 ;
      Left := Main.Left + 20 ;
 
-    KeepFileName := CDRFH.FileName ;
+    KeepFileName := EDRFIle.CDRFH.FileName ;
 
      // Set block of EDR file to be exported
      edRange.LoLimit := 0.0 ;
      edRange.LoValue := 0.0 ;
      edRange.Units := 's' ;
-     edRange.HiLimit := (CdrFH.NumSamplesInFile div CdrFH.NumChannels -1)*cdrFH.dt ;
+     edRange.HiLimit := (EDRFIle.CdrFH.NumSamplesInFile div EDRFIle.CdrFH.NumChannels -1)*EDRFIle.cdrFH.dt ;
      edRange.HiValue := edRange.HiLimit ;
 
      // Export formats
@@ -164,7 +164,7 @@ begin
 
      { Update O/P file name channel selection options }
      meFileList.Clear ;
-     meFileList.Lines[0] := CDRFH.FileName ;
+     meFileList.Lines[0] := EDRFIle.CDRFH.FileName ;
      ckCombineRecords.Visible := False ;
      UpdateChannelSelectionList ;
 
@@ -178,10 +178,10 @@ procedure TExportFrm.SetChannel(
 // Set channel selection state
 // ---------------------------
 begin
-     if ch < CDRFH.NumChannels then begin
+     if ch < EDRFIle.Cdrfh.NumChannels then begin
         CheckBox.Visible := True ;
-        CheckBox.Checked := Channel[ch].InUse ;
-        CheckBox.Caption := Channel[ch].ADCName ;
+        CheckBox.Checked := EDRFIle.Channel[ch].InUse ;
+        CheckBox.Caption := EDRFIle.Channel[ch].ADCName ;
         end
      else CheckBox.Visible := False ;
      end ;
@@ -211,11 +211,11 @@ begin
 
      if rbAllRecords.Checked then begin
         StartAt := 0 ;
-        EndAt := (CdrFH.NumSamplesInFile div CdrFH.NumChannels) -1 ;
+        EndAt := (EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels) -1 ;
         end
      else begin
-        StartAt := Round(edRange.LoValue/CdrFH.dt) ;
-        EndAt := Min(Round(edRange.HiValue/CdrFH.dt),(CdrFH.NumSamplesInFile div CdrFH.NumChannels) -1) ;
+        StartAt := Round(edRange.LoValue/EDRFIle.Cdrfh.dt) ;
+        EndAt := Min(Round(edRange.HiValue/EDRFIle.Cdrfh.dt),(EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels) -1) ;
         end ;
 
      // Add record range to file name
@@ -234,24 +234,24 @@ begin
      ExportFile.CreateDataFile( ExportFileName, ExportType ) ;
 
      // Set file parameters
-     ExportFile.NumChannelsPerScan := CdrFH.NumChannels ;
+     ExportFile.NumChannelsPerScan := EDRFIle.Cdrfh.NumChannels ;
      ExportFile.NumScansPerRecord := EndAt - StartAt + 1 ;
-     ExportFile.MaxADCValue := Channel[0].ADCMaxValue ;
-     ExportFile.MinADCValue := -Channel[0].ADCMaxValue -1 ;
-     ExportFile.ScanInterval := CdrFH.dt ;
-     ExportFile.IdentLine := CdrFH.IdentLine ;
+     ExportFile.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+     ExportFile.MinADCValue := -EDRFile.Channel[0].ADCMaxValue -1 ;
+     ExportFile.ScanInterval := EDRFIle.Cdrfh.dt ;
+     ExportFile.IdentLine := EDRFIle.Cdrfh.IdentLine ;
      ExportFile.RecordNum := 1 ;
      ExportFile.ABFAcquisitionMode := ftGapFree ;
 
      chOut := 0 ;
-     for ch := 0 to CdrFH.NumChannels-1 do if UseChannel(ch)then begin
+     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do if UseChannel(ch)then begin
          ExportFile.ChannelOffset[chOut] := chOut ;
-         ExportFile.ChannelADCVoltageRange[chOut] := CdrFH.ADCVoltageRange ;
-         ExportFile.ChannelName[chOut] := Channel[ch].ADCName ;
-         ExportFile.ChannelUnits[chOut] := Channel[ch].ADCUnits ;
-         ExportFile.ChannelScale[chOut] := Channel[ch].ADCSCale ;
-         ExportFile.ChannelCalibrationFactor[chOut] := Channel[ch].ADCCalibrationFactor ;
-         ExportFile.ChannelGain[chOut] := Channel[ch].ADCAmplifierGain ;
+         ExportFile.ChannelADCVoltageRange[chOut] := EDRFIle.Cdrfh.ADCVoltageRange ;
+         ExportFile.ChannelName[chOut] := EDRFile.Channel[ch].ADCName ;
+         ExportFile.ChannelUnits[chOut] := EDRFile.Channel[ch].ADCUnits ;
+         ExportFile.ChannelScale[chOut] := EDRFile.Channel[ch].ADCSCale ;
+         ExportFile.ChannelCalibrationFactor[chOut] := EDRFile.Channel[ch].ADCCalibrationFactor ;
+         ExportFile.ChannelGain[chOut] := EDRFile.Channel[ch].ADCAmplifierGain ;
          Inc(chOut) ;
          end ;
      ExportFile.NumChannelsPerScan := chOut ;
@@ -265,15 +265,15 @@ begin
 
          // Read from buffer
          NumScansToRead := Min( NumScansToCopy,NumScansPerBuf ) ;
-         NumScansRead := ReadCDRBuffer( CDRFH, InScan, InBuf, NumScansToRead ) ;
+         NumScansRead := EDRFile.ReadBuffer( EDRFile.Cdrfh, InScan, InBuf, NumScansToRead ) ;
          if NumScansRead <= 0 then Done := True ;
 
          // Copy required channels
          j := 0 ;
          for i := 0 to NumScansRead-1 do begin
-             for ch := 0 to CdrFH.NumChannels-1 do if UseChannel(ch) then begin
-                 OutBuf[j] := InBuf[i*CdrFH.NumChannels+Channel[ch].ChannelOffset]
-                              - Round(Channel[ch].ADCZero) ;
+             for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do if UseChannel(ch) then begin
+                 OutBuf[j] := InBuf[i*EDRFIle.Cdrfh.NumChannels+EDRFile.Channel[ch].ChannelOffset]
+                              - Round(EDRFile.Channel[ch].ADCZero) ;
                  Inc(j) ;
                  end ;
              end ;
@@ -301,7 +301,7 @@ begin
      Main.StatusBar.SimpleText := format(
      ' EXPORT: %d time points exported to %s ',
      [EndAt-StartAt+1,ExportFileName]) ;
-     WriteToLogFile( Main.StatusBar.SimpleText ) ;
+     EDRFile.WriteToLogFile( Main.StatusBar.SimpleText ) ;
 
      end;
 
@@ -327,11 +327,11 @@ begin
 
      if rbAllRecords.Checked then begin
         StartAt := 0 ;
-        EndAt := (CdrFH.NumSamplesInFile div CdrFH.NumChannels) -1 ;
+        EndAt := (EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels) -1 ;
         end
      else begin
-        StartAt := Round(edRange.LoValue/CdrFH.dt) ;
-        EndAt := Min(Round(edRange.HiValue/CdrFH.dt),(CdrFH.NumSamplesInFile div CdrFH.NumChannels) -1) ;
+        StartAt := Round(edRange.LoValue/EDRFIle.Cdrfh.dt) ;
+        EndAt := Min(Round(edRange.HiValue/EDRFIle.Cdrfh.dt),(EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels) -1) ;
         end ;
 
      // If destination file already exists, allow user to abort
@@ -340,33 +340,33 @@ begin
            mtConfirmation, [mbYes, mbNo], 0) <> mrYes then Exit ;
          end ;
 
-     for ch := 0 to CdrFH.NumChannels-1 do if UseChannel(ch) then begin
+     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do if UseChannel(ch) then begin
 
          // Create export file name
          ExportFileName := CreateExportFileName(FileName) ;
          ExportFileName := ANSIReplaceText( ExportFileName,
                                             '.ibw',
-                                            format( '[%s].ibw',[Channel[ch].ADCName])) ;
+                                            format( '[%s].ibw',[EDRFile.Channel[ch].ADCName])) ;
          ExportFile.CreateDataFile( FileName, ftIBW ) ;
 
          // Set file parameters
          ExportFile.NumChannelsPerScan := 1 ;
          ExportFile.NumScansPerRecord := EndAt - StartAt + 1 ;
-         ExportFile.MaxADCValue := Channel[0].ADCMaxValue ;
-         ExportFile.MinADCValue := -Channel[0].ADCMaxValue -1 ;
-         ExportFile.ScanInterval := CdrFH.dt ;
-         ExportFile.IdentLine := CdrFH.IdentLine ;
+         ExportFile.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+         ExportFile.MinADCValue := -EDRFile.Channel[0].ADCMaxValue -1 ;
+         ExportFile.ScanInterval := EDRFIle.Cdrfh.dt ;
+         ExportFile.IdentLine := EDRFIle.Cdrfh.IdentLine ;
          ExportFile.RecordNum := 1 ;
          ExportFile.ABFAcquisitionMode := ftGapFree ;
          ExportFile.NumChannelsPerScan := 1 ;
 
          ExportFile.ChannelOffset[0] := 0 ;
-         ExportFile.ChannelADCVoltageRange[0] := CdrFH.ADCVoltageRange ;
-         ExportFile.ChannelName[0] := Channel[ch].ADCName ;
-         ExportFile.ChannelUnits[0] := Channel[ch].ADCUnits ;
-         ExportFile.ChannelScale[0] := Channel[ch].ADCSCale ;
-         ExportFile.ChannelCalibrationFactor[0] := Channel[ch].ADCCalibrationFactor ;
-         ExportFile.ChannelGain[0] := Channel[ch].ADCAmplifierGain ;
+         ExportFile.ChannelADCVoltageRange[0] := EDRFIle.Cdrfh.ADCVoltageRange ;
+         ExportFile.ChannelName[0] := EDRFile.Channel[ch].ADCName ;
+         ExportFile.ChannelUnits[0] := EDRFile.Channel[ch].ADCUnits ;
+         ExportFile.ChannelScale[0] := EDRFile.Channel[ch].ADCSCale ;
+         ExportFile.ChannelCalibrationFactor[0] := EDRFile.Channel[ch].ADCCalibrationFactor ;
+         ExportFile.ChannelGain[0] := EDRFile.Channel[ch].ADCAmplifierGain ;
 
          { Copy records }
          InScan := StartAt ;
@@ -377,14 +377,14 @@ begin
 
             // Read from buffer
             NumScansToRead := Min(NumScansToCopy,NumScansPerBuf) ;
-            NumScansRead := ReadCDRBuffer( CDRFH, InScan, InBuf, NumScansToRead ) ;
+            NumScansRead := EDRFile.ReadBuffer( EDRFile.Cdrfh, InScan, InBuf, NumScansToRead ) ;
             if NumScansRead <= 0 then Done := True ;
 
             // Copy required channel
-            j := Channel[ch].ChannelOffset ;
+            j := EDRFile.Channel[ch].ChannelOffset ;
             for i := 0 to NumScansRead-1 do begin
                 OutBuf[i] := InBuf[j] ;
-                j := j + CDRFH.NumChannels ;
+                j := j + EDRFIle.Cdrfh.NumChannels ;
                 end ;
 
             // Write to export file
@@ -409,7 +409,7 @@ begin
          Main.StatusBar.SimpleText := format(
          ' EXPORT: %d time points from %s to %s ',
          [EndAt-StartAt+1,FileName,ExportFileName]) ;
-         WriteToLogFile( Main.StatusBar.SimpleText ) ;
+         EDRFile.WriteToLogFile( Main.StatusBar.SimpleText ) ;
 
          end ;
 
@@ -438,11 +438,11 @@ begin
 
      if rbAllRecords.Checked then begin
         StartAt := 0 ;
-        EndAt := (CdrFH.NumSamplesInFile div CdrFH.NumChannels) -1 ;
+        EndAt := (EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels) -1 ;
         end
      else begin
-        StartAt := Round(edRange.LoValue/CdrFH.dt) ;
-        EndAt := Min(Round(edRange.HiValue/CdrFH.dt),(CdrFH.NumSamplesInFile div CdrFH.NumChannels) -1) ;
+        StartAt := Round(edRange.LoValue/EDRFIle.Cdrfh.dt) ;
+        EndAt := Min(Round(edRange.HiValue/EDRFIle.Cdrfh.dt),(EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels) -1) ;
         end ;
 
      // If destination file already exists, allow user to abort
@@ -456,8 +456,8 @@ begin
 
      // Create buffers
      NumScansToExport := EndAt - StartAt + 1 ;
-     GetMem( InBuf, NumScansPerBuf*CDRFH.NumChannels*2 ) ;
-     GetMem( YBuf, NumScansToExport*CDRFH.NumChannels*8 ) ;
+     GetMem( InBuf, NumScansPerBuf*EDRFIle.Cdrfh.NumChannels*2 ) ;
+     GetMem( YBuf, NumScansToExport*EDRFIle.Cdrfh.NumChannels*8 ) ;
      GetMem( TBuf, NumScansToExport*8 ) ;
 
      // Open MAT file
@@ -469,7 +469,7 @@ begin
 
      // Write time vector
      for i := 0 to NumScansToExport-1 do begin
-         TBuf^[i] := i*CDRFH.dt ;
+         TBuf^[i] := i*EDRFIle.Cdrfh.dt ;
          end ;
 
      // Extract channels to copy to to YBuf
@@ -477,13 +477,13 @@ begin
      NumChannelsExported := 0 ;
      NumScansRead := 0 ;
      while NumScansToRead > 0 do begin
-           NumScans := ReadCDRBuffer( CDRFH, StartAt, InBuf^,Min(NumScansToRead,NumScansPerBuf) ) ;
+           NumScans := EDRFile.ReadBuffer( EDRFile.Cdrfh, StartAt, InBuf^,Min(NumScansToRead,NumScansPerBuf) ) ;
            NumChannelsExported := 0 ;
-           for ch := 0 to CDRFH.NumChannels-1 do if UseChannel(ch) then begin
+           for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do if UseChannel(ch) then begin
                j := NumChannelsExported*NumScansToExport + NumScansRead ;
                for i := 0 to NumScans-1 do begin
-                   YBuf^[j] := (InBuf^[(i*CDRFH.NumChannels)+Channel[ch].ChannelOffset]
-                                            - Channel[ch].ADCZero)*Channel[ch].ADCSCale ;
+                   YBuf^[j] := (InBuf^[(i*EDRFIle.Cdrfh.NumChannels)+EDRFile.Channel[ch].ChannelOffset]
+                                            - EDRFile.Channel[ch].ADCZero)*EDRFile.Channel[ch].ADCSCale ;
                    Inc(j) ;
                    end ;
                Inc(NumChannelsExported) ;
@@ -503,8 +503,8 @@ begin
      // Final Report
      Main.StatusBar.SimpleText := format(
      ' EXPORT: %.5g - %.5g time points exported from %s to %s ',
-     [StartAt*CDRFH.dt,EndAt*CDRFH.dt,FileName,ExportFileName]) ;
-     WriteToLogFile( Main.StatusBar.SimpleText ) ;
+     [StartAt*EDRFIle.Cdrfh.dt,EndAt*EDRFIle.Cdrfh.dt,FileName,ExportFileName]) ;
+     EDRFile.WriteToLogFile( Main.StatusBar.SimpleText ) ;
 
      Finally
         // Free allocated buffers
@@ -530,9 +530,9 @@ begin
                             OpenDialog.DefaultExt + '|' ;
 
      OpenDialog.Title := 'Select Files to Export ' ;
-     if Main.DataDirectory <> '' then begin
-        SetCurrentDir(Main.DataDirectory);
-        OpenDialog.InitialDir := Main.DataDirectory ;
+     if EDRFile.DataDirectory <> '' then begin
+        SetCurrentDir(EDRFile.DataDirectory);
+        OpenDialog.InitialDir := EDRFile.DataDirectory ;
         end;
 
      if OpenDialog.Execute then begin
@@ -558,11 +558,11 @@ begin
 
      if rbAllRecords.Checked then begin
         StartAt := 0 ;
-        EndAt := (CdrFH.NumSamplesInFile div CdrFH.NumChannels) -1 ;
+        EndAt := (EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels) -1 ;
         end
      else begin
-        StartAt := Round(edRange.LoValue/CdrFH.dt) ;
-        EndAt := Min(Round(edRange.HiValue/CdrFH.dt),(CdrFH.NumSamplesInFile div CdrFH.NumChannels) -1) ;
+        StartAt := Round(edRange.LoValue/EDRFIle.Cdrfh.dt) ;
+        EndAt := Min(Round(edRange.HiValue/EDRFIle.Cdrfh.dt),(EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels) -1) ;
         s := s + format( '%.6g-%.6gs',[edRange.LoValue,edRange.HiValue]) ;
         end ;
 
@@ -572,13 +572,13 @@ begin
      // Add record range
      FileName := ANSIReplaceText( FileName,
                                   '.tmp',
-                                 format( '%.6g-%.6gs',[StartAt*CDRFH.dt,EndAt*CDRFH.dt]) ) ;
+                                 format( '%.6g-%.6gs',[StartAt*EDRFIle.Cdrfh.dt,EndAt*EDRFIle.Cdrfh.dt]) ) ;
 
      // Add channels for ASCII text export
      if TADCDataFileType(cbExportFormat.Items.objects[cbExportFormat.ItemIndex])=ftASC then begin
         s := '[' ;
-        for ch := 0 to CDRFH.NumChannels-1 do if UseChannel(ch) then begin
-            s := s + Channel[ch].ADCName + ',' ;
+        for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do if UseChannel(ch) then begin
+            s := s + EDRFile.Channel[ch].ADCName + ',' ;
             end;
         s := LeftStr(s,Length(s)-1)+'].tmp' ;
         FileName := ANSIReplaceText( FileName,'.tmp',s);
@@ -604,13 +604,13 @@ begin
     ExportType := TADCDataFileType(cbExportFormat.Items.objects[cbExportFormat.ItemIndex]);
 
     // Close currently open data file
-    FileClose(CdrFH.FileHandle) ;
-    CdrFH.FileHandle := -1 ;
+    FileClose(EDRFIle.Cdrfh.FileHandle) ;
+    EDRFIle.Cdrfh.FileHandle := -1 ;
 
     for i := 0 to meFileList.Lines.Count-1 do begin
 
         FileName := meFileList.Lines[i] ;
-        Main.LoadDataFiles(FileName) ;
+        EDRFile.LoadDataFiles(FileName) ;
 
         case ExportType of
              ftIBW : ExportToIGORFile(FileName) ;
@@ -618,12 +618,12 @@ begin
              else ExportToFile(FileName) ;
              end ;
 
-        FileClose(CdrFH.FileHandle) ;
-        CdrFH.FileHandle := -1 ;
+        FileClose(EDRFIle.Cdrfh.FileHandle) ;
+        EDRFIle.Cdrfh.FileHandle := -1 ;
 
         end;
 
-    Main.LoadDataFiles(KeepFileName) ;
+    EDRFile.LoadDataFiles(KeepFileName) ;
 
     end ;
 
@@ -700,8 +700,8 @@ procedure TExportFrm.UpdateChannelSelectionList ;
 // --------------------------------------
 begin
 
-     Main.CloseDataFile ;
-     Main.LoadDataFiles( meFileList.Lines[0] ) ;
+     EDRFile.CloseDataFile ;
+     EDRFile.LoadDataFiles( meFileList.Lines[0] ) ;
 
      SetChannel( ckCh0, 0 ) ;
      SetChannel( ckCh1, 1 ) ;
@@ -736,8 +736,8 @@ begin
      SetChannel( ckCh30, 30 ) ;
      SetChannel( ckCh31, 31 ) ;
 
-     Main.CloseDataFile ;
-     Main.LoadDataFiles(KeepFileName) ;
+     EDRFile.CloseDataFile ;
+     EDRFile.LoadDataFiles(KeepFileName) ;
 
      end ;
 

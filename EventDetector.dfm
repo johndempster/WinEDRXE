@@ -31,7 +31,7 @@ object EventDetFrm: TEventDetFrm
     Top = 8
     Width = 869
     Height = 838
-    ActivePage = DetectEventsPage
+    ActivePage = HistPage
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 0
     OnChange = PageChange
@@ -538,8 +538,6 @@ object EventDetFrm: TEventDetFrm
               Left = 0
               Top = 0
               Caption = 'Threshold'
-              ExplicitWidth = 0
-              ExplicitHeight = 0
               object GroupBox7: TGroupBox
                 Left = 4
                 Top = 4
@@ -605,8 +603,6 @@ object EventDetFrm: TEventDetFrm
               Left = 0
               Top = 0
               Caption = 'RateOfRise'
-              ExplicitWidth = 0
-              ExplicitHeight = 0
               object GroupBox11: TGroupBox
                 Left = 4
                 Top = 0
@@ -769,10 +765,6 @@ object EventDetFrm: TEventDetFrm
     object EditEventsPage: TTabSheet
       Caption = 'Review/Edit Events'
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       DesignSize = (
         861
         808)
@@ -1676,10 +1668,6 @@ object EventDetFrm: TEventDetFrm
     object XYPlotPage: TTabSheet
       Caption = 'X-Y Plot'
       ImageIndex = 2
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       DesignSize = (
         861
         808)
@@ -1989,16 +1977,12 @@ object EventDetFrm: TEventDetFrm
     object HistPage: TTabSheet
       Caption = 'Histogram'
       ImageIndex = 3
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       DesignSize = (
         861
         808)
       object plHist: TXYPlotDisplay
-        Left = 224
-        Top = 16
+        Left = 219
+        Top = 18
         Width = 425
         Height = 201
         MaxPointsPerLine = 4096
@@ -2389,10 +2373,6 @@ object EventDetFrm: TEventDetFrm
     object AveragePage: TTabSheet
       Caption = 'Average'
       ImageIndex = 4
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       DesignSize = (
         861
         808)

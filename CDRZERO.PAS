@@ -7,7 +7,7 @@ interface
 
 uses
   SysUtils, WinTypes, WinProcs, Messages, Classes, Graphics, Controls,
-  Forms, Dialogs, StdCtrls, global, Shared, fileio, math, maths ;
+  Forms, Dialogs, StdCtrls, math, maths, edrfileunit ;
 
 type
   TCDRZeroFrm = class(TForm)
@@ -34,17 +34,18 @@ implementation
 
 procedure TCDRZeroFrm.bOKClick(Sender: TObject);
 begin
-     Channel[ChSel].ADCZero := ExtractInt( edLevel.text ) ;
-     Channel[ChSel].ADCZero := Max(-Channel[ChSel].ADCMaxValue-1,Channel[ChSel].ADCZero) ;
-     Channel[ChSel].ADCZero := Min(Channel[ChSel].ADCMaxValue,Channel[ChSel].ADCZero) ;
-     Channel[ChSel].ADCZeroAt := -1 ;
-     SaveCDRHeader( CdrFH ) ;
+     EDRFile.Channel[ChSel].ADCZero := ExtractInt( edLevel.text ) ;
+     EDRFile.Channel[ChSel].ADCZero := Max(-EDRFile.Channel[ChSel].ADCMaxValue-1,EDRFile.Channel[ChSel].ADCZero) ;
+     EDRFile.Channel[ChSel].ADCZero := Min(EDRFile.Channel[ChSel].ADCMaxValue,EDRFile.Channel[ChSel].ADCZero) ;
+     EDRFile.Channel[ChSel].ADCZeroAt := -1 ;
+     EDRFile.SaveHeader( EDRFile.CdrFH ) ;
      end;
+
 
 procedure TCDRZeroFrm.FormShow(Sender: TObject);
 begin
-     edChannel.text := format('Ch.%d %s',[ChSel,Channel[ChSel].ADCName]) ;
-     edLevel.text := format( '%4g',[Channel[ChSel].ADCZero] ) ;
+     edChannel.text := format('Ch.%d %s',[ChSel,EDRFile.Channel[ChSel].ADCName]) ;
+     edLevel.text := format( '%4g',[EDRFile.Channel[ChSel].ADCZero] ) ;
      end ;
 
 end.

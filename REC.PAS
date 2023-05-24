@@ -1,5 +1,5 @@
 unit Rec;
-{ ==============================================================================
+{ ==============================================================================                                                                                       di
   WinEDR - Analogue Recording module (c) J. Dempster 1998, All Rights Reserved.
     9/6/99 ...  Now uses WinRT device driver for Digidata 1200
   26/8/99 ... Real-time fluorescence ratio computation added
@@ -90,14 +90,18 @@ unit Rec;
               for Axopatch 200 and AMS-2400
   24.04.18 .. Option to start stimulus protocol when recording started added
   06.02.23 .. Continuous recording option added which overrides RecordingDuration
+  09.05.23 .. AO2..AO3 holding level tabs now visible when interface supports 4 output channels
+  22.05.23 .. Excessively long Timer.Interval period when large numbers of channels are being acquired fixed
+              More than one write buffer can now be written to file during each timer tick.
+              Fixes failure of writing to file to keep up when sampling slowly.
   ==============================================================================}
 interface
 
 uses
   SysUtils, WinTypes, WinProcs, Messages, Classes, Graphics, Controls,
-  Forms, Dialogs, StdCtrls, ExtCtrls, Global, Shared, FileIO,
+  Forms, Dialogs, StdCtrls, ExtCtrls,
   Spin, ChartDisplay, ValEdit, ScopeDisplay, SESLabIO, mmsystem, ced1902u,
-  Grids, ComCtrls, ValidatedEdit, CursorLabel, HTMLLabel, Math, strutils ;
+  Grids, ComCtrls, ValidatedEdit, CursorLabel, HTMLLabel, Math, strutils, EDRFileUnit ;
 
 const
      MinScansPerWriteBuf = 16 ;
@@ -551,24 +555,24 @@ begin
      bStopStimulus.Enabled := False ;
      StimulatorStartRequired := False ;
 
-     ckStartStimOnRecord.Checked := Settings.StartStimulusOnRecord ;
+     ckStartStimOnRecord.Checked := EDRFile.Settings.StartStimulusOnRecord ;
 
      // Update list of stimulus programs
      UpdateStimProgramList ;
 
      // Set display duration
-     edTDisplay.Value := Settings.DisplayDuration ;
+     edTDisplay.Value := EDRFile.Settings.DisplayDuration ;
 
-     edIdent.text := CdrFH.IdentLine ;
+     edIdent.text := EDRFile.CdrFH.IdentLine ;
 
      { Set trigger mode }
-     if Settings.TriggerMode = 'E' then rbExtTrigger.checked := True
+     if EDRFile.Settings.TriggerMode = 'E' then rbExtTrigger.checked := True
                                    else rbFreeRun.checked := True ;
      // Set external trigger polarity
-     Main.SESLabIO.ADCExternalTriggerActiveHigh := Settings.ExternalTriggerActiveHigh ;
+     Main.SESLabIO.ADCExternalTriggerActiveHigh := EDRFile.Settings.ExternalTriggerActiveHigh ;
      rbExtTriggerHigh.Checked := Main.SESLabIO.ADCExternalTriggerActiveHigh ;
      // Set voltage range
-     //Main.SESLabIO.ADCVoltageRangeIndex := Settings.ADCVoltageRangeIndex ;
+     //Main.SESLabIO.ADCVoltageRangeIndex := EDRFile.Settings.ADCVoltageRangeIndex ;
 
      { If a CED 1902 is in use, update its settings }
      for i := 1 to 2 do begin
@@ -578,21 +582,21 @@ begin
      // Show amplifier gains and modes
      ShowAmplifierGains ;
 
-     edRecordDuration.Value := Settings.RecordDuration ;
-     edNumTriggerSweeps.Value := Settings.NumTriggerSweeps ;
+     edRecordDuration.Value := EDRFile.Settings.RecordDuration ;
+     edNumTriggerSweeps.Value := EDRFile.Settings.NumTriggerSweeps ;
 
      // Set continuous recording flags
-     rbContinuousRecording.Checked := Settings.ContinuousRecording ;
-     rbRecordingDuration.Checked := not Settings.ContinuousRecording ;
+     rbContinuousRecording.Checked := EDRFile.Settings.ContinuousRecording ;
+     rbRecordingDuration.Checked := not EDRFile.Settings.ContinuousRecording ;
 
      TimerBusy := False ;
 
      // Initialise time scale
-     if Settings.TScale = 1000.0 then rbTDisplayUnitsMsecs.Checked := True
-     else if Settings.TScale = 1.0 then rbTDisplayUnitsSecs.Checked := True
+     if EDRFile.Settings.TScale = 1000.0 then rbTDisplayUnitsMsecs.Checked := True
+     else if EDRFile.Settings.TScale = 1.0 then rbTDisplayUnitsSecs.Checked := True
      else rbTDisplayUnitsMins.Checked := True ;
-     edTDisplay.Scale := Settings.TSCale ;
-     edTDisplay.Units := Settings.TUnits ;
+     edTDisplay.Scale := EDRFile.Settings.TSCale ;
+     edTDisplay.Units := EDRFile.Settings.TUnits ;
 
      { No recording }
      WriteBufs.Recording := False ;
@@ -614,7 +618,7 @@ begin
      RecordingStatus := '' ;
      SweepStatus := '' ;
      ReadUserEnteredGain := False ;
-     ckFixedZeroLevels.Checked := Settings.FixedZeroLevels ;
+     ckFixedZeroLevels.Checked := EDRFile.Settings.FixedZeroLevels ;
 
      Timer.Enabled := True ;
      Initialised := True ;
@@ -628,7 +632,7 @@ procedure TRecordFrm.DisplayAOHold(
 // Set AO Hold entry field
 // -----------------------
 begin
-     if AONum < Main.SESLabIO.DACNumChannels then begin
+     if AONum < Main.SESLabIO.DACMaxChannels then begin
         AOTab.TabVisible := True ;
         edAOHold.Value := Main.SESLabIO.DACHoldingVoltage[AONum] ;
         end
@@ -665,14 +669,14 @@ begin
      Main.SESLabIO.ADCStop ;
 
      { Get the A/D sample offsets for each input channel }
-     Main.SESLabIO.ADCNumChannels := Settings.NumChannels ;
-     Settings.NumChannels := Main.SESLabIO.ADCNumChannels ;
-     edNumChannels.Value := Settings.NumChannels ;
+     Main.SESLabIO.ADCNumChannels := EDRFile.Settings.NumChannels ;
+     EDRFile.Settings.NumChannels := Main.SESLabIO.ADCNumChannels ;
+     edNumChannels.Value := EDRFile.Settings.NumChannels ;
 
-     Main.SESLabIO.ADCSamplingInterval := Settings.ADCSamplingInterval ;
-     Settings.ADCSamplingInterval := Main.SESLabIO.ADCSamplingInterval ;
-     edSamplingInterval.Value := Settings.ADCSamplingInterval ;
-     edRecordDuration.Value := Settings.RecordDuration ;
+     Main.SESLabIO.ADCSamplingInterval := EDRFile.Settings.ADCSamplingInterval ;
+     EDRFile.Settings.ADCSamplingInterval := Main.SESLabIO.ADCSamplingInterval ;
+     edSamplingInterval.Value := EDRFile.Settings.ADCSamplingInterval ;
+     edRecordDuration.Value := EDRFile.Settings.RecordDuration ;
 
      UpdateAmplifierGain ;
      //edAmplifierGain.Value := RecChannel[0].ADCCalibrationFactor ;
@@ -681,20 +685,20 @@ begin
      { Initialise scope display area }
      scDisplay.MaxADCValue := Main.SESLabIO.ADCMaxValue ;
      scDisplay.MinADCValue := Main.SESLabIO.ADCMinValue ;
-     scDisplay.DisplayGrid := Settings.DisplayGrid ;
+     scDisplay.DisplayGrid := EDRFile.Settings.DisplayGrid ;
 
      scDisplay.NumPoints := 0 ;
-     scDisplay.NumChannels := Settings.NumChannels ;
+     scDisplay.NumChannels := EDRFile.Settings.NumChannels ;
 
      { Create a set of zero level cursors }
      scDisplay.ClearHorizontalCursors ;
-     for ch := 0 to Settings.NumChannels-1 do begin
+     for ch := 0 to EDRFile.Settings.NumChannels-1 do begin
         Cursors.Base[ch] := scDisplay.AddHorizontalCursor( ch, clGray, True,'z' ) ;
         scDisplay.HorizontalCursors[ch] := Main.SESLabIO.ADCChannelZero[ch] ;
         end ;
 
      { Set channel information }
-     for ch := 0 to Settings.NumChannels-1 do begin
+     for ch := 0 to EDRFile.Settings.NumChannels-1 do begin
         scDisplay.ChanOffsets[ch] := Main.SESLabIO.ADCChannelOffset[ch] ;
         scDisplay.ChanUnits[ch] := Main.SESLabIO.ADCChannelUnits[ch] ;
         scDisplay.ChanName[ch] := Main.SESLabIO.ADCChannelName[ch] ;
@@ -709,29 +713,29 @@ begin
 //     for i := 0 to High(TSmallIntArray) do DisplayBuf[i] := 0 ;
 
      { Enable/disable real-time fluorescence ratio computation }
-     if Settings.NumChannels < Settings.Fluorescence.MinChannels then begin
-        Settings.Fluorescence.InUse := False ;
+     if EDRFile.Settings.NumChannels < EDRFile.Settings.Fluorescence.MinChannels then begin
+        EDRFile.Settings.Fluorescence.InUse := False ;
         ckFluorescence.Enabled := False ;
         end
      else ckFluorescence.Enabled := True ;
-     ckFluorescence.Checked :=  Settings.Fluorescence.InUse ;
+     ckFluorescence.Checked :=  EDRFile.Settings.Fluorescence.InUse ;
 
      { Enable/disable real-time capacity computation }
-     if Settings.NumChannels < Settings.Capacity.MinChannels then begin
-        Settings.Capacity.InUse := False ;
+     if EDRFile.Settings.NumChannels < EDRFile.Settings.Capacity.MinChannels then begin
+        EDRFile.Settings.Capacity.InUse := False ;
         ckCapacity.Enabled := False ;
         end
      else ckCapacity.Enabled := True ;
-     ckCapacity.Checked :=  Settings.Capacity.InUse ;
+     ckCapacity.Checked :=  EDRFile.Settings.Capacity.InUse ;
 
      // Enable/disable event frequency plot
-     ckEventFrequency.Checked := Settings.RTEventAnalysis.InUse ;
+     ckEventFrequency.Checked := EDRFile.Settings.RTEventAnalysis.InUse ;
 
      // Enable/disable cell resistance plot
-     ckResistance.Checked := Settings.RTResistance.InUse ;
+     ckResistance.Checked := EDRFile.Settings.RTResistance.InUse ;
 
      // Number of chart markers still available
-     edNumMarkers.text := format('%d',[MaxMarkers-MarkerList.Count]);
+     edNumMarkers.text := format('%d',[MaxMarkers-EDRFile.MarkerList.Count]);
 
      end ;
 
@@ -753,7 +757,7 @@ begin
      Changed := False ;
      for ch := 0 to Main.SESLabIO.ADCNumChannels-1 do begin
 
-         OldValue := CDRFH.ADCVoltageRange ;
+         OldValue := EDRFile.CDRFH.ADCVoltageRange ;
          OldUnits := Main.SESLabIO.ADCChannelUnits[ch] ;
          OldName := Main.SESLabIO.ADCChannelName[ch] ;
 
@@ -769,7 +773,7 @@ begin
 //         RH.ADCVoltageRange[ch] := Main.SESLabIO.ADCVoltageRange /
 //                                   Main.SESLabIO.ADCChannelGain[ch] ;
 
-         if (OldValue <> CDRFH.ADCVoltageRange) or
+         if (OldValue <> EDRFile.CDRFH.ADCVoltageRange) or
             (OldUnits <> Units ) or
             (OldName <> Name) then Changed := True ;
 
@@ -934,7 +938,7 @@ begin
         StartADC ;
         nTicks := TimeGetTime ;
         DisplayLive( True ) ;
-        Settings.NewCalculation := True ;
+        EDRFile.Settings.NewCalculation := True ;
 
         // If recording and a stimulus is protocol selected, request its start
         //if bStop.Enabled then bStartStimulus.Click ;
@@ -953,7 +957,8 @@ begin
         npHalfBuf := (WriteBufs.NumSamples div 2) - 1 ;
         While ((ADC^[WriteBufs.EmptyPointer] <> EmptyFlag) or
               (ADC^[WriteBufs.EmptyPointer+1] <> -EmptyFlag)) and
-              (np < npHalfBuf) do begin
+              (np < npHalfBuf) do
+              begin
               WriteBufs.EmptyPointer := WriteBufs.EmptyPointer + Main.SESLabIO.ADCNumChannels*2 ;
               if WriteBufs.EmptyPointer >= WriteBufs.NumSamples then
                  WriteBufs.EmptyPointer := WriteBufs.EmptyPointer - WriteBufs.NumSamples ;
@@ -965,7 +970,8 @@ begin
 
         NumNewScans := 0 ;
         NewScan :=  WriteBufs.OldestScan ;
-        while NewScan <> WriteBufs.LatestScan do begin
+        while NewScan <> WriteBufs.LatestScan do
+             begin
              NewScan := NewScan + Main.SESLabIO.ADCNumChannels ;
              if NewScan >= WriteBufs.NumSamples then NewScan := NewScan - WriteBufs.NumSamples ;
              Inc(NumNewScans) ;
@@ -982,37 +988,39 @@ begin
 
         // If latest write block full .. write to file
         WriteBufs.ActiveBuf := WriteBufs.OldestScan div WriteBufs.NumSamplesPerBuf ;
+  //      outputdebugstring(pchar(format('%d %d %d %d',[NewScan,WriteBufs.OldestScan,WriteBufs.ActiveBuf,WriteBufs.WriteBuf])));
 
-        if (WriteBufs.ActiveBuf <> WriteBufs.WriteBuf) then
+        while (WriteBufs.ActiveBuf <> WriteBufs.WriteBuf) do
            begin
 
            // Write block to file (if recording)
            if WriteBufs.Recording then
               begin
-              FilePointer := (CDRFH.NumSamplesInFile*2) + CDRFH.NumBytesInHeader ;
-              FileSeek( CDRFH.FileHandle, FilePointer, 0 ) ;
-              if FileWrite( CDRFH.FileHandle,
-                            ADC^[WriteBufs.BufStart[WriteBufs.WriteBuf]],
-                            WriteBufs.NumBytesPerBuf )
-                 <> WriteBufs.NumBytesPerBuf then
-                 Main.StatusBar.SimpleText := 'Error writing to ' + CDRFH.FileName ;
-              CDRFH.NumSamplesInFile := CDRFH.NumSamplesInFile + WriteBufs.NumSamplesPerBuf ;
+              FilePointer := (EDRFIle.Cdrfh.NumSamplesInFile*2) + EDRFile.CDRFH.NumBytesInHeader ;
+
+              FileSeek( EDRFIle.Cdrfh.FileHandle, FilePointer, 0 ) ;
+              if FileWrite( EDRFIle.Cdrfh.FileHandle,ADC^[WriteBufs.BufStart[WriteBufs.WriteBuf]],WriteBufs.NumBytesPerBuf )
+                 <> WriteBufs.NumBytesPerBuf then Main.StatusBar.SimpleText := 'Error writing to ' + EDRFIle.Cdrfh.FileName ;
+
+              EDRFIle.Cdrfh.NumSamplesInFile := EDRFIle.Cdrfh.NumSamplesInFile + WriteBufs.NumSamplesPerBuf ;
               WriteBufs.TAcquired := WriteBufs.TAcquired
-                                     + CDRFH.dt*(WriteBufs.NumSamplesPerBuf div CDRFH.NumChannels) ;
+                                     + EDRFIle.Cdrfh.dt*(WriteBufs.NumSamplesPerBuf div EDRFIle.Cdrfh.NumChannels) ;
               lbRecording.Visible := not lbRecording.Visible ;
 
-              if Settings.ContinuousRecording then
+
+
+              if EDRFile.Settings.ContinuousRecording then
                  begin
                  RecordingStatus := format( 'Recording: %.1fs (%d Kb) ',
                                              [WriteBufs.TAcquired  ,
-                                              CDRFH.NumSamplesInFile div 512]) ;
+                                              EDRFIle.Cdrfh.NumSamplesInFile div 512]) ;
                  end
               else
                  begin
-                 RecordingStatus := format( 'Recording: %.1f/%.1f s (%d Kb) ',
+                 RecordingStatus := format( 'Recording: %.1f/%.1f s (%d Kb)',
                                            [WriteBufs.TAcquired,
-                                            Settings.RecordDuration,
-                                            CDRFH.NumSamplesInFile div 512]) ;
+                                            EDRFile.Settings.RecordDuration,
+                                            EDRFIle.Cdrfh.NumSamplesInFile div 512]) ;
                  end;
 
               Main.StatusBar.SimpleText := SweepStatus + RecordingStatus + StimulusStatus ;
@@ -1036,8 +1044,8 @@ begin
            end ;
 
         if WriteBufs.Recording and
-           (CDRFH.NumSamplesInFile >= WriteBufs.NumSamplesInFileRequired) and
-           (not Settings.ContinuousRecording) then
+           (EDRFIle.Cdrfh.NumSamplesInFile >= WriteBufs.NumSamplesInFileRequired) and
+           (not EDRFile.Settings.ContinuousRecording) then
            begin
            { Restart recording if more records to be done }
            Dec(WriteBufs.NumRecordsToAcquire) ;
@@ -1078,7 +1086,7 @@ begin
         end ;
 
      // Update voltage and digital outputs
-     if Settings.UpdateOutputs then
+     if EDRFile.Settings.UpdateOutputs then
         begin
         if not WriteBufs.Recording then UpdateOutputs ;
         end ;
@@ -1109,7 +1117,8 @@ begin
      // Erase display and initialise live display counters
      // --------------------------------------------------
 
-     if Initialise or (scDisplay.Numpoints >= scDisplay.Maxpoints) then begin
+     if Initialise or (scDisplay.Numpoints >= scDisplay.Maxpoints) then
+       begin
 
        // No. of multi-channel scans to be displayed
        NumScans := Max( Round(edTDisplay.Value/Main.SESLabIO.ADCSamplingInterval),1 ) ;
@@ -1117,14 +1126,14 @@ begin
        // Max. number of points in display
        scDisplay.MaxPoints := NumScans ;
 
-       scDisplay.TScale := Main.SESLabIO.ADCSamplingInterval*Settings.TScale ;
-       scDisplay.TUnits := Settings.TUnits + ' ' ;
+       scDisplay.TScale := Main.SESLabIO.ADCSamplingInterval*EDRFile.Settings.TScale ;
+       scDisplay.TUnits := EDRFile.Settings.TUnits + ' ' ;
 
        scDisplay.xMin := 0 ;
        scDisplay.xMax := scDisplay.MaxPoints-1 ;
 
        // Enable/disable display calibration grid
-       scDisplay.DisplayGrid := Settings.DisplayGrid ;
+       scDisplay.DisplayGrid := EDRFile.Settings.DisplayGrid ;
 
        OldDisplayBufSize := DisplayBufSize ;
        DisplayBufSize := scDisplay.MaxPoints*scDisplay.NumChannels*2 ;
@@ -1134,7 +1143,7 @@ begin
           end;
        scDisplay.SetDataBuf( DisplayBuf ) ;
 
-       scDisplay.XOffset := CDRFH.NumSamplesInFile div Main.SESLabIO.ADCNumChannels ;
+       scDisplay.XOffset := EDRFIle.Cdrfh.NumSamplesInFile div Main.SESLabIO.ADCNumChannels ;
        scDisplay.NumPoints := 0 ;
 
        scDisplay.Invalidate ;
@@ -1170,6 +1179,8 @@ begin
 
      // Display latest points added to display buffer
      scDisplay.DisplayNewPoints( NewPoints );
+
+//     outputdebugstring(pchar(format('NewPoints=%d',[NewPoints])));
 
      // Update cursor readout
      if (WriteBufs.LatestScan > 0) and
@@ -1210,19 +1221,23 @@ begin
 
      { Start A/D converter sampling }
      Main.SESLabIO.ADCStop ;
-     Main.SESLabIO.ADCNumChannels := Settings.NumChannels ;
-     Main.SESLabIO.ADCSamplingInterval := Settings.ADCSamplingInterval ;
-     //Main.SESLabIO.ADCVoltageRangeIndex := Settings.ADCVoltageRangeIndex ;
+     Main.SESLabIO.ADCNumChannels := EDRFile.Settings.NumChannels ;
+     Main.SESLabIO.ADCSamplingInterval := EDRFile.Settings.ADCSamplingInterval ;
+     //Main.SESLabIO.ADCVoltageRangeIndex := EDRFile.Settings.ADCVoltageRangeIndex ;
 
      // Ensure timer interval is long enough to capture some samples
-     Timer.Interval := Max(Round(Main.SESLabIO.ADCNumChannels*Main.SESLabIO.ADCSamplingInterval*4000.0),55) ;
+     Timer.Interval := Max(Round(Main.SESLabIO.ADCSamplingInterval*4000.0),55) ;
+     outputdebugstring(pchar(format('Timer=%d',[Timer.Interval])));
 
      // Set number of scans in write block
      MaxScans := Main.SESLabIO.ADCBufferLimit div Main.SESLabIO.ADCNumChannels ;
 
+     // Configure write buffers
+
      WriteBufs.NumBufs := 1 ;
      Done := False ;
-     while not Done do begin
+     while not Done do
+          begin
           Inc(WriteBufs.NumBufs) ;
           WriteBufs.NumScansPerBuf := MaxScans div WriteBufs.NumBufs ;
           WriteBufs.NumScansPerBuf := 4*(WriteBufs.NumScansPerBuf div 4) ;
@@ -1233,7 +1248,8 @@ begin
      WriteBufs.NumBytesPerBuf := WriteBufs.NumSamplesPerBuf*2 ;
 
      // Set up write Buf pointers
-     for i := 0 to WriteBufs.NumBufs-1 do begin
+     for i := 0 to WriteBufs.NumBufs-1 do
+         begin
          WriteBufs.BufStart[i] := i*WriteBufs.NumSamplesPerBuf ;
          WriteBufs.BufEnd[i] := WriteBufs.BufStart[i] + WriteBufs.NumSamplesPerBuf - 1 ;
          end ;
@@ -1248,7 +1264,7 @@ begin
      WriteBufs.LatestScan := 0 ;
      WriteBufs.OldestScan := 0 ;
 
-     scDisplay.CursorsEnabled := not Settings.FixedZeroLevels ;
+     scDisplay.CursorsEnabled := not EDRFile.Settings.FixedZeroLevels ;
 
      { If in external trigger mode when recording ...
        Request A/D converter to wait for a trigger pulse }
@@ -1259,27 +1275,27 @@ begin
      else ExtTrigger := False ;
 
      { Enable on-line fluorescence ratio computation }
-     if Main.SESLabIO.ADCNumChannels < Settings.Fluorescence.MinChannels then
-        Settings.Fluorescence.InUse := False ;
+     if Main.SESLabIO.ADCNumChannels < EDRFile.Settings.Fluorescence.MinChannels then
+        EDRFile.Settings.Fluorescence.InUse := False ;
 
-     if Settings.Fluorescence.InUse then begin
-        Main.SESLabIO.ADCChannelZero[Settings.Fluorescence.RatioChan] := 0 ;
-        Main.SESLabIO.ADCChannelYMin[Settings.Fluorescence.RatioChan] :=
-           Max( Main.SESLabIO.ADCChannelYMin[Settings.Fluorescence.RatioChan],
+     if EDRFile.Settings.Fluorescence.InUse then begin
+        Main.SESLabIO.ADCChannelZero[EDRFile.Settings.Fluorescence.RatioChan] := 0 ;
+        Main.SESLabIO.ADCChannelYMin[EDRFile.Settings.Fluorescence.RatioChan] :=
+           Max( Main.SESLabIO.ADCChannelYMin[EDRFile.Settings.Fluorescence.RatioChan],
                 (-Main.SESLabIO.ADCmaxValue -1) div 10 ) ;
         end ;
 
-     if Main.SESLabIO.ADCNumChannels < Settings.Capacity.MinChannels then
-        Settings.Capacity.InUse := False ;
+     if Main.SESLabIO.ADCNumChannels < EDRFile.Settings.Capacity.MinChannels then
+        EDRFile.Settings.Capacity.InUse := False ;
 
      scDisplay.Invalidate ;
 
      { Start A/D converter sampling }
      Main.SESLabIO.ADCStop ;
-     Main.SESLabIO.ADCNumChannels := Settings.NumChannels ;
+     Main.SESLabIO.ADCNumChannels := EDRFile.Settings.NumChannels ;
      Main.SESLabIO.ADCNumSamples := WriteBufs.NumScans ;
-     Main.SESLabIO.ADCSamplingInterval := Settings.ADCSamplingInterval ;
-     //Main.SESLabIO.ADCVoltageRangeIndex := Settings.ADCVoltageRangeIndex ;
+     Main.SESLabIO.ADCSamplingInterval := EDRFile.Settings.ADCSamplingInterval ;
+     //Main.SESLabIO.ADCVoltageRangeIndex := EDRFile.Settings.ADCVoltageRangeIndex ;
 
      // Set A/D sweep triggering
      if not ExtTrigger then Main.SESLabIO.ADCTriggerMode := tmFreeRun
@@ -1293,7 +1309,7 @@ begin
      nProcTime := 0 ;
      TLastReadout := TimeGetTime ;
 
-//     if Settings.Capacity.InUse then StartSineWave ;
+//     if EDRFile.Settings.Capacity.InUse then StartSineWave ;
 
      end ;
 
@@ -1342,7 +1358,7 @@ begin
      if bStop.Enabled then begin
         Inc(StimulusNumber) ;
         edMarker.Text := format('Stim%d',[StimulusNumber]) ;
-        WriteToLogFile( format('Stim:%d %s started',[StimulusNumber,ActiveStimFileName])) ;
+        EDRFile.WriteToLogFile( format('Stim:%d %s started',[StimulusNumber,ActiveStimFileName])) ;
         bMark.Click ;
         end ;
 
@@ -1351,7 +1367,7 @@ begin
 
      Main.StatusBar.SimpleText := SweepStatus + RecordingStatus + StimulusStatus ;
 
-     //Settings.NewCalculation := True ;
+     //EDRFile.Settings.NewCalculation := True ;
 
      end ;
 
@@ -1397,7 +1413,7 @@ begin
      AmpGainGrp.Enabled := bUpdateGain.Enabled ;
 
      { Save data to file header }
-     if CDRFH.FileHandle >= 0 then SaveCDRHeader( CdrFH ) ;
+     EDRFile.SaveHeader( EDRFile.CdrFH ) ;
 
      { Update signal display window (if it is open) }
      Main.UpdateViewSig ;
@@ -1412,9 +1428,9 @@ begin
      StopStimulator ;
 
      { Indicate when recording stopped on log file }
-     WriteToLogFile( SweepStatus + format(
-                    ' Stopped at %.4g s',[(CdrFH.NumSamplesInFile*CdrFH.dt)/
-                                           CdrFH.NumChannels])  ) ;
+     EDRFile.WriteToLogFile( SweepStatus + format(
+                    ' Stopped at %.4g s',[(EDRFIle.Cdrfh.NumSamplesInFile*EDRFIle.Cdrfh.dt)/
+                                           EDRFIle.Cdrfh.NumChannels])  ) ;
 
      RecordingStatus := '' ;
      SweepStatus := '' ;
@@ -1457,32 +1473,32 @@ var
    yDiff : Integer ;
 begin
 
-     if Settings.Fluorescence.InUse then CalculateRatio ;
+     if EDRFile.Settings.Fluorescence.InUse then CalculateRatio ;
 
-     if Settings.Capacity.InUse then CalculateCapacity ;
+     if EDRFile.Settings.Capacity.InUse then CalculateCapacity ;
 
      // Event frequency display
-     if Settings.RTEventAnalysis.InUse then begin
+     if EDRFile.Settings.RTEventAnalysis.InUse then begin
 
         // Initialise event detector
-        if Settings.NewCalculation then begin
+        if EDRFile.Settings.NewCalculation then begin
 
            // Clear scans acquired counter
            EventAnalysis.ScanCounter := 0 ;
 
            // Channel offset
-           EventAnalysis.ChannelOffset := Main.SESLabIO.ADCChannelOffset[Settings.RTEventAnalysis.Channel] ;
+           EventAnalysis.ChannelOffset := Main.SESLabIO.ADCChannelOffset[EDRFile.Settings.RTEventAnalysis.Channel] ;
 
            // Clear dead time counter
            EventAnalysis.DeadScanCounter := 0 ;
 
            // Clear event counter
            EventAnalysis.NumEvents := 0 ;
-           EventAnalysis.ScansPerCountingInterval := Round(Settings.RTEventAnalysis.CountingInterval
+           EventAnalysis.ScansPerCountingInterval := Round(EDRFile.Settings.RTEventAnalysis.CountingInterval
                                                       /Main.SESLabIO.ADCSamplingInterval);
            // Set detection threshold and polarity
-           EventAnalysis.Threshold := Round( Settings.RTEventAnalysis.DetectionThreshold /
-                                             Main.SESLabIO.ADCChannelUnitsPerBit[Settings.RTEventAnalysis.Channel] ) ;
+           EventAnalysis.Threshold := Round( EDRFile.Settings.RTEventAnalysis.DetectionThreshold /
+                                             Main.SESLabIO.ADCChannelUnitsPerBit[EDRFile.Settings.RTEventAnalysis.Channel] ) ;
            if EventAnalysis.Threshold < 0 then begin
               EventAnalysis.Threshold := Abs(EventAnalysis.Threshold) ;
               EventAnalysis.Polarity := -1 ;
@@ -1492,7 +1508,7 @@ begin
            // Set running mean baseline and smoothing factor
            EventAnalysis.Baseline := ADC^[WriteBufs.OldestScan+EventAnalysis.ChannelOffset] ;
            EventAnalysis.Smooth := Main.SESLabIO.ADCSamplingInterval /
-                                   Max(Settings.RTEventAnalysis.RunningMeanTime,
+                                   Max(EDRFile.Settings.RTEventAnalysis.RunningMeanTime,
                                        Main.SESLabIO.ADCSamplingInterval);
 
            end ;
@@ -1519,7 +1535,7 @@ begin
                  EventAnalysis.EventAtScan := EventAnalysis.ScanCounter ;
 
                  EventAnalysis.NumEvents := EventAnalysis.NumEvents + 1 ;
-                 EventAnalysis.DeadScanCounter := Round( Settings.RTEventAnalysis.DeadTime/
+                 EventAnalysis.DeadScanCounter := Round( EDRFile.Settings.RTEventAnalysis.DeadTime/
                                                          Main.SESLabIO.ADCSamplingInterval ) ;
                  end ;
 
@@ -1532,7 +1548,7 @@ begin
 
               Inc(EventAnalysis.ScanCounter) ;
               if EventAnalysis.ScanCounter >= EventAnalysis.ScansPerCountingInterval then begin
-                 RecPlotFrm.PlotFrequency( EventAnalysis.NumEvents / Settings.RTEventAnalysis.CountingInterval ) ;
+                 RecPlotFrm.PlotFrequency( EventAnalysis.NumEvents / EDRFile.Settings.RTEventAnalysis.CountingInterval ) ;
                  EventAnalysis.NumEvents := 0 ;
                  EventAnalysis.ScanCounter := 0 ;
                  end ;
@@ -1547,9 +1563,9 @@ begin
 
         end ;
 
-     if Settings.RTResistance.InUse then CalculateResistance ;
+     if EDRFile.Settings.RTResistance.InUse then CalculateResistance ;
 
-     Settings.NewCalculation := False ;
+     EDRFile.Settings.NewCalculation := False ;
      end ;
 
 
@@ -1562,33 +1578,33 @@ var
    Ratio,Numerator,Denominator,Threshold : single ;
 begin
 
-   if Settings.NewCalculation then
+   if EDRFile.Settings.NewCalculation then
       begin
 
       { Ratio O/P channel settings }
-      if Settings.Fluorescence.RatioChan >= 0 then
+      if EDRFile.Settings.Fluorescence.RatioChan >= 0 then
          begin
-         Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Fluorescence.RatioChan] :=
-                             Settings.Fluorescence.RatioDisplayMax/Main.SESLabIO.ADCMaxValue ;
-         Fluor.RatioScale := 1.0 / Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Fluorescence.RatioChan] ;
-         Fluor.RatioOffset :=  Main.SESLabIO.ADCChannelOffset[Settings.Fluorescence.RatioChan] ;
-         Main.SESLabIO.ADCChannelName[Settings.Fluorescence.RatioChan] :=
-            Main.SESLabIO.ADCChannelName[Settings.Fluorescence.NumerChan] + '/' +
-            Main.SESLabIO.ADCChannelName[Settings.Fluorescence.DenomChan] ;
-         Main.SESLabIO.ADCChannelUnits[Settings.Fluorescence.RatioChan] := ' ';
+         Main.SESLabIO.ADCChannelUnitsPerBit[EDRFile.Settings.Fluorescence.RatioChan] :=
+                             EDRFile.Settings.Fluorescence.RatioDisplayMax/Main.SESLabIO.ADCMaxValue ;
+         Fluor.RatioScale := 1.0 / Main.SESLabIO.ADCChannelUnitsPerBit[EDRFile.Settings.Fluorescence.RatioChan] ;
+         Fluor.RatioOffset :=  Main.SESLabIO.ADCChannelOffset[EDRFile.Settings.Fluorescence.RatioChan] ;
+         Main.SESLabIO.ADCChannelName[EDRFile.Settings.Fluorescence.RatioChan] :=
+            Main.SESLabIO.ADCChannelName[EDRFile.Settings.Fluorescence.NumerChan] + '/' +
+            Main.SESLabIO.ADCChannelName[EDRFile.Settings.Fluorescence.DenomChan] ;
+         Main.SESLabIO.ADCChannelUnits[EDRFile.Settings.Fluorescence.RatioChan] := ' ';
          end
       else Fluor.RatioOffset := -1 ;
 
       { Concentration O/P channel settings }
-      if Settings.Fluorescence.ConcChan >= 0 then
+      if EDRFile.Settings.Fluorescence.ConcChan >= 0 then
          begin
-         Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Fluorescence.ConcChan] :=
-                             Settings.Fluorescence.ConcDisplayMax/Main.SESLabIO.ADCMaxValue ;
-         Fluor.ConcScale := Settings.Fluorescence.Keff /
-                            Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Fluorescence.ConcChan] ;
-         Fluor.ConcOffset := Main.SESLabIO.ADCChannelOffset[Settings.Fluorescence.ConcChan] ;
-         Main.SESLabIO.ADCChannelName[Settings.Fluorescence.ConcChan] := Settings.Fluorescence.IonName ;
-         Main.SESLabIO.ADCChannelUnits[Settings.Fluorescence.ConcChan] := Settings.Fluorescence.IonUnits ;
+         Main.SESLabIO.ADCChannelUnitsPerBit[EDRFile.Settings.Fluorescence.ConcChan] :=
+                             EDRFile.Settings.Fluorescence.ConcDisplayMax/Main.SESLabIO.ADCMaxValue ;
+         Fluor.ConcScale := EDRFile.Settings.Fluorescence.Keff /
+                            Main.SESLabIO.ADCChannelUnitsPerBit[EDRFile.Settings.Fluorescence.ConcChan] ;
+         Fluor.ConcOffset := Main.SESLabIO.ADCChannelOffset[EDRFile.Settings.Fluorescence.ConcChan] ;
+         Main.SESLabIO.ADCChannelName[EDRFile.Settings.Fluorescence.ConcChan] := EDRFile.Settings.Fluorescence.IonName ;
+         Main.SESLabIO.ADCChannelUnits[EDRFile.Settings.Fluorescence.ConcChan] := EDRFile.Settings.Fluorescence.IonUnits ;
          end
       else Fluor.ConcOffset := -1 ;
 
@@ -1606,26 +1622,26 @@ begin
           end ;
       scDisplay.Invalidate ;
 
-      if CDRFH.FileHandle >= 0 then SaveCDRHeader ( CDRFH ) ;
-      Settings.NewCalculation := False ;
+      EDRFile.SaveHeader ( EDRFile.CDRFH ) ;
+      EDRFile.Settings.NewCalculation := False ;
       end ;
 
    { Acceptance threshold for ratio calculation }
-   Threshold := Settings.Fluorescence.FThreshold /
-                Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Fluorescence.NumerChan] ;
+   Threshold := EDRFile.Settings.Fluorescence.FThreshold /
+                Main.SESLabIO.ADCChannelUnitsPerBit[EDRFile.Settings.Fluorescence.NumerChan] ;
 
    // Channel offsets and zero levels
-   Fluor.NumerZero := Main.SESLabIO.ADCChannelZero[Settings.Fluorescence.NumerChan] ;
-   Fluor.NumerOffset := Main.SESLabIO.ADCChannelOffset[Settings.Fluorescence.NumerChan] ;
-   Fluor.NumerScale := Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Fluorescence.NumerChan] ;
-   Fluor.DenomZero := Main.SESLabIO.ADCChannelZero[Settings.Fluorescence.DenomChan] ;
-   Fluor.DenomOffset := Main.SESLabIO.ADCChannelOffset[Settings.Fluorescence.DenomChan] ;
-   Fluor.DenomScale := Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Fluorescence.DenomChan] ;
+   Fluor.NumerZero := Main.SESLabIO.ADCChannelZero[EDRFile.Settings.Fluorescence.NumerChan] ;
+   Fluor.NumerOffset := Main.SESLabIO.ADCChannelOffset[EDRFile.Settings.Fluorescence.NumerChan] ;
+   Fluor.NumerScale := Main.SESLabIO.ADCChannelUnitsPerBit[EDRFile.Settings.Fluorescence.NumerChan] ;
+   Fluor.DenomZero := Main.SESLabIO.ADCChannelZero[EDRFile.Settings.Fluorescence.DenomChan] ;
+   Fluor.DenomOffset := Main.SESLabIO.ADCChannelOffset[EDRFile.Settings.Fluorescence.DenomChan] ;
+   Fluor.DenomScale := Main.SESLabIO.ADCChannelUnitsPerBit[EDRFile.Settings.Fluorescence.DenomChan] ;
    // Ensure computed channel zero are kept at zero
-   if Settings.Fluorescence.RatioChan >= 0 then
-      Main.SESLabIO.ADCChannelZero[Settings.Fluorescence.RatioChan] := 0 ;
-   if Settings.Fluorescence.ConcChan >= 0 then
-      Main.SESLabIO.ADCChannelZero[Settings.Fluorescence.ConcChan] := 0 ;
+   if EDRFile.Settings.Fluorescence.RatioChan >= 0 then
+      Main.SESLabIO.ADCChannelZero[EDRFile.Settings.Fluorescence.RatioChan] := 0 ;
+   if EDRFile.Settings.Fluorescence.ConcChan >= 0 then
+      Main.SESLabIO.ADCChannelZero[EDRFile.Settings.Fluorescence.ConcChan] := 0 ;
 
    iScan := WriteBufs.OldestScan ;
    while iScan <> WriteBufs.LatestScan do
@@ -1643,10 +1659,10 @@ begin
             { Calculate ion concentration using binding eqn. }
             if Fluor.ConcOffset >= 0 then
                begin
-               if Ratio <> Settings.Fluorescence.RMax then
+               if Ratio <> EDRFile.Settings.Fluorescence.RMax then
                   ADC^[iScan+Fluor.ConcOffset] := Round( Fluor.ConcScale *
-                                              (Ratio - Settings.Fluorescence.RMin) /
-                                              (Settings.Fluorescence.RMax - Ratio) )
+                                              (Ratio - EDRFile.Settings.Fluorescence.RMin) /
+                                              (EDRFile.Settings.Fluorescence.RMax - Ratio) )
                else ADC^[iScan+Fluor.ConcOffset] := 0 ;
                end ;
             { Next block of channels }
@@ -1679,80 +1695,80 @@ var
    Omega,Denom : Single ;
 begin
 
-     if Settings.NewCalculation then begin
+     if EDRFile.Settings.NewCalculation then begin
         // Set channel names and units }
 
         { Cell membrane capacity }
-        if Settings.Capacity.CmChan >= 0 then begin
-            Main.SESLabIO.ADCChannelName[Settings.Capacity.CmChan] := 'Cm' ;
-            Main.SESLabIO.ADCChannelUnits[Settings.Capacity.CmChan] := 'pF' ;
-            Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Capacity.CmChan] :=
-                               Settings.Capacity.CmDisplayMax/Main.SESLabIO.ADCMaxValue ;
-            Main.SESLabIO.ADCChannelYMin[Settings.Capacity.CmChan] := Main.SESLabIO.ADCMinValue div 10 ;
-            Cap.CmScale := Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Capacity.CmChan]*pFToFarad ;
-            Cap.CmOffset :=  Main.SESLabIO.ADCChannelOffset[Settings.Capacity.CmChan] ;
+        if EDRFile.Settings.Capacity.CmChan >= 0 then begin
+            Main.SESLabIO.ADCChannelName[EDRFile.Settings.Capacity.CmChan] := 'Cm' ;
+            Main.SESLabIO.ADCChannelUnits[EDRFile.Settings.Capacity.CmChan] := 'pF' ;
+            Main.SESLabIO.ADCChannelUnitsPerBit[EDRFile.Settings.Capacity.CmChan] :=
+                               EDRFile.Settings.Capacity.CmDisplayMax/Main.SESLabIO.ADCMaxValue ;
+            Main.SESLabIO.ADCChannelYMin[EDRFile.Settings.Capacity.CmChan] := Main.SESLabIO.ADCMinValue div 10 ;
+            Cap.CmScale := Main.SESLabIO.ADCChannelUnitsPerBit[EDRFile.Settings.Capacity.CmChan]*pFToFarad ;
+            Cap.CmOffset :=  Main.SESLabIO.ADCChannelOffset[EDRFile.Settings.Capacity.CmChan] ;
             end
         else Cap.CmOffset := -1 ;
 
         { Cell membrane conductance }
-        if Settings.Capacity.GmChan >= 0 then begin
-           Main.SESLabIO.ADCChannelName[Settings.Capacity.GmChan] := 'Gm' ;
-           Main.SESLabIO.ADCChannelUnits[Settings.Capacity.GmChan] := 'nS' ;
-           Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Capacity.GmChan] :=
-                                        Settings.Capacity.GmDisplayMax/Main.SESLabIO.ADCMaxValue ;
-           Main.SESLabIO.ADCChannelYMin[Settings.Capacity.GmChan] := (-Main.SESLabIO.ADCMaxValue-1) div 10 ;
-           Cap.GmScale := Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Capacity.GmChan]*nSToSiemen ;
-           Cap.GmOffset :=  Main.SESLabIO.ADCChannelOffset[Settings.Capacity.GmChan] ;
+        if EDRFile.Settings.Capacity.GmChan >= 0 then begin
+           Main.SESLabIO.ADCChannelName[EDRFile.Settings.Capacity.GmChan] := 'Gm' ;
+           Main.SESLabIO.ADCChannelUnits[EDRFile.Settings.Capacity.GmChan] := 'nS' ;
+           Main.SESLabIO.ADCChannelUnitsPerBit[EDRFile.Settings.Capacity.GmChan] :=
+                                        EDRFile.Settings.Capacity.GmDisplayMax/Main.SESLabIO.ADCMaxValue ;
+           Main.SESLabIO.ADCChannelYMin[EDRFile.Settings.Capacity.GmChan] := (-Main.SESLabIO.ADCMaxValue-1) div 10 ;
+           Cap.GmScale := Main.SESLabIO.ADCChannelUnitsPerBit[EDRFile.Settings.Capacity.GmChan]*nSToSiemen ;
+           Cap.GmOffset :=  Main.SESLabIO.ADCChannelOffset[EDRFile.Settings.Capacity.GmChan] ;
            end
         else Cap.GmOffset := -1 ;
 
         { Cell access conductance }
-        if Settings.Capacity.GsChan >= 0 then begin
-           Main.SESLabIO.ADCChannelName[Settings.Capacity.GsChan] := 'Gs' ;
-           Main.SESLabIO.ADCChannelUnits[Settings.Capacity.GsChan] := 'nS' ;
-           Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Capacity.GsChan] :=
-                                     Settings.Capacity.GsDisplayMax/Main.SESLabIO.ADCMaxValue ;
-           Main.SESLabIO.ADCChannelYMin[Settings.Capacity.GsChan] := (-Main.SESLabIO.ADCMaxValue-1) div 10 ;
-           Cap.GsScale := Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Capacity.GsChan]*nSToSiemen ;
-           Cap.GsOffset :=  Main.SESLabIO.ADCChannelOffset[Settings.Capacity.GsChan] ;
+        if EDRFile.Settings.Capacity.GsChan >= 0 then begin
+           Main.SESLabIO.ADCChannelName[EDRFile.Settings.Capacity.GsChan] := 'Gs' ;
+           Main.SESLabIO.ADCChannelUnits[EDRFile.Settings.Capacity.GsChan] := 'nS' ;
+           Main.SESLabIO.ADCChannelUnitsPerBit[EDRFile.Settings.Capacity.GsChan] :=
+                                     EDRFile.Settings.Capacity.GsDisplayMax/Main.SESLabIO.ADCMaxValue ;
+           Main.SESLabIO.ADCChannelYMin[EDRFile.Settings.Capacity.GsChan] := (-Main.SESLabIO.ADCMaxValue-1) div 10 ;
+           Cap.GsScale := Main.SESLabIO.ADCChannelUnitsPerBit[EDRFile.Settings.Capacity.GsChan]*nSToSiemen ;
+           Cap.GsOffset :=  Main.SESLabIO.ADCChannelOffset[EDRFile.Settings.Capacity.GsChan] ;
            end
         else Cap.GsOffset := -1 ;
 
         { Cell membrane current }
-        Main.SESLabIO.ADCChannelName[Settings.Capacity.ImChan] := 'Im' ;
-        Main.SESLabIO.ADCChannelUnits[Settings.Capacity.ImChan] := 'pA' ;
-        Cap.ImOffset :=  Main.SESLabIO.ADCChannelOffset[Settings.Capacity.ImChan] ;
-        Cap.ImScale := Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Capacity.ImChan]*pAToAmp ;
+        Main.SESLabIO.ADCChannelName[EDRFile.Settings.Capacity.ImChan] := 'Im' ;
+        Main.SESLabIO.ADCChannelUnits[EDRFile.Settings.Capacity.ImChan] := 'pA' ;
+        Cap.ImOffset :=  Main.SESLabIO.ADCChannelOffset[EDRFile.Settings.Capacity.ImChan] ;
+        Cap.ImScale := Main.SESLabIO.ADCChannelUnitsPerBit[EDRFile.Settings.Capacity.ImChan]*pAToAmp ;
 
         { Cell membrane potential }
-        Main.SESLabIO.ADCChannelName[Settings.Capacity.VmChan] := 'Vm' ;
-        Main.SESLabIO.ADCChannelUnits[Settings.Capacity.VmChan] := 'mV' ;
-        Cap.VmOffset :=  Main.SESLabIO.ADCChannelOffset[Settings.Capacity.VmChan] ;
-        Cap.VmScale := Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Capacity.VmChan]*mVToVolt ;
+        Main.SESLabIO.ADCChannelName[EDRFile.Settings.Capacity.VmChan] := 'Vm' ;
+        Main.SESLabIO.ADCChannelUnits[EDRFile.Settings.Capacity.VmChan] := 'mV' ;
+        Cap.VmOffset :=  Main.SESLabIO.ADCChannelOffset[EDRFile.Settings.Capacity.VmChan] ;
+        Cap.VmScale := Main.SESLabIO.ADCChannelUnitsPerBit[EDRFile.Settings.Capacity.VmChan]*mVToVolt ;
 
         { Real component of cell membrane impedance }
-        Main.SESLabIO.ADCChannelName[Settings.Capacity.GrealChan] := 'Greal' ;
-        Main.SESLabIO.ADCChannelUnits[Settings.Capacity.GrealChan] := 'nS' ;
-        Cap.GrealOffset :=  Main.SESLabIO.ADCChannelOffset[Settings.Capacity.GrealChan] ;
+        Main.SESLabIO.ADCChannelName[EDRFile.Settings.Capacity.GrealChan] := 'Greal' ;
+        Main.SESLabIO.ADCChannelUnits[EDRFile.Settings.Capacity.GrealChan] := 'nS' ;
+        Cap.GrealOffset :=  Main.SESLabIO.ADCChannelOffset[EDRFile.Settings.Capacity.GrealChan] ;
         // Calculate scaling factor
-        if Settings.Capacity.GChannelsUseGainTelegraph then begin
+        if EDRFile.Settings.Capacity.GChannelsUseGainTelegraph then begin
            // Apply current gain factor from telegraph (if in use)
-           Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Capacity.GrealChan] :=
-               Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Capacity.GrealChan] /
-               Main.SESLabIO.ADCChannelGain[Settings.Capacity.ImChan] ;
+           Main.SESLabIO.ADCChannelUnitsPerBit[EDRFile.Settings.Capacity.GrealChan] :=
+               Main.SESLabIO.ADCChannelUnitsPerBit[EDRFile.Settings.Capacity.GrealChan] /
+               Main.SESLabIO.ADCChannelGain[EDRFile.Settings.Capacity.ImChan] ;
            end ;
-        Cap.GrealScale := Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Capacity.GrealChan]*nSToSiemen ;
-        //if Settings.Capacity.InvertGReal then Cap.GrealScale := -Cap.GrealScale ;
+        Cap.GrealScale := Main.SESLabIO.ADCChannelUnitsPerBit[EDRFile.Settings.Capacity.GrealChan]*nSToSiemen ;
+        //if EDRFile.Settings.Capacity.InvertGReal then Cap.GrealScale := -Cap.GrealScale ;
 
         { Imaginary component of cell membrane impedance }
-        Main.SESLabIO.ADCChannelName[Settings.Capacity.GimagChan] := 'Gimag' ;
-        Main.SESLabIO.ADCChannelUnits[Settings.Capacity.GimagChan] := 'nS' ;
-        if Settings.Capacity.GChannelsUseGainTelegraph then begin
+        Main.SESLabIO.ADCChannelName[EDRFile.Settings.Capacity.GimagChan] := 'Gimag' ;
+        Main.SESLabIO.ADCChannelUnits[EDRFile.Settings.Capacity.GimagChan] := 'nS' ;
+        if EDRFile.Settings.Capacity.GChannelsUseGainTelegraph then begin
            // Apply current gain factor from telegraph (if in use)
-           Main.SESLabIO.ADCChannelGain[Settings.Capacity.GimagChan] :=
-               Main.SESLabIO.ADCChannelGain[Settings.Capacity.ImChan] ;
+           Main.SESLabIO.ADCChannelGain[EDRFile.Settings.Capacity.GimagChan] :=
+               Main.SESLabIO.ADCChannelGain[EDRFile.Settings.Capacity.ImChan] ;
            end ;
-        Cap.GimagScale := Main.SESLabIO.ADCChannelUnitsPerBit[Settings.Capacity.GimagChan]*nSToSiemen ;
+        Cap.GimagScale := Main.SESLabIO.ADCChannelUnitsPerBit[EDRFile.Settings.Capacity.GimagChan]*nSToSiemen ;
 
         { Set channel information }
         for ch := 0 to Main.SESLabIO.ADCNumChannels-1 do begin
@@ -1766,8 +1782,8 @@ begin
                scDisplay.ChanVisible[ch] := Main.SESLabIO.ADCChannelVisible[ch] ;
                end ;
         scDisplay.Invalidate ;
-        if CDRFH.FileHandle >= 0 then SaveCDRHeader ( CDRFH ) ;
-        Settings.NewCalculation := False ;
+        EDRFile.SaveHeader ( EDRFile.CDRFH ) ;
+        EDRFile.Settings.NewCalculation := False ;
 
         end ;
 
@@ -1777,30 +1793,30 @@ begin
 
             {- Convert the input signals from binary to SI units - }
 
-            iZero := Main.SESLabIO.ADCChannelZero[Settings.Capacity.ImChan] ;
+            iZero := Main.SESLabIO.ADCChannelZero[EDRFile.Settings.Capacity.ImChan] ;
             Im := (ADC^[iScan+Cap.ImOffset] - iZero)*Cap.ImScale ;
-            if Settings.NewCalculation then Cap.ImSmoothed := Im ;
+            if EDRFile.Settings.NewCalculation then Cap.ImSmoothed := Im ;
             Cap.ImSmoothed := 0.02*Im + (1.0 - 0.02)*Cap.ImSmoothed ;
             Cap.ImSmoothed := Im ;
 
             // Real conductance
-            iZero := Main.SESLabIO.ADCChannelZero[Settings.Capacity.GRealChan] ;
-            if Settings.Capacity.InvertGReal then begin
+            iZero := Main.SESLabIO.ADCChannelZero[EDRFile.Settings.Capacity.GRealChan] ;
+            if EDRFile.Settings.Capacity.InvertGReal then begin
                ADC^[iScan+Cap.GRealOffset] := -(ADC^[iScan+Cap.GRealOffset] - iZero) + iZero ;
                end ;
             GReal := (ADC^[iScan+Cap.GrealOffset] - iZero)*Cap.GrealScale ;
 
             // Imaginary conductance
-            iZero := Main.SESLabIO.ADCChannelZero[Settings.Capacity.GimagChan] ;
-            if Settings.Capacity.InvertGImag then begin
+            iZero := Main.SESLabIO.ADCChannelZero[EDRFile.Settings.Capacity.GimagChan] ;
+            if EDRFile.Settings.Capacity.InvertGImag then begin
                ADC^[iScan+Cap.GimagOffset] := -(ADC^[iScan+Cap.GimagOffset] - iZero) + iZero ;
                end ;
             GImag := (ADC^[iScan+Cap.GimagOffset] - iZero)*Cap.GimagScale ;
 
-            iZero := Main.SESLabIO.ADCChannelZero[Settings.Capacity.VmChan] ;
+            iZero := Main.SESLabIO.ADCChannelZero[EDRFile.Settings.Capacity.VmChan] ;
             Vm := (ADC^[iScan+Cap.VmOffset] - iZero)*Cap.VmScale ;
             Cap.VmSmoothed := 0.02*Vm + (1.0 - 0.02)*Cap.VmSmoothed ;
-            if Settings.NewCalculation then Cap.VmSmoothed := Vm ;
+            if EDRFile.Settings.NewCalculation then Cap.VmSmoothed := Vm ;
             //Cap.VmSmoothed := -0.05 ;
 
             Gm := 0.0 ;
@@ -1808,24 +1824,24 @@ begin
             Cm := 0.0 ;
 
             OK := True ;
-	          if Cap.VmSmoothed <> Settings.Capacity.Vrev then begin
-               Gdc := ABS(Cap.ImSmoothed/(Cap.VmSmoothed - Settings.Capacity.Vrev)) ;
+	          if Cap.VmSmoothed <> EDRFile.Settings.Capacity.Vrev then begin
+               Gdc := ABS(Cap.ImSmoothed/(Cap.VmSmoothed - EDRFile.Settings.Capacity.Vrev)) ;
                if GDC = 0.0 then OK := False ;
                end
             else OK := False ;
 
-            if Settings.Capacity.CapacityCompensationInUse and OK then begin
-               if Gdc = Settings.Capacity.RSeriesComp then Break ;
-               Omega := TwoPi*Settings.Capacity.Frequency ;
-               A := Omega*Settings.Capacity.CellCapacityComp*Settings.Capacity.RSeriesComp ;
+            if EDRFile.Settings.Capacity.CapacityCompensationInUse and OK then begin
+               if Gdc = EDRFile.Settings.Capacity.RSeriesComp then Break ;
+               Omega := TwoPi*EDRFile.Settings.Capacity.Frequency ;
+               A := Omega*EDRFile.Settings.Capacity.CellCapacityComp*EDRFile.Settings.Capacity.RSeriesComp ;
                Denom := 1. + A*A ;
                GReal := GReal +
-                        ((Omega*Omega*Settings.Capacity.CellCapacityComp*
-                        Settings.Capacity.CellCapacityComp*
-                         Settings.Capacity.RSeriesComp ) / Denom ) ;
+                        ((Omega*Omega*EDRFile.Settings.Capacity.CellCapacityComp*
+                        EDRFile.Settings.Capacity.CellCapacityComp*
+                         EDRFile.Settings.Capacity.RSeriesComp ) / Denom ) ;
 
                GImag := GImag +
-                        ((Omega*Settings.Capacity.CellCapacityComp) / Denom ) ;
+                        ((Omega*EDRFile.Settings.Capacity.CellCapacityComp) / Denom ) ;
 
                end ;
 
@@ -1836,7 +1852,7 @@ begin
                          else OK := False ;
 
             if (GImag <> 0.0) and OK then
-               Cm := (Gs*Gs*(GReal - Gdc))/((Gs - Gdc)*GImag*TwoPi*Settings.Capacity.Frequency) ;
+               Cm := (Gs*Gs*(GReal - Gdc))/((Gs - Gdc)*GImag*TwoPi*EDRFile.Settings.Capacity.Frequency) ;
 
             if Cap.GsOffset >= 0 then
                ADC^[iScan+Cap.GsOffset] := Round(Min(Max(Gs/Cap.GsScale,
@@ -1852,7 +1868,7 @@ begin
             if iScan >= WriteBufs.NumSamples then
                iScan := iScan - WriteBufs.NumSamples ;
 
-            Settings.NewCalculation := False ;
+            EDRFile.Settings.NewCalculation := False ;
 
 //            Main.StatusBar.SimpleText := format('Vm(smoothed)=%.4g mV, G(dc)=%.4g nS',
 //            [Cap.VmSmoothed*1E3,Gdc*1E9])  ;
@@ -1888,19 +1904,19 @@ begin
 
      MaxDACPoints := Main.SESLabIO.DACBufferLimit div (NumDACChannels) - 10 ;
 
-     DacDT := 1.0/(100.0*Settings.Capacity.Frequency) ;
+     DacDT := 1.0/(100.0*EDRFile.Settings.Capacity.Frequency) ;
      DACdt := Max( DACdt, Main.SESLabIO.DACMinUpdateInterval ) ;
      Main.SESLabIO.DACUpdateInterval := DACdt ;
      DACdt := Main.SESLabIO.DACUpdateInterval ;
 
-     nDacValues := Min( Round( (10.0/(DacDT*Settings.Capacity.Frequency))), MaxDACPoints) ;
-     sVPeak := (Settings.Capacity.SineWaveRMS/0.707)*Main.SESLabIO.DACHoldingVoltage[0] ;
+     nDacValues := Min( Round( (10.0/(DacDT*EDRFile.Settings.Capacity.Frequency))), MaxDACPoints) ;
+     sVPeak := (EDRFile.Settings.Capacity.SineWaveRMS/0.707)*Main.SESLabIO.DACHoldingVoltage[0] ;
      sVHold[0] := Main.SESLabIO.DACHoldingVoltage[0] ;
      sVHold[1] := Main.SESLabIO.DACHoldingVoltage[1] ;
 
      { D/A channel voltage -> bits scaling factors }
      x := 0.0 ;
-     xStep := 2.0*Pi*Settings.Capacity.Frequency*DacDT ;
+     xStep := 2.0*Pi*EDRFile.Settings.Capacity.Frequency*DacDT ;
      for i := 0 to nDacValues-1 do begin
          // DAC channel 0
          DACScale := Main.SESLabIO.DACMaxValue/ Main.SESLabIO.DACVoltageRange[0] ;
@@ -1934,16 +1950,16 @@ var
 begin
 
     // Initialise event detector
-    if Settings.NewCalculation then begin
+    if EDRFile.Settings.NewCalculation then begin
 
        // Set voltage channel and scaling
-       RAnalysis.VmChan := Settings.RTResistance.VmChannel ;
+       RAnalysis.VmChan := EDRFile.Settings.RTResistance.VmChannel ;
        RAnalysis.VmUnits := Main.SESLabIO.ADCChannelUnits[RAnalysis.VmChan] ;
        if RAnalysis.VmUnits = 'mV' then RAnalysis.ScaleToVolts := 1E-3
                                    else RAnalysis.ScaleToVolts := 1.0 ;
 
        // Set current channel and scaling
-       RAnalysis.ImChan := Settings.RTResistance.ImChannel ;
+       RAnalysis.ImChan := EDRFile.Settings.RTResistance.ImChannel ;
        RAnalysis.ImUnits := Main.SESLabIO.ADCChannelUnits[RAnalysis.ImChan] ;
        if AnsiContainsText(RAnalysis.ImUnits,'pa') then RAnalysis.ScaleToAmps := 1E-12
        else if AnsiContainsText(RAnalysis.ImUnits,'na') then RAnalysis.ScaleToAmps := 1E-9
@@ -1951,7 +1967,7 @@ begin
        else if AnsiContainsText(RAnalysis.ImUnits,'ma') then RAnalysis.ScaleToAmps := 1E-3
        else RAnalysis.ScaleToAmps := 1.0 ;
 
-       RAnalysis.NAvgMin := Max(Round(0.2*(Settings.RTResistance.Duration/Main.SESLabIO.ADCSamplingInterval)),1) ;
+       RAnalysis.NAvgMin := Max(Round(0.2*(EDRFile.Settings.RTResistance.Duration/Main.SESLabIO.ADCSamplingInterval)),1) ;
        RAnalysis.Smooth := 1.0/RAnalysis.NAvgMin ;
        RAnalysis.Level := -2 ;
        RAnalysis.PreviousValue := 0 ;
@@ -1961,11 +1977,11 @@ begin
            RAnalysis.NAvg[i] := 0 ;
            end ;
        if Amplifier.ClampMode[0] = amCurrentClamp then begin
-          RAnalysis.Threshold := Round( (0.25*Settings.RTResistance.Amplitude/(RAnalysis.ScaleToAmps*1E12))/
+          RAnalysis.Threshold := Round( (0.25*EDRFile.Settings.RTResistance.Amplitude/(RAnalysis.ScaleToAmps*1E12))/
                                      Main.SESLabIO.ADCChannelUnitsPerBit[RAnalysis.ImChan]);
           end
        else begin
-          RAnalysis.Threshold := Round( (0.1*Settings.RTResistance.Amplitude/(RAnalysis.ScaleToVolts*1E3))/
+          RAnalysis.Threshold := Round( (0.1*EDRFile.Settings.RTResistance.Amplitude/(RAnalysis.ScaleToVolts*1E3))/
                                      Main.SESLabIO.ADCChannelUnitsPerBit[RAnalysis.VmChan]);
           end ;
        RAnalysis.Polarity := Sign(RAnalysis.Threshold) ;
@@ -1990,21 +2006,21 @@ begin
 
        Stimulator.Prot.Stimulus[0].WaveShape := wvStep0 ;
        Stimulator.Prot.Stimulus[0].Parameters[spDelay].Exists := True ;
-       Stimulator.Prot.Stimulus[0].Parameters[spDelay].Value := Settings.RTResistance.Interval*0.1 ;
+       Stimulator.Prot.Stimulus[0].Parameters[spDelay].Value := EDRFile.Settings.RTResistance.Interval*0.1 ;
        Stimulator.Prot.Stimulus[0].Parameters[spDuration].Exists := True ;
-       Stimulator.Prot.Stimulus[0].Parameters[spDuration].Value := Settings.RTResistance.Duration ;
+       Stimulator.Prot.Stimulus[0].Parameters[spDuration].Value := EDRFile.Settings.RTResistance.Duration ;
        Stimulator.Prot.Stimulus[0].Parameters[spStartAmplitude].Exists := True ;
-       Stimulator.Prot.Stimulus[0].Parameters[spStartAmplitude].Value := Settings.RTResistance.Amplitude ;
+       Stimulator.Prot.Stimulus[0].Parameters[spStartAmplitude].Value := EDRFile.Settings.RTResistance.Amplitude ;
        Stimulator.Prot.Stimulus[0].Parameters[spEndAmplitude].Exists := True ;
-       Stimulator.Prot.Stimulus[0].Parameters[spEndAmplitude].Value := Settings.RTResistance.Amplitude ;
-       Stimulator.Prot.StimulusPeriod := Settings.RTResistance.Interval ;
+       Stimulator.Prot.Stimulus[0].Parameters[spEndAmplitude].Value := EDRFile.Settings.RTResistance.Amplitude ;
+       Stimulator.Prot.StimulusPeriod := EDRFile.Settings.RTResistance.Interval ;
        Stimulator.Prot.NumRecords := 1 ;
        Stimulator.Prot.NumRepeatsPerIncrement := 1 ;
        Stimulator.Prot.RepeatedProtocol := True ;
        Stimulator.Prot.NextProtocolFileName := '' ;
 
        // Save file to stim folder
-       ActiveStimFileName := Main.VProtDirectory + ResistanceStimFileName ;
+       ActiveStimFileName := EDRFile.VProtDirectory + ResistanceStimFileName ;
        if FileExists(ActiveStimFileName) then DeleteFile(PChar(ActiveStimFileName)) ;
        Stimulator.SaveProtocolToXMLFile(Stimulator.Prot, ActiveStimFileName);
 
@@ -2065,7 +2081,7 @@ begin
                             else R := 0.0 ;
 
                 // Update plot
-                case Settings.RTResistance.Plot of
+                case EDRFile.Settings.RTResistance.Plot of
                     0 : RecPlotFrm.PlotCurrent( ITest ) ;
                     1 : RecPlotFrm.PlotVoltage( VTest ) ;
                     2 : RecPlotFrm.PlotResistance( R ) ;
@@ -2092,7 +2108,7 @@ begin
 
           end ;
 
-     Settings.NewCalculation := False ;
+     EDRFile.Settings.NewCalculation := False ;
 
      end ;
 
@@ -2151,7 +2167,8 @@ var
 begin
 
      //
-     if CDRFH.FileHandle < 0 then begin
+     if EDRFIle.Cdrfh.FileHandle < 0 then
+        begin
         ShowMessage('RECORD: No data file! Select File/New to create a data file') ;
         Exit ;
         end ;
@@ -2160,10 +2177,11 @@ begin
      CheckNewDataFileNeeded ;
 
      // Copy data into file header
-     CDRFH.NumChannels := Main.SESLabIO.ADCNumChannels ;
-     CDRFH.dt := Main.SESLabIO.ADCSamplingInterval ;
-     CDRFH.ADCVoltageRange := Main.SESLabIO.ADCVoltageRange ;
-     CdrFH.NumBytesInHeader := NumBytesInHeader ;
+     EDRFIle.Cdrfh.NumChannels := Main.SESLabIO.ADCNumChannels ;
+     EDRFIle.Cdrfh.dt := Main.SESLabIO.ADCSamplingInterval ;
+     EDRFIle.Cdrfh.ADCVoltageRange := Main.SESLabIO.ADCVoltageRange ;
+     EDRFIle.SaveHeader( EDRFIle.CDRFH ) ;
+//     EDRFIle.Cdrfh.NumBytesInHeader := NumBytesInHeader ;
 
      bRecord.Enabled := False ;
      bStop.Enabled := True ;
@@ -2178,21 +2196,21 @@ begin
      { Update number of recording sweeps to be done }
      // Set no. of records to acquire if this first sweep of ext. triggered sweeps
      if (WriteBufs.NumRecordsToAcquire = 0) and rbExtTrigger.Checked then begin
-        Settings.NumTriggerSweeps := Round(edNumTriggerSweeps.Value) ;
-        WriteBufs.NumRecordsToAcquire := Settings.NumTriggerSweeps ;
+        EDRFile.Settings.NumTriggerSweeps := Round(edNumTriggerSweeps.Value) ;
+        WriteBufs.NumRecordsToAcquire := EDRFile.Settings.NumTriggerSweeps ;
         end ;
 
      { Number of bytes to be acquired from A/D converter }
-     Settings.RecordDuration := edRecordDuration.Value ;
-     WriteBufs.NumSamplesInFileRequired := CDRFH.NumSamplesInFile +
-                                           Round((Settings.RecordDuration*Main.SESLabIO.ADCNumChannels)
-                                                 /Settings.ADCSamplingInterval ) ;
+     EDRFile.Settings.RecordDuration := edRecordDuration.Value ;
+     WriteBufs.NumSamplesInFileRequired := EDRFIle.Cdrfh.NumSamplesInFile +
+                                           Round((EDRFile.Settings.RecordDuration*Main.SESLabIO.ADCNumChannels)
+                                                 /EDRFile.Settings.ADCSamplingInterval ) ;
 
      { Sweep count if in Free Run or Ext. Trigger mode }
      if rbExtTrigger.Checked then begin
         SweepStatus := format( 'Sweep %d/%d : ',
-                                  [Settings.NumTriggerSweeps-WriteBufs.NumRecordsToAcquire+1,
-                                   Settings.NumTriggerSweeps]
+                                  [EDRFile.Settings.NumTriggerSweeps-WriteBufs.NumRecordsToAcquire+1,
+                                   EDRFile.Settings.NumTriggerSweeps]
                                     ) ;
         end
      else SweepStatus := '' ;
@@ -2200,29 +2218,29 @@ begin
      WriteBufs.TAcquired := 0.0 ;
      Main.StatusBar.SimpleText := SweepStatus + RecordingStatus + StimulusStatus ;
 
-     WriteToLogFile( SweepStatus + format(
-                    ' Started at %.4g s',[(CdrFH.NumSamplesInFile*CdrFH.dt)/
-                                           CdrFH.NumChannels])  ) ;
+     EDRFile.WriteToLogFile( SweepStatus + format(
+                    ' Started at %.4g s',[(EDRFIle.Cdrfh.NumSamplesInFile*EDRFIle.Cdrfh.dt)/
+                                           EDRFIle.Cdrfh.NumChannels])  ) ;
 
-     FileSeek(CdrFH.FileHandle,0,2) ;
+     FileSeek(EDRFIle.Cdrfh.FileHandle,0,2) ;
 
      UpdateChannelSettings ;
 
      // Copy recording channel settings to file channel settings
-     CDRFH.ADCVoltageRange := Main.SESLabIO.ADCVoltageRange ;
-     CDRFH.ADCMaxValue := Main.SESLabIO.ADCMaxValue ;
-     CDRFH.NumChannels := Main.SESLabIO.ADCNumChannels ;
+     EDRFIle.Cdrfh.ADCVoltageRange := Main.SESLabIO.ADCVoltageRange ;
+     EDRFIle.Cdrfh.ADCMaxValue := Main.SESLabIO.ADCMaxValue ;
+     EDRFIle.Cdrfh.NumChannels := Main.SESLabIO.ADCNumChannels ;
      for ch := 0 to Main.SESLabIO.ADCNumChannels-1 do begin
-        Channel[ch].ADCName := Main.SESLabIO.ADCChannelName[ch] ;
-        Channel[ch].ADCUnits := Main.SESLabIO.ADCChannelUnits[ch] ;
-        Channel[ch].yMin := Main.SESLabIO.ADCChannelYMin[ch] ;
-        Channel[ch].yMax := Main.SESLabIO.ADCChannelYMax[ch] ;
-        Channel[ch].yScale := Main.SESLabIO.ADCChannelUnitsPerBit[ch] ;
-        Channel[ch].ADCSCale := Main.SESLabIO.ADCChannelUnitsPerBit[ch] ;
-        Channel[ch].ADCCalibrationFactor := Main.SESLabIO.ADCChannelVoltsPerUnit[ch] ;
-        Channel[ch].ADCAmplifierGain := Main.SESLabIO.ADCChannelGain[ch] ;
-        Channel[ch].ADCZero := Main.SESLabIO.ADCChannelZero[ch] ;
-        Channel[ch].ADCMaxValue := Main.SESLabIO.ADCMaxValue ;
+        EDRFile.Channel[ch].ADCName := Main.SESLabIO.ADCChannelName[ch] ;
+        EDRFile.Channel[ch].ADCUnits := Main.SESLabIO.ADCChannelUnits[ch] ;
+        EDRFile.Channel[ch].yMin := Main.SESLabIO.ADCChannelYMin[ch] ;
+        EDRFile.Channel[ch].yMax := Main.SESLabIO.ADCChannelYMax[ch] ;
+        EDRFile.Channel[ch].yScale := Main.SESLabIO.ADCChannelUnitsPerBit[ch] ;
+        EDRFile.Channel[ch].ADCSCale := Main.SESLabIO.ADCChannelUnitsPerBit[ch] ;
+        EDRFile.Channel[ch].ADCCalibrationFactor := Main.SESLabIO.ADCChannelVoltsPerUnit[ch] ;
+        EDRFile.Channel[ch].ADCAmplifierGain := Main.SESLabIO.ADCChannelGain[ch] ;
+        EDRFile.Channel[ch].ADCZero := Main.SESLabIO.ADCChannelZero[ch] ;
+        EDRFile.Channel[ch].ADCMaxValue := Main.SESLabIO.ADCMaxValue ;
         end ;
 
      DisplayLive( True ) ;
@@ -2233,7 +2251,7 @@ begin
      RestartADC ;
 
      RecordingStatus := format( 'Recording: 0/%.1f s (0 Kb) ',
-                                [Settings.RecordDuration]) ;
+                                [EDRFile.Settings.RecordDuration]) ;
 
      // Start stimulus if start on record is requested
      if ckStartStimOnRecord.Checked then bStartStimulus.Click ;
@@ -2255,23 +2273,23 @@ begin
      Result := True ;
 
      // Not required if file is empty
-     if CDRFH.NumSamplesInFile <= 0 then Exit ;
+     if EDRFIle.Cdrfh.NumSamplesInFile <= 0 then Exit ;
 
-     if CDRFH.NumChannels <> Main.SESLabIO.ADCNumChannels then NewFileNeeded := True ;
+     if EDRFIle.Cdrfh.NumChannels <> Main.SESLabIO.ADCNumChannels then NewFileNeeded := True ;
 
-     if Abs((CDRFH.dt/Main.SESLabIO.ADCSamplingInterval)-1.0) > 1E-4 then NewFileNeeded := True ;
-     if CDRFH.ADCVoltageRange <> Main.SESLabIO.ADCVoltageRange then NewFileNeeded := True ;
+     if Abs((EDRFIle.Cdrfh.dt/Main.SESLabIO.ADCSamplingInterval)-1.0) > 1E-4 then NewFileNeeded := True ;
+     if EDRFIle.Cdrfh.ADCVoltageRange <> Main.SESLabIO.ADCVoltageRange then NewFileNeeded := True ;
 
      for ch := 0 to Main.SESLabIO.ADCNumChannels-1 do begin
-         if Channel[ch].ADCName <> Main.SESLabIO.ADCChannelName[ch] then NewFileNeeded := True ;
-         if Channel[ch].ADCUnits <> Main.SESLabIO.ADCChannelUnits[ch] then NewFileNeeded := True ;
-         if Abs((Channel[ch].ADCCalibrationFactor/Main.SESLabIO.ADCChannelVoltsPerUnit[ch])-1.0) > 1E-4 then NewFileNeeded := True ;
-         if Abs((Channel[ch].ADCAmplifierGain/Main.SESLabIO.ADCChannelGain[ch])-1.0) > 1E-4 then NewFileNeeded := True ;
+         if EDRFile.Channel[ch].ADCName <> Main.SESLabIO.ADCChannelName[ch] then NewFileNeeded := True ;
+         if EDRFile.Channel[ch].ADCUnits <> Main.SESLabIO.ADCChannelUnits[ch] then NewFileNeeded := True ;
+         if Abs((EDRFile.Channel[ch].ADCCalibrationFactor/Main.SESLabIO.ADCChannelVoltsPerUnit[ch])-1.0) > 1E-4 then NewFileNeeded := True ;
+         if Abs((EDRFile.Channel[ch].ADCAmplifierGain/Main.SESLabIO.ADCChannelGain[ch])-1.0) > 1E-4 then NewFileNeeded := True ;
         end ;
 
      if NewFileNeeded then begin
         // Extract stem of file name
-        Stem := ANSIReplaceText( CDRFH.FileName, '.edr', '.' ) ;
+        Stem := ANSIReplaceText( EDRFIle.Cdrfh.FileName, '.edr', '.' ) ;
         n := Pos( '.', Stem ) ;
         if n > 0 then Stem := LeftStr(Stem,n) ;
 
@@ -2282,9 +2300,9 @@ begin
           until not FileExists(NewFileName) ;
 
         // New file with '+' added to end of file name
-        CDRFH.FileName :=NewFileName ;
+        EDRFIle.Cdrfh.FileName :=NewFileName ;
         if not FileExists(NewFileName) then begin
-           Main.CreateNewDataFile( CDRFH ) ;
+           EDRFile.CreateNewDataFile( EDRFile.CDRFH ) ;
            end
         else begin
            ShowMessage('Additional data file ' + NewFileName + ' already exists. New data file required!') ;
@@ -2348,7 +2366,7 @@ procedure TRecordFrm.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
 
      { Save data to file header }
-     if CDRFH.FileHandle >= 0 then SaveCDRHeader( CdrFH ) ;
+     EDRFile.SaveHeader( EDRFile.CdrFH ) ;
 
      // Close frequency plotting window if it is open
      if Main.FormExists( 'RecPlotFrm' ) then begin
@@ -2380,7 +2398,7 @@ procedure TRecordFrm.rbFreeRunClick(Sender: TObject);
   Set trigger mode to free run
   ----------------------------}
 begin
-     Settings.TriggerMode := 'F' ;
+     EDRFile.Settings.TriggerMode := 'F' ;
      end;
 
 
@@ -2389,7 +2407,7 @@ procedure TRecordFrm.rbContinuousRecordingClick(Sender: TObject);
 // Continuous recording flag clicked
 //
 begin
-  Settings.ContinuousRecording := rbContinuousRecording.Checked ;
+  EDRFile.Settings.ContinuousRecording := rbContinuousRecording.Checked ;
 end;
 
 
@@ -2398,7 +2416,7 @@ procedure TRecordFrm.rbExtTriggerClick(Sender: TObject);
   Set trigger mode to External trigger
   ------------------------------------}
 begin
-     Settings.TriggerMode := 'E' ;
+     EDRFile.Settings.TriggerMode := 'E' ;
      end;
 
 
@@ -2426,7 +2444,7 @@ procedure TRecordFrm.edIdentKeyPress(Sender: TObject; var Key: Char);
   -------------------------------}
 begin
      { Only save to log file if recording is not in progress }
-     if (bRecord.Enabled) and (key = chr(13)) then WriteToLogFile( CdrFH.IdentLine ) ;
+     if (bRecord.Enabled) and (key = chr(13)) then EDRFile.WriteToLogFile( EDRFIle.Cdrfh.IdentLine ) ;
      end;
 
 
@@ -2445,9 +2463,9 @@ begin
         end ;
 
      if not bStopStimulus.Enabled and
-        Main.SESLabIO.DACAvailableWhileADCActive then Settings.UpdateOutputs := True ;
+        Main.SESLabIO.DACAvailableWhileADCActive then EDRFile.Settings.UpdateOutputs := True ;
 
-     ckFixedZeroLevels.Checked := Settings.FixedZeroLevels ;
+     ckFixedZeroLevels.Checked := EDRFile.Settings.FixedZeroLevels ;
 
      Timer.Enabled := True ;
 
@@ -2476,7 +2494,7 @@ procedure TRecordFrm.edTDisplayKeyPress(Sender: TObject;
   ------------------------- }
 begin
      if key = #13 then begin
-        Settings.DisplayDuration := edTDisplay.Value ;
+        EDRFile.Settings.DisplayDuration := edTDisplay.Value ;
         // Stop A/D recording (to force a re-start)
         if not WriteBufs.Recording then RestartADC ;
         end ;
@@ -2489,7 +2507,7 @@ procedure TRecordFrm.edRecordDurationKeyPress(Sender: TObject;
   Change recording duration
   ------------------------- }
 begin
-     if key = chr(13) then Settings.RecordDuration := edRecordDuration.Value ;
+     if key = chr(13) then EDRFile.Settings.RecordDuration := edRecordDuration.Value ;
      end;
 
 
@@ -2499,7 +2517,7 @@ procedure TRecordFrm.bStartStimulusClick(Sender: TObject);
 // -----------------------------------
 begin
      if cbStimProgram.ItemIndex > 0 then begin
-        if not ckResistance.Checked then ActiveStimFileName := Settings.VProgramFileName ;
+        if not ckResistance.Checked then ActiveStimFileName := EDRFile.Settings.VProgramFileName ;
         StimulatorStartRequired := True ;
         end ;
      end;
@@ -2542,7 +2560,7 @@ begin
         ckCapacity.Checked := False ;
         end ;
 
-     Settings.Fluorescence.InUse := ckFluorescence.Checked ;
+     EDRFile.Settings.Fluorescence.InUse := ckFluorescence.Checked ;
      Main.SESLabIO.ADCStop ;
      end;
 
@@ -2557,7 +2575,7 @@ begin
 //       if ch >= 0 then Main.SESLabIO.ADCChannelZero[ch] := scDisplay.HorizontalCursors[ch] ;
        for ch := 0 to scDisplay.NumChannels-1 do begin
           { Get signal baseline cursor }
-          if Settings.FixedZeroLevels then begin
+          if EDRFile.Settings.FixedZeroLevels then begin
              if scDisplay.HorizontalCursors[ch] <> Main.SESLabIO.ADCChannelZero[ch] then
                 scDisplay.HorizontalCursors[ch] := Main.SESLabIO.ADCChannelZero[ch] ;
              end
@@ -2585,7 +2603,7 @@ begin
      scDisplay.MaxADCValue := Main.SESLabIO.ADCMaxValue ;
      scDisplay.MinADCValue := Main.SESLabIO.ADCMinValue ;
 
-     scDisplay.DisplayGrid := Settings.DisplayGrid ;
+     scDisplay.DisplayGrid := EDRFile.Settings.DisplayGrid ;
      scDisplay.Invalidate ;
      end ;
 
@@ -2635,7 +2653,7 @@ begin
         ckFluorescence.Checked := False ;
         end ;
 
-     Settings.Capacity.InUse := ckCapacity.Checked ;
+     EDRFile.Settings.Capacity.InUse := ckCapacity.Checked ;
      //if ckCapacity.Checked then ckFixedZeroLevels.Checked := True ;
      Main.SESLabIO.ADCStop ;
      end;
@@ -2647,7 +2665,7 @@ procedure TRecordFrm.ckFixedZeroLevelsClick(Sender: TObject);
 // ---------------------------------------------------
 begin
      if not WriteBufs.Recording then Main.SESLabIO.ADCStop ;
-     Settings.FixedZeroLevels := ckFixedZeroLevels.Checked ;
+     EDRFile.Settings.FixedZeroLevels := ckFixedZeroLevels.Checked ;
      end;
 
 
@@ -2666,8 +2684,8 @@ begin
 
     UpdateAmplifierGain ;
 
-    Settings.UpdateOutputs := False ;
-    //Settings.NewCalculation := True ;
+    EDRFile.Settings.UpdateOutputs := False ;
+    //EDRFile.Settings.NewCalculation := True ;
 
     end ;
 
@@ -2678,8 +2696,8 @@ procedure TRecordFrm.edIdentChange(Sender: TObject);
   -------------------------------------------}
 begin
      { Update ident line if it is changed }
-     CdrFH.IdentLine := edIdent.text ;
-     if bRecord.Enabled then SaveCDRHeader(CdrFH) ;
+     EDRFIle.Cdrfh.IdentLine := edIdent.text ;
+     if bRecord.Enabled then EDRFile.SaveHeader(EDRFile.CdrFH) ;
      end;
 
 
@@ -2692,18 +2710,18 @@ var
      TimeScale : Single ;
 begin
 
-     if MarkerList.Count < MaxMarkers then begin
+     if EDRFile.MarkerList.Count < MaxMarkers then begin
 
-          TimeScale := scDisplay.TScale/Settings.TScale ;
+          TimeScale := scDisplay.TScale/EDRFile.Settings.TScale ;
 
           MarkerTime := (scDisplay.NumPoints + scDisplay.XOffset)*TimeScale ;
           // Plot marker on chart
-          MarkerList.AddObject( EdMarker.text, TObject(MarkerTime) ) ;
+          EDRFile.MarkerList.AddObject( EdMarker.text, TObject(MarkerTime) ) ;
           scDisplay.AddMarker( Round(MarkerTime/TimeScale) - scDisplay.XOffset,
                                EdMarker.text );
 
           end ;
-     edNumMarkers.text := format('%d',[MaxMarkers-MarkerList.Count]);
+     edNumMarkers.text := format('%d',[MaxMarkers-EDRFile.MarkerList.Count]);
      end;
 
 
@@ -2721,8 +2739,8 @@ procedure TRecordFrm.rbExtTriggerHighClick(Sender: TObject);
 // ----------------------------------------
 begin
 
-     Settings.ExternalTriggerActiveHigh := rbExtTriggerHigh.Checked ;
-     Main.SESLabIO.ADCExternalTriggerActiveHigh := Settings.ExternalTriggerActiveHigh ;
+     EDRFile.Settings.ExternalTriggerActiveHigh := rbExtTriggerHigh.Checked ;
+     Main.SESLabIO.ADCExternalTriggerActiveHigh := EDRFile.Settings.ExternalTriggerActiveHigh ;
      rbExtTriggerHigh.Checked := Main.SESLabIO.ADCExternalTriggerActiveHigh ;
 
      end;
@@ -2733,8 +2751,8 @@ procedure TRecordFrm.rbExttriggerLowClick(Sender: TObject);
 // Ext. Trigger Active Low option selected
 // ----------------------------------------
 begin
-     Settings.ExternalTriggerActiveHigh := rbExtTriggerHigh.Checked ;
-     Main.SESLabIO.ADCExternalTriggerActiveHigh := Settings.ExternalTriggerActiveHigh ;
+     EDRFile.Settings.ExternalTriggerActiveHigh := rbExtTriggerHigh.Checked ;
+     Main.SESLabIO.ADCExternalTriggerActiveHigh := EDRFile.Settings.ExternalTriggerActiveHigh ;
      rbExtTriggerHigh.Checked := Main.SESLabIO.ADCExternalTriggerActiveHigh ;
      end;
 
@@ -2744,9 +2762,9 @@ procedure TRecordFrm.bUpdateGainClick(Sender: TObject);
 // Force re-start to update Ch.0 gain
 // ----------------------------------
 begin
-     if bRecord.Enabled {and (CDRFH.NumSamplesInFile = 0)} then begin
+     if bRecord.Enabled {and (EDRFIle.Cdrfh.NumSamplesInFile = 0)} then begin
         ReadUserEnteredGain := True ;
-        Settings.NewCalculation := True ;
+        EDRFile.Settings.NewCalculation := True ;
         RestartADC ;
         end ;
      end;
@@ -2768,7 +2786,7 @@ procedure TRecordFrm.edAmplifierGainKeyPress(Sender: TObject;
 // -------------------------------------------
 begin
      if Key = #13 then begin
-        if bRecord.Enabled and (CDRFH.NumSamplesInFile = 0) then begin
+        if bRecord.Enabled and (EDRFIle.Cdrfh.NumSamplesInFile = 0) then begin
            ReadUserEnteredGain := True ;
            RestartADC ;
            end ;
@@ -2782,7 +2800,7 @@ procedure TRecordFrm.bTDisplayHalfClick(Sender: TObject);
 // -------------------------------
 begin
      edTDisplay.Value := edTDisplay.Value*0.5 ;
-     Settings.DisplayDuration := edTDisplay.Value ;
+     EDRFile.Settings.DisplayDuration := edTDisplay.Value ;
      if not WriteBufs.Recording then RestartADC ;
      end;
 
@@ -2793,7 +2811,7 @@ procedure TRecordFrm.bTDisplayDoubleClick(Sender: TObject);
 // -------------------------------
 begin
      edTDisplay.Value := edTDisplay.Value*2.0 ;
-     Settings.DisplayDuration := edTDisplay.Value ;
+     EDRFile.Settings.DisplayDuration := edTDisplay.Value ;
      if not WriteBufs.Recording then RestartADC ;
      end;
 
@@ -2803,10 +2821,10 @@ procedure TRecordFrm.rbTDisplayUnitsMSecsClick(Sender: TObject);
 // Set time readout units to milliseconds
 // --------------------------------------
 begin
-    Settings.TUnits := 'ms' ;
-    Settings.TSCale := 1000.0 ;
-    edTDisplay.Scale := Settings.TSCale ;
-    edTDisplay.Units := Settings.TUnits ;
+    EDRFile.Settings.TUnits := 'ms' ;
+    EDRFile.Settings.TSCale := 1000.0 ;
+    edTDisplay.Scale := EDRFile.Settings.TSCale ;
+    edTDisplay.Units := EDRFile.Settings.TUnits ;
     Main.SESLabIO.ADCStop ;
     end;
 
@@ -2816,10 +2834,10 @@ procedure TRecordFrm.rbTDisplayUnitsSecsClick(Sender: TObject);
 // Set time readout units to milliseconds
 // --------------------------------------
 begin
-    Settings.TUnits := 's' ;
-    Settings.TSCale := 1.0 ;
-    edTDisplay.Scale := Settings.TSCale ;
-    edTDisplay.Units := Settings.TUnits ;
+    EDRFile.Settings.TUnits := 's' ;
+    EDRFile.Settings.TSCale := 1.0 ;
+    edTDisplay.Scale := EDRFile.Settings.TSCale ;
+    edTDisplay.Units := EDRFile.Settings.TUnits ;
     Main.SESLabIO.ADCStop ;
     end;
 
@@ -2828,10 +2846,10 @@ procedure TRecordFrm.rbTDisplayUnitsMinsClick(Sender: TObject);
 // Set time readout units to minutes
 // --------------------------------------
 begin
-    Settings.TUnits := 'min' ;
-    Settings.TSCale := 1./60.0 ;
-    edTDisplay.Scale := Settings.TSCale ;
-    edTDisplay.Units := Settings.TUnits ;
+    EDRFile.Settings.TUnits := 'min' ;
+    EDRFile.Settings.TSCale := 1./60.0 ;
+    edTDisplay.Scale := EDRFile.Settings.TSCale ;
+    edTDisplay.Units := EDRFile.Settings.TUnits ;
     Main.SESLabIO.ADCStop ;
     end;
 
@@ -2846,9 +2864,9 @@ begin
 
      // Load list of stimulus programs
      Stimulator.CreateProtocolList( cbStimProgram ) ;
-     if Settings.VProgramFileName <> '' then begin
+     if EDRFile.Settings.VProgramFileName <> '' then begin
         // Find name within list
-        NamePart := AnsiReplaceText(ExtractFileName( Settings.VProgramFileName),'.xml', '' ) ;
+        NamePart := AnsiReplaceText(ExtractFileName( EDRFile.Settings.VProgramFileName),'.xml', '' ) ;
         cbStimProgram.ItemIndex := cbStimProgram.Items.IndexOf(NamePart) ;
         end
      else begin
@@ -2887,7 +2905,7 @@ procedure TRecordFrm.cbStimProgramChange(Sender: TObject);
 begin
      if cbStimProgram.ItemIndex > 0 then begin
         bStartStimulus.Enabled := True ;
-        Settings.VProgramFileName := Main.VProtDirectory + cbStimProgram.Text + '.xml' ;
+        EDRFile.Settings.VProgramFileName := EDRFile.VProtDirectory + cbStimProgram.Text + '.xml' ;
         end
      else bStartStimulus.Enabled := False ;
 
@@ -2908,7 +2926,7 @@ begin
 
 procedure TRecordFrm.SetRecordDuration( Value : Single ) ;
 begin
-    Settings.RecordDuration := Value ;
+    EDRFile.Settings.RecordDuration := Value ;
     edRecordDuration.Value := Value ;
     end ;
 
@@ -2932,11 +2950,11 @@ begin
     idx := cbStimProgram.Items.IndexOf(Value) ;
     if (idx > 0) and (idx < cbStimProgram.Items.Count) then begin
        cbStimProgram.ItemIndex := idx ;
-       Settings.VProgramFileName := Main.VProtDirectory + cbStimProgram.Text + '.xml' ;
+       EDRFile.Settings.VProgramFileName := EDRFile.VProtDirectory + cbStimProgram.Text + '.xml' ;
        end
     else begin
        cbStimProgram.ItemIndex := 0 ;
-       Settings.VProgramFileName := '' ;
+       EDRFile.Settings.VProgramFileName := '' ;
        end ;
 
     end ;
@@ -2946,7 +2964,7 @@ function TRecordFrm.GetTriggerMode : Integer ;
 // Return trigger mode (0=free run, 1=external)
 // --------------------------------------------
 begin
-    if Settings.TriggerMode = 'F' then Result := 0
+    if EDRFile.Settings.TriggerMode = 'F' then Result := 0
                                   else Result := 1 ;
     end ;
 
@@ -2957,11 +2975,11 @@ procedure TRecordFrm.SetTriggerMode( Value : Integer ) ;
 // --------------------------------------------
 begin
     if Value = 0 then begin
-       Settings.TriggerMode := 'F' ;
+       EDRFile.Settings.TriggerMode := 'F' ;
        rbFreeRun.Checked := True ;
        end
     else begin
-       Settings.TriggerMode := 'E' ;
+       EDRFile.Settings.TriggerMode := 'E' ;
        rbExtTrigger.Checked := True ;
        end ;
     end ;
@@ -2972,7 +2990,7 @@ function TRecordFrm.GetNumTriggerSweeps : Integer ;
 // Return no. of externally triggered sweeps required
 // --------------------------------------------------
 begin
-    Result := Settings.NumTriggerSweeps ;
+    Result := EDRFile.Settings.NumTriggerSweeps ;
     end ;
 
 
@@ -2981,8 +2999,8 @@ procedure TRecordFrm.SetNumTriggerSweeps( Value : Integer ) ;
 // Set no. of externally triggered sweeps required
 // --------------------------------------------
 begin
-    Settings.NumTriggerSweeps :=  Round(Value) ;
-    edNumTriggerSweeps.Value := Settings.NumTriggerSweeps ;
+    EDRFile.Settings.NumTriggerSweeps :=  Round(Value) ;
+    edNumTriggerSweeps.Value := EDRFile.Settings.NumTriggerSweeps ;
     end ;
 
 
@@ -3047,7 +3065,7 @@ procedure TRecordFrm.edNumTriggerSweepsKeyPress(Sender: TObject;
 // No. of external trigger sweeps changed
 // --------------------------------------
 begin
-     if Key = #13 then Settings.NumTriggerSweeps := Round(edNumTriggerSweeps.Value)  ;
+     if Key = #13 then EDRFile.Settings.NumTriggerSweeps := Round(edNumTriggerSweeps.Value)  ;
      end;
 
 procedure TRecordFrm.ckEventFrequencyClick(Sender: TObject);
@@ -3061,8 +3079,8 @@ begin
         ckCapacity.Checked := False ;
         end ;
 
-     Settings.RTEventAnalysis.InUse := ckEventFrequency.Checked ;
-     Settings.NewCalculation := True ;
+     EDRFile.Settings.RTEventAnalysis.InUse := ckEventFrequency.Checked ;
+     EDRFile.Settings.NewCalculation := True ;
      end;
 
 procedure TRecordFrm.ckResistanceClick(Sender: TObject);
@@ -3075,8 +3093,8 @@ begin
         ckFluorescence.Checked := False ;
         ckCapacity.Checked := False ;
         end ;
-     Settings.RTResistance.InUse := ckResistance.Checked ;
-     Settings.NewCalculation := True ;
+     EDRFile.Settings.RTResistance.InUse := ckResistance.Checked ;
+     EDRFile.Settings.NewCalculation := True ;
      if not ckResistance.Checked then StopStimulator ;
      end;
 
@@ -3085,7 +3103,7 @@ procedure TRecordFrm.ckStartStimOnRecordClick(Sender: TObject);
 // Start Stim on Record option changed
 // -----------------------------------
 begin
-      Settings.StartStimulusOnRecord := ckStartStimOnRecord.Checked
+      EDRFile.Settings.StartStimulusOnRecord := ckStartStimOnRecord.Checked
       end;
 
 procedure TRecordFrm.edNumChannelsKeyPress(Sender: TObject; var Key: Char);
@@ -3094,7 +3112,7 @@ procedure TRecordFrm.edNumChannelsKeyPress(Sender: TObject; var Key: Char);
 // ---------------------------
 begin
     if Key = #13 then begin
-       Settings.NumChannels := Round(edNumChannels.Value);
+       EDRFile.Settings.NumChannels := Round(edNumChannels.Value);
        NewFile ;
        end ;
 
@@ -3107,7 +3125,7 @@ procedure TRecordFrm.edSamplingIntervalKeyPress(Sender: TObject;
 // ---------------------------
 begin
     if Key = #13 then begin
-       Settings.ADCSamplingInterval := edSamplingInterval.Value ;
+       EDRFile.Settings.ADCSamplingInterval := edSamplingInterval.Value ;
        NewFile ;
        end ;
 
@@ -3122,25 +3140,25 @@ begin
      { Fill combo box with list of available command voltage programs }
      Stimulator.CreateProtocolList( cbStimProgram ) ;
 
-     if (Settings.VProgramFileName = '') or
-        ANSIContainsText(Settings.VProgramFileName,'\ .') then begin
+     if (EDRFile.Settings.VProgramFileName = '') or
+        ANSIContainsText(EDRFile.Settings.VProgramFileName,'\ .') then begin
         cbStimProgram.ItemIndex := 0 ;
         end
      else begin
         cbStimProgram.ItemIndex := cbStimProgram.Items.IndexOf(
-                                    ExtractFileNameOnly(Settings.VProgramFileName))
+                                    EDRFile.ExtractFileNameOnly(EDRFile.Settings.VProgramFileName))
         end ;
 
      // Update list of protocol lists
  {    CreateProtocolListList( cbProtocolList ) ;
-     if (Settings.ProtocolListFileName = '') or
-        ANSIContainsText(Settings.ProtocolListFileName,'\ .') then begin
+     if (EDRFile.Settings.ProtocolListFileName = '') or
+        ANSIContainsText(EDRFile.Settings.ProtocolListFileName,'\ .') then begin
         cbProtocolList.ItemIndex := 0 ;
         meProtocolList.Clear ;
         end
      else begin
         cbProtocolList.ItemIndex := cbProtocolList.Items.IndexOf(
-                                    ExtractFileNameOnly(Settings.ProtocolListFileName)) ;
+                                    ExtractFileNameOnly(EDRFile.Settings.ProtocolListFileName)) ;
         LoadProtocolList ;
         end ;}
 
@@ -3352,7 +3370,7 @@ procedure TRecordFrm.rbRecordingDurationClick(Sender: TObject);
 // User defined recording duration option clicked
 // ----------------------------------------------
 begin
-  Settings.ContinuousRecording := not rbRecordingDuration.Checked ;
+  EDRFile.Settings.ContinuousRecording := not rbRecordingDuration.Checked ;
 end;
 
 

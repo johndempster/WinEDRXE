@@ -52,7 +52,7 @@ interface
 uses
   SysUtils, WinTypes, WinProcs, Messages, Classes, Graphics, Controls,
   Forms, Dialogs, ExtCtrls, StdCtrls, Spin, TabNotBk, printers, ClipBrd,
-  global, shared, maths, fileio, Grids, setfitpa, strutils,
+  EDRFileUnit, maths, Grids, setfitpa, strutils,
   RangeEdit, ValEdit, ScopeDisplay, XYPlotDisplay, ValidatedEdit, Log, Math,
   ComCtrls, HTMLLabel, Menus, UITypes ;
 
@@ -609,8 +609,8 @@ begin
           Allocate : begin
              if not BuffersAllocated then begin
                 //New(ADC) ;
-                GetMem(DetBuf,2*MaxDisplayPoints*CDRFH.NumChannels) ;
-                GetMem(EditBuf,2*MaxDisplayPoints*CDRFH.NumChannels) ;
+                GetMem(DetBuf,2*MaxDisplayPoints*EDRFIle.Cdrfh.NumChannels) ;
+                GetMem(EditBuf,2*MaxDisplayPoints*EDRFIle.Cdrfh.NumChannels) ;
                 // Amplitude histogram objects
                 AmpHist := THistogram.Create ;
                 AmpFunc := TMathFunc.Create ;
@@ -667,7 +667,7 @@ begin
 
      // Load cursor measurements list
      NumCursorMeasurements := 0 ;
-     LoadCursorMeasurementsFromFile( ChangeFileExt( CDRFH.FileName, '.crm' )) ;
+     LoadCursorMeasurementsFromFile( ChangeFileExt( EDRFIle.Cdrfh.FileName, '.crm' )) ;
 
      // Initialise amplitude histogram methods
      ChanNum := 0 ;
@@ -684,12 +684,12 @@ begin
 
      { Signal display window duration }
      edDetDisplayWidth.Units := 'ms' ;
-     edDetDisplayWidth.Scale := CDRFH.dt*1000.0 ;
-     edDetDisplayWidth.Value := Settings.DwellTimes.RecordSize ;
+     edDetDisplayWidth.Scale := EDRFIle.Cdrfh.dt*1000.0 ;
+     edDetDisplayWidth.Value := EDRFile.Settings.DwellTimes.RecordSize ;
 
      edEditDisplayWidth.Units := 'ms' ;
-     edEditDisplayWidth.Scale := CDRFH.dt*1000.0 ;
-     edEditDisplayWidth.Value := Settings.DwellTimes.RecordSize ;
+     edEditDisplayWidth.Scale := EDRFIle.Cdrfh.dt*1000.0 ;
+     edEditDisplayWidth.Value := EDRFile.Settings.DwellTimes.RecordSize ;
 
      SelectionCursor0 := 0 ;
      SelectionCursor1 := 100 ;
@@ -718,16 +718,16 @@ var
 begin
 
      // Update internal channel selected for analysis
-     ChanNum := Settings.DwellTimes.ChanNum ;
+     ChanNum := EDRFile.Settings.DwellTimes.ChanNum ;
 
      { Continuous record display channel }
-     scDetDisplay.MaxADCValue := Channel[0].ADCMaxValue ;
-     scDetDisplay.MinADCValue := -Channel[0].ADCMaxValue -1 ;
-     scDetDisplay.DisplayGrid := Settings.DisplayGrid ;
+     scDetDisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+     scDetDisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue -1 ;
+     scDetDisplay.DisplayGrid := EDRFile.Settings.DisplayGrid ;
 
      scDetDisplay.MaxPoints := Round(edDetDisplayWidth.Value) ;
      scDetDisplay.NumPoints := scDetDisplay.MaxPoints ;
-     scDetDisplay.NumChannels := CdrFH.NumChannels ;
+     scDetDisplay.NumChannels := EDRFIle.Cdrfh.NumChannels ;
      scDetDisplay.xMin := 0 ;
      scDetDisplay.xMax := scDetDisplay.MaxPoints  ;
      scDetDisplay.DisableChannelVisibilityButton := True ;
@@ -735,20 +735,20 @@ begin
 
      { Set channel information (only detected channel on display) }
      for ch := 0 to scDetDisplay.NumChannels-1 do begin
-         scDetDisplay.ChanUnits[ch] := Channel[ch].ADCUnits ;
-         scDetDisplay.ChanName[ch] := Channel[ch].ADCName ;
-         scDetDisplay.yMin[ch] := Channel[ch].yMin ;
-         scDetDisplay.yMax[ch] := Channel[ch].yMax ;
-         scDetDisplay.ChanScale[ch] := Channel[ch].ADCScale ;
-         scDetDisplay.ChanUnits[ch] := Channel[ch].ADCUnits ;
-         scDetDisplay.ChanZero[ch] := Channel[ch].ADCZero ;
-         scDetDisplay.ChanOffsets[ch] := Channel[ch].ChannelOffset ;
+         scDetDisplay.ChanUnits[ch] := EDRFile.Channel[ch].ADCUnits ;
+         scDetDisplay.ChanName[ch] := EDRFile.Channel[ch].ADCName ;
+         scDetDisplay.yMin[ch] := EDRFile.Channel[ch].yMin ;
+         scDetDisplay.yMax[ch] := EDRFile.Channel[ch].yMax ;
+         scDetDisplay.ChanScale[ch] := EDRFile.Channel[ch].ADCScale ;
+         scDetDisplay.ChanUnits[ch] := EDRFile.Channel[ch].ADCUnits ;
+         scDetDisplay.ChanZero[ch] := EDRFile.Channel[ch].ADCZero ;
+         scDetDisplay.ChanOffsets[ch] := EDRFile.Channel[ch].ChannelOffset ;
          scDetDisplay.ChanColor[ch] := clBlue ;
          if ch = ChanNum then scDetDisplay.ChanVisible[ch] := True
                          else scDetDisplay.ChanVisible[ch] := False ;
          end ;
-     scDetDisplay.TScale := CdrFH.dt*Settings.TScale ;
-     scDetDisplay.TUnits := Settings.TUnits ;
+     scDetDisplay.TScale := EDRFIle.Cdrfh.dt*EDRFile.Settings.TScale ;
+     scDetDisplay.TUnits := EDRFile.Settings.TUnits ;
 
      { Create display cursors }
      scDetDisplay.ClearHorizontalCursors ;
@@ -765,13 +765,13 @@ begin
      scDetDisplay.VerticalCursors[DetCurs.C0] := 100 ;
 
      { Detected event display }
-     scEditDisplay.MaxADCValue := Channel[0].ADCMaxValue ;
-     scEditDisplay.MinADCValue := -Channel[0].ADCMaxValue -1 ;
-     scEditDisplay.DisplayGrid := Settings.DisplayGrid ;
+     scEditDisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+     scEditDisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue -1 ;
+     scEditDisplay.DisplayGrid := EDRFile.Settings.DisplayGrid ;
 
      scEditDisplay.MaxPoints := Round(edEditDisplayWidth.Value) ;
      scEditDisplay.NumPoints := scEditDisplay.MaxPoints ;
-     scEditDisplay.NumChannels := CdrFH.NumChannels ;
+     scEditDisplay.NumChannels := EDRFIle.Cdrfh.NumChannels ;
      scEditDisplay.xMin := 0 ;
      scEditDisplay.xMax := scEditDisplay.MaxPoints  ;
      scEditDisplay.DisableChannelVisibilityButton := True ;
@@ -795,26 +795,26 @@ begin
 
      { Set Edit Display channel information (only one channel on display) }
      for ch := 0 to scDetDisplay.NumChannels-1 do begin
-         scEditDisplay.ChanUnits[ch] := Channel[ch].ADCUnits ;
-         scEditDisplay.ChanName[ch] := Channel[ch].ADCName ;
-         scEditDisplay.yMin[ch] := Channel[ch].yMin ;
-         scEditDisplay.yMax[ch] := Channel[ch].yMax ;
-         scEditDisplay.ChanScale[ch] := Channel[ch].ADCScale ;
-         scEditDisplay.ChanUnits[ch] := Channel[ch].ADCUnits ;
-         scEditDisplay.ChanZero[ch] := Channel[ch].ADCZero ;
-         scEditDisplay.ChanOffsets[ch] := Channel[ch].ChannelOffset ;
+         scEditDisplay.ChanUnits[ch] := EDRFile.Channel[ch].ADCUnits ;
+         scEditDisplay.ChanName[ch] := EDRFile.Channel[ch].ADCName ;
+         scEditDisplay.yMin[ch] := EDRFile.Channel[ch].yMin ;
+         scEditDisplay.yMax[ch] := EDRFile.Channel[ch].yMax ;
+         scEditDisplay.ChanScale[ch] := EDRFile.Channel[ch].ADCScale ;
+         scEditDisplay.ChanUnits[ch] := EDRFile.Channel[ch].ADCUnits ;
+         scEditDisplay.ChanZero[ch] := EDRFile.Channel[ch].ADCZero ;
+         scEditDisplay.ChanOffsets[ch] := EDRFile.Channel[ch].ChannelOffset ;
          scEditDisplay.ChanColor[ch] := clBlue ;
          if ch = ChanNum then scEditDisplay.ChanVisible[ch] := True
                          else scEditDisplay.ChanVisible[ch] := False ;
          end ;
-     scEditDisplay.TScale := CdrFH.dt*Settings.TScale ;
-     scEditDisplay.TUnits := Settings.TUnits ;
+     scEditDisplay.TScale := EDRFIle.Cdrfh.dt*EDRFile.Settings.TScale ;
+     scEditDisplay.TUnits := EDRFile.Settings.TUnits ;
 
      edDetDisplayWidth.Units := 'ms' ;
-     edDetDisplayWidth.Scale := CDRFH.dt*1000.0 ;
+     edDetDisplayWidth.Scale := EDRFIle.Cdrfh.dt*1000.0 ;
      edDetDisplayWidth.HiLimit := MaxDisplayPoints ;
 
-     edMarginPoints.Scale := CDRFH.dt*1000.0 ;
+     edMarginPoints.Scale := EDRFIle.Cdrfh.dt*1000.0 ;
 
      end ;
 
@@ -828,24 +828,24 @@ var
    x,xStep : single ;
 begin
 
-   sbDetDisplay.Max := Max( (CdrFH.NumSamplesInFile div CdrFH.NumChannels)
+   sbDetDisplay.Max := Max( (EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels)
                             - scDetDisplay.MaxPoints,1) ;
    sbDetDisplay.LargeChange := scDetDisplay.MaxPoints div 4 ;
 
    scDetDisplay.xOffset := sbDetDisplay.Position ;
 
-   if ReadCDRBuffer(CdrFH,sbDetDisplay.Position,DetBuf^,scDetDisplay.MaxPoints)
+   if EDRFile.ReadBuffer(EDRFile.CdrFH,sbDetDisplay.Position,DetBuf^,scDetDisplay.MaxPoints)
       = scDetDisplay.MaxPoints then begin
 
-      scDetDisplay.HorizontalCursors[DetCurs.Base] := Channel[ChanNum].ADCZero ;
-      Det.UnitLevel := Round( Settings.DwellTimes.UnitCurrent / Channel[ChanNum].ADCScale ) ;
-      scDetDisplay.HorizontalCursors[DetCurs.IUnit] := Channel[ChanNum].ADCZero
+      scDetDisplay.HorizontalCursors[DetCurs.Base] := EDRFile.Channel[ChanNum].ADCZero ;
+      Det.UnitLevel := Round( EDRFile.Settings.DwellTimes.UnitCurrent / EDRFile.Channel[ChanNum].ADCScale ) ;
+      scDetDisplay.HorizontalCursors[DetCurs.IUnit] := EDRFile.Channel[ChanNum].ADCZero
                                                       + Round(edDetUnitCurrent.Value/
-                                                              Channel[ChanNum].ADCScale) ;
-      scDetDisplay.HorizontalCursors[DetCurs.Threshold] := Channel[ChanNum].ADCZero
+                                                              EDRFile.Channel[ChanNum].ADCScale) ;
+      scDetDisplay.HorizontalCursors[DetCurs.Threshold] := EDRFile.Channel[ChanNum].ADCZero
                                                  + Round((edDetUnitCurrent.Value
                                                          *edThreshold.Value)/
-                                                         Channel[ChanNum].ADCScale) ;
+                                                         EDRFile.Channel[ChanNum].ADCScale) ;
 
       end ;
 
@@ -875,14 +875,14 @@ procedure TSingleChanAnalFrm.UpdateCursors(
   Move horizontal cursors on signal display
   --------------------------------------------}
 begin
-     scDisplay.HorizontalCursors[DetCurs.Base] := Channel[ChanNum].ADCZero ;
-     scDisplay.HorizontalCursors[DetCurs.IUnit] := Channel[ChanNum].ADCZero
-                                                   + Round(Settings.DwellTimes.UnitCurrent/
-                                                           Channel[ChanNum].ADCScale) ;
-     scDisplay.HorizontalCursors[DetCurs.Threshold] := Channel[ChanNum].ADCZero
-                                                 + Round((Settings.DwellTimes.UnitCurrent
+     scDisplay.HorizontalCursors[DetCurs.Base] := EDRFile.Channel[ChanNum].ADCZero ;
+     scDisplay.HorizontalCursors[DetCurs.IUnit] := EDRFile.Channel[ChanNum].ADCZero
+                                                   + Round(EDRFile.Settings.DwellTimes.UnitCurrent/
+                                                           EDRFile.Channel[ChanNum].ADCScale) ;
+     scDisplay.HorizontalCursors[DetCurs.Threshold] := EDRFile.Channel[ChanNum].ADCZero
+                                                 + Round((EDRFile.Settings.DwellTimes.UnitCurrent
                                                          *edThreshold.Value)/
-                                                         Channel[ChanNum].ADCScale) ;
+                                                         EDRFile.Channel[ChanNum].ADCScale) ;
      end ;
 
 
@@ -902,10 +902,10 @@ procedure TSingleChanAnalFrm.FormClose(Sender: TObject;
   -------------------------}
 begin
 
-     //Settings.DwellTimes.UnitCurrent := edDetUnitCurrent.Value  ;
-     //Settings.DwellTimes.Threshold := edThreshold.Value ;
+     //EDRFile.Settings.DwellTimes.UnitCurrent := edDetUnitCurrent.Value  ;
+     //EDRFile.Settings.DwellTimes.Threshold := edThreshold.Value ;
 
-     SaveCDRHeader( cdrFH ) ;
+     EDRFile.SaveHeader( EDRFile.cdrFH ) ;
 
      { Close event file }
      CloseEventFile( EventFile ) ;
@@ -924,7 +924,7 @@ procedure TSingleChanAnalFrm.edDetUnitCurrentKeyPress(Sender: TObject;
   var Key: Char);
 begin
      if key = chr(13) then begin
-        Settings.DwellTimes.UnitCurrent := edDetUnitCurrent.Value ;
+        EDRFile.Settings.DwellTimes.UnitCurrent := edDetUnitCurrent.Value ;
         UpdateCursors( scDetDisplay ) ;
         end ;
      end;
@@ -939,28 +939,28 @@ begin
 
      { Fill detection channel selection list }
      cbDetChannel.Clear ;
-     for ch := 0 to CdrFH.NumChannels-1 do begin
-          cbDetChannel.items.add( format('Ch.%d %s',[ch,Channel[ch].ADCName]) ) ;
+     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
+          cbDetChannel.items.add( format('Ch.%d %s',[ch,EDRFile.Channel[ch].ADCName]) ) ;
           end ;
-     cbDetChannel.ItemIndex := Settings.DwellTimes.ChanNum ;
-     ChanNum := Settings.DwellTimes.ChanNum ;
+     cbDetChannel.ItemIndex := EDRFile.Settings.DwellTimes.ChanNum ;
+     ChanNum := EDRFile.Settings.DwellTimes.ChanNum ;
 
      { Unitary current level }
-     edDetUnitCurrent.Units := Channel[ChanNum].ADCUnits ;
-     edDetUnitCurrent.Value := Settings.DwellTimes.UnitCurrent ;
-     edAHUnitCurrent.Value := Settings.DwellTimes.UnitCurrent ;
-     Det.UnitLevel := Round( Settings.DwellTimes.UnitCurrent / Channel[ChanNum].ADCScale ) ;
+     edDetUnitCurrent.Units := EDRFile.Channel[ChanNum].ADCUnits ;
+     edDetUnitCurrent.Value := EDRFile.Settings.DwellTimes.UnitCurrent ;
+     edAHUnitCurrent.Value := EDRFile.Settings.DwellTimes.UnitCurrent ;
+     Det.UnitLevel := Round( EDRFile.Settings.DwellTimes.UnitCurrent / EDRFile.Channel[ChanNum].ADCScale ) ;
 
      { Transition detection threshold (% of unit current) }
-     edThreshold.Value := Settings.DwellTimes.Threshold ;
+     edThreshold.Value := EDRFile.Settings.DwellTimes.Threshold ;
      Det.Threshold := Round( Det.UnitLevel*edThreshold.Value ) ;
 
     { Set block of CDR file to be scanned }
-     edDetRange.Scale := CdrFH.dt ;
+     edDetRange.Scale := EDRFIle.Cdrfh.dt ;
      edDetRange.LoLimit := 0.0 ;
-     edDetRange.HiLimit := CdrFH.NumSamplesInFile div CdrFH.NumChannels ;
-     edDetRange.HiValue := Min(Settings.DwellTimes.SampleRangeHi,edDetRange.HiLimit) ;
-     edDetRange.LoValue := Min(Settings.DwellTimes.SampleRangeLo,edDetRange.HiLimit) ;
+     edDetRange.HiLimit := EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels ;
+     edDetRange.HiValue := Min(EDRFile.Settings.DwellTimes.SampleRangeHi,edDetRange.HiLimit) ;
+     edDetRange.LoValue := Min(EDRFile.Settings.DwellTimes.SampleRangeLo,edDetRange.HiLimit) ;
      if edDetRange.LoValue >= edDetRange.HiValue then edDetRange.LoValue := 0.0 ;
 
      StateNames[0] := 'Closed' ;
@@ -969,8 +969,8 @@ begin
          StateNames[i] := format('Open(%d)', [i] ) ;
 
      { Scroll bar control }
-     sbDetDisplay.Max := (CdrFH.NumSamplesInFile div
-                         (CdrFH.NumChannels*scDetDisplay.MaxPoints)) - 1 ;
+     sbDetDisplay.Max := (EDRFIle.Cdrfh.NumSamplesInFile div
+                         (EDRFIle.Cdrfh.NumChannels*scDetDisplay.MaxPoints)) - 1 ;
      sbDetDisplay.Position := 0 ;
 
      { Create list of baseline trend curves that can be fitted }
@@ -982,14 +982,14 @@ begin
      cbTrendEquation.ItemIndex := 0 ;
      TrendLine.Func.Setup( TEqnType(
                            cbTrendEquation.Items.Objects[cbTrendEquation.ItemIndex]),
-                           Settings.TUnits,
-                           Channel[ChanNum].ADCUnits)  ;
+                           EDRFile.Settings.TUnits,
+                           EDRFile.Channel[ChanNum].ADCUnits)  ;
 
      TrendLine.NumPoints := 0 ;
      TrendLine.Available := False ;
      bRemoveTrend.Enabled := False ;
-     bRestoreOriginal.Enabled := CdrFH.BackedUp and
-                                 FileExists(ChangeFileExt(CdrFH.FileName,'.bak')) ;
+     bRestoreOriginal.Enabled := EDRFIle.Cdrfh.BackedUp and
+                                 FileExists(ChangeFileExt(EDRFIle.Cdrfh.FileName,'.bak')) ;
 
      end ;
 
@@ -1024,20 +1024,20 @@ begin
            end ;
         end ;
 
-     Det.UnitLevel := Round(Settings.DwellTimes.UnitCurrent/Channel[ChanNum].ADCScale) ;
+     Det.UnitLevel := Round(EDRFile.Settings.DwellTimes.UnitCurrent/EDRFile.Channel[ChanNum].ADCScale) ;
      Det.Threshold := Round(Det.UnitLevel*edThreshold.Value) ;
 
      { Range of samples to be scanned for single-channel transitions }
 
-     Settings.DwellTimes.SampleRangeLo := Round(edDetRange.LoValue) ;
-     Settings.DwellTimes.SampleRangeHi := Round(edDetRange.HiValue) ;
+     EDRFile.Settings.DwellTimes.SampleRangeLo := Round(edDetRange.LoValue) ;
+     EDRFile.Settings.DwellTimes.SampleRangeHi := Round(edDetRange.HiValue) ;
      if rbAllRecords.Checked then begin
         Det.StartAtSample := 0 ;
-        Det.EndAtSample := CdrFH.NumSamplesInFile div CdrFH.NumChannels ;
+        Det.EndAtSample := EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels ;
         end
      else begin
-        Det.StartAtSample := Settings.DwellTimes.SampleRangeLo ;
-        Det.EndAtSample :=   Settings.DwellTimes.SampleRangeHi ;
+        Det.StartAtSample := EDRFile.Settings.DwellTimes.SampleRangeLo ;
+        Det.EndAtSample :=   EDRFile.Settings.DwellTimes.SampleRangeHi ;
         end ;
 
      { Move data file pointer to start of data to be plotted }
@@ -1059,7 +1059,7 @@ begin
          { Load another buffer of A/D samples from file when needed }
          if NewBufferNeeded then begin
             scDetDisplay.xOffset := Det.SampleNum ;
-            if ReadCDRBuffer(CdrFH,Det.SampleNum,DetBuf^,scDetDisplay.MaxPoints)
+            if EDRFile.ReadBuffer(EDRFile.CdrFH,Det.SampleNum,DetBuf^,scDetDisplay.MaxPoints)
                = scDetDisplay.MaxPoints then begin
                UpdateCursors( scDetDisplay ) ;
                scDetDisplay.SetDataBuf( DetBuf ) ;
@@ -1076,15 +1076,15 @@ begin
             { Indicate progress of detection }
             Main.StatusBar.SimpleText := format(
             ' Single-channel Analysis : Detecting Events %.1f/%.1f (%d events detected)',
-            [Det.SampleNum*CDRFH.dt,Det.EndAtSample*CDRFH.dt,EventFile.NumEvents]) ;
+            [Det.SampleNum*EDRFIle.Cdrfh.dt,Det.EndAtSample*EDRFIle.Cdrfh.dt,EventFile.NumEvents]) ;
 
             NewBufferNeeded := False ;
             end ;
 
          { Subtract baseline }
-         j := (ADCPointer*CdrFH.NumChannels) + Channel[ChanNum].ChannelOffset ;
+         j := (ADCPointer*EDRFIle.Cdrfh.NumChannels) + EDRFile.Channel[ChanNum].ChannelOffset ;
          Det.YOld := Det.Y ;
-         Det.Y := DetBuf^[j] - Channel[ChanNum].ADCZero ;
+         Det.Y := DetBuf^[j] - EDRFile.Channel[ChanNum].ADCZero ;
 
          { Invert if negative single-channel currents }
 
@@ -1134,7 +1134,7 @@ begin
 
             Event.ChannelState := Det.OldChannelState ;
             { Duration of channel state }
-            Event.Duration := (Det.TransitionTime - Det.OldTransitionTime)*CdrFH.dt;
+            Event.Duration := (Det.TransitionTime - Det.OldTransitionTime)*EDRFIle.Cdrfh.dt;
             { Sample where channel entered state }
             Event.StartAt := Det.OldTransitionSample ;
             Event.ExactStart := Det.OldTransitionTime ;
@@ -1142,9 +1142,9 @@ begin
             { Sample where channel left state }
             Event.EndAt := Det.TransitionSample - 1 ;
 
-            Event.Average := (Det.Sum/Det.NumSamples)*Channel[ChanNum].ADCScale ;
+            Event.Average := (Det.Sum/Det.NumSamples)*EDRFile.Channel[ChanNum].ADCScale ;
             if Det.NumSamples > 1 then
-               Event.Variance := Channel[ChanNum].ADCScale*Channel[ChanNum].ADCScale*
+               Event.Variance := EDRFile.Channel[ChanNum].ADCScale*EDRFile.Channel[ChanNum].ADCScale*
                                  (Det.Sumsquares
                                   - (Det.Sum*Det.Sum)/Det.NumSamples) /
                                  (Det.NumSamples-1)
@@ -1183,7 +1183,7 @@ begin
 
          { Draw idealised channel time course }
          scDetDisplay.AddPointToLine( iLine,ADCPointer,
-                                      Det.ChannelState*Det.UnitLevel + Channel[ChanNum].ADCZero ) ;
+                                      Det.ChannelState*Det.UnitLevel + EDRFile.Channel[ChanNum].ADCZero ) ;
 
          { Increment A/D sample buffer pointer }
          Inc(ADCPointer) ;
@@ -1208,8 +1208,8 @@ begin
      ' Single-channel Analysis : %d events detected',
      [EventFile.NumEvents]) ;
 
-     Settings.DwellTimes.EventRangeLo := 1 ;
-     Settings.DwellTimes.EventRangeHi := EventFile.NumEvents ;
+     EDRFile.Settings.DwellTimes.EventRangeLo := 1 ;
+     EDRFile.Settings.DwellTimes.EventRangeHi := EventFile.NumEvents ;
 
      end;
 
@@ -1370,8 +1370,8 @@ begin
         iStart := Max( Event.StartAt - PreEventPoints, 0 ) ;
 
         // Data from file
-        NumPointsAvailable := ReadCDRBuffer(
-                              CdrFH,
+        NumPointsAvailable := EDRFile.ReadBuffer(
+                              EDRFile.CdrFH,
                               iStart,
                               EditBuf^,
                               scEditDisplay.MaxPoints) ;
@@ -1384,14 +1384,14 @@ begin
            scEditDisplay.xOffset := iStart ;
            end ;
 
-         scEditDisplay.HorizontalCursors[EditCurs.Base] := Channel[ChanNum].ADCZero ;
-         scEditDisplay.HorizontalCursors[EditCurs.IUnit] := Channel[ChanNum].ADCZero
-                                                      + Round(Settings.DwellTimes.UnitCurrent/
-                                                              Channel[ChanNum].ADCScale) ;
-         scEditDisplay.HorizontalCursors[EditCurs.Threshold] := Channel[ChanNum].ADCZero
-                                                 + Round((Settings.DwellTimes.UnitCurrent
+         scEditDisplay.HorizontalCursors[EditCurs.Base] := EDRFile.Channel[ChanNum].ADCZero ;
+         scEditDisplay.HorizontalCursors[EditCurs.IUnit] := EDRFile.Channel[ChanNum].ADCZero
+                                                      + Round(EDRFile.Settings.DwellTimes.UnitCurrent/
+                                                              EDRFile.Channel[ChanNum].ADCScale) ;
+         scEditDisplay.HorizontalCursors[EditCurs.Threshold] := EDRFile.Channel[ChanNum].ADCZero
+                                                 + Round((EDRFile.Settings.DwellTimes.UnitCurrent
                                                          *edThreshold.Value)/
-                                                         Channel[ChanNum].ADCScale) ;
+                                                         EDRFile.Channel[ChanNum].ADCScale) ;
 
         // Amplitude zero cursors
         scEditDisplay.VerticalCursors[EditCurs.Z0] := Max(Event.StartAt -
@@ -1407,23 +1407,23 @@ begin
         EditCurs.OldC0 := -1 ;
 
         { Plot idealised channel time course }
-        UnitLevel := Round( Settings.DwellTimes.UnitCurrent / Channel[ChanNum].ADCScale ) ;
+        UnitLevel := Round( EDRFile.Settings.DwellTimes.UnitCurrent / EDRFile.Channel[ChanNum].ADCScale ) ;
         scEditDisplay.ClearLines ;
         iLine := scEditDisplay.CreateLine( ChanNum, clGreen, psSolid, 2 ) ;
         if PreviousEvent.Available then begin
            x := (Event.StartAt - iStart) - (scEditDisplay.MaxPoints*0.05) ;
-           y := (PreviousEvent.ChannelState*UnitLevel) + Channel[ChanNum].ADCZero ;
+           y := (PreviousEvent.ChannelState*UnitLevel) + EDRFile.Channel[ChanNum].ADCZero ;
            scEditDisplay.AddPointToLine( iLine, x, y ) ;
            x := (Event.ExactStart) - iStart ;
            scEditDisplay.AddPointToLine( iLine,x, y ) ;
            end ;
         x := (Event.ExactStart) - iStart ;
-        y := (Event.ChannelState*UnitLevel) + Channel[ChanNum].ADCZero ;
+        y := (Event.ChannelState*UnitLevel) + EDRFile.Channel[ChanNum].ADCZero ;
         scEditDisplay.AddPointToLine( iLine,x, y ) ;
         x := Event.ExactEnd - iStart ;
         scEditDisplay.AddPointToLine( iLine,x, y ) ;
         if NextEvent.Available then begin
-           y := (NextEvent.ChannelState*UnitLevel) + Channel[ChanNum].ADCZero ;
+           y := (NextEvent.ChannelState*UnitLevel) + EDRFile.Channel[ChanNum].ADCZero ;
            scEditDisplay.AddPointToLine( iLine,x, y ) ;
            x := (Event.ExactEnd - iStart)
                 + (scEditDisplay.MaxPoints*0.05) ;
@@ -1439,9 +1439,9 @@ begin
 
         if AverageEventAmplitude( Event, AverageAmplitude, StDevAmplitude ) = True then begin
            s := s + format(' Avg.= %.3g %s<br>',
-                    [AverageAmplitude,Channel[ChanNum].ADCUnits]) ;
+                    [AverageAmplitude,EDRFile.Channel[ChanNum].ADCUnits]) ;
            s := s + format(' S.D.= %.3g %s',
-                    [StDevAmplitude,Channel[ChanNum].ADCUnits]) ;
+                    [StDevAmplitude,EDRFile.Channel[ChanNum].ADCUnits]) ;
            end
         else begin
            s := s + ' Avg.= n/a<br> St. Dev.= n/a' ;
@@ -1498,15 +1498,15 @@ begin
      cbDwellTHistType.ItemIndex := 0 ;
 
      // Upper limit of dwell time histogram
-     edHistRange.Scale := Settings.TScale ;
-     edHistRange.Units := Settings.TUnits ;
+     edHistRange.Scale := EDRFile.Settings.TScale ;
+     edHistRange.Units := EDRFile.Settings.TUnits ;
      edHistRange.LoLimit := 0.0 ;
      edHistRange.LoValue := 0.0 ;
-     edHistRange.HiValue := CdrFH.dt*1000.0 ;
+     edHistRange.HiValue := EDRFIle.Cdrfh.dt*1000.0 ;
 
-     edTCritical.Scale := Settings.TScale ;
-     edTCritical.Units := Settings.TUnits ;
-     edTCritical.Value := Settings.DwellTimes.TCritical ;
+     edTCritical.Scale := EDRFile.Settings.TScale ;
+     edTCritical.Units := EDRFile.Settings.TUnits ;
+     edTCritical.Value := EDRFile.Settings.DwellTimes.TCritical ;
 
      // Create list of curves that can be fitted to dwell time histogram
      cbDwellTEqn.Clear ;
@@ -1560,10 +1560,10 @@ begin
         DwellTHist.EndAt := Round( edDwellEventRange.HiLimit ) ;
         end
      else begin
-        Settings.DwellTimes.EventRangeLo := Round(edDwellEventRange.LoValue) ;
-        Settings.DwellTimes.EventRangeHi := Round(edDwellEventRange.HiValue) ;
-        DwellTHist.StartAt := Settings.DwellTimes.EventRangeLo ;
-        DwellTHist.EndAt := Settings.DwellTimes.EventRangeHi ;
+        EDRFile.Settings.DwellTimes.EventRangeLo := Round(edDwellEventRange.LoValue) ;
+        EDRFile.Settings.DwellTimes.EventRangeHi := Round(edDwellEventRange.HiValue) ;
+        DwellTHist.StartAt := EDRFile.Settings.DwellTimes.EventRangeLo ;
+        DwellTHist.EndAt := EDRFile.Settings.DwellTimes.EventRangeHi ;
         end ;
 
      DwellTHist.NumBins := Round( edNumBins.Value ) ;
@@ -1581,7 +1581,7 @@ begin
 
      if DwellTHist.RangeHi <= 0.0 then begin
         DwellTHist.RangeLo := 0.0  ;
-        DwellTHist.RangeHi := CdrFH.dt*1000.0 ;
+        DwellTHist.RangeHi := EDRFIle.Cdrfh.dt*1000.0 ;
         ShowMessage( 'Histogram bin range must be > 0 ' ) ;
         end ;
 
@@ -1605,7 +1605,7 @@ begin
 
        { logarithmically increasing bin width }
        DwellTHist.MaxBin := DwellTHist.NumBins - 1 ;
-       DwellTHist.TMin := log10(CdrFH.dt)  ;
+       DwellTHist.TMin := log10(EDRFIle.Cdrfh.dt)  ;
        DwellTHist.BinWidth := 1.0/DwellTHist.NumLogBinsPerDecade ;
        for iBin := 0 to DwellTHist.MaxBin do begin
             DwellTHist.Bins[iBin].Hi :=  ((iBin+1)*DwellTHist.BinWidth)
@@ -1651,7 +1651,7 @@ begin
      bNewDwellTHist.Enabled := True ;
 
      if HistType = htOpeningsPerBurst then Scale := 1.0
-                                      else Scale := Settings.TScale ;
+                                      else Scale := EDRFile.Settings.TScale ;
 
      // Clear all existing lines on plot }
      plDwellTHist.ClearPlot ;
@@ -1665,7 +1665,7 @@ begin
      plDwellTHist.yAxisAutoRange := True ;
      if HistType = htOpeningsPerBurst then
         plDwellTHist.xAxisLabel := cbDwellTHistType.text
-     else plDwellTHist.xAxisLabel := cbDwellTHistType.text + ' (' + Settings.TUnits + ')';
+     else plDwellTHist.xAxisLabel := cbDwellTHistType.text + ' (' + EDRFile.Settings.TUnits + ')';
      plDwellTHist.yAxisLabel := 'No. Events' ;
 
      if rbLinear.checked then begin
@@ -1752,7 +1752,7 @@ var
 begin
 
     { Read records of data from file and add to histogram }
-    Settings.DwellTimes.TCritical := edTCritical.Value ;
+    EDRFile.Settings.DwellTimes.TCritical := edTCritical.Value ;
     BurstDuration := 0.0 ;
     EventNum := DwellTHist.StartAt ;
     Done := False ;
@@ -1766,7 +1766,7 @@ begin
          { Process event if it not marked as ignored }
          if (not Event.Ignore) then begin
             if (Event.ChannelState = csClosedState) and
-               (Event.Duration >= Settings.DwellTimes.TCritical) then begin
+               (Event.Duration >= EDRFile.Settings.DwellTimes.TCritical) then begin
                UpdateHistogram( BurstDuration, 1.0 ) ;
                BurstDuration := 0.0 ;
                end
@@ -1794,7 +1794,7 @@ var
 begin
 
     { Read records of data from file and add to histogram }
-    Settings.DwellTimes.TCritical := edTCritical.Value ;
+    EDRFile.Settings.DwellTimes.TCritical := edTCritical.Value ;
     NumOpeningsPerBurst := 0 ;
     EventNum := DwellTHist.StartAt ;
     Done := False ;
@@ -1808,7 +1808,7 @@ begin
          { Add to histogram if not marked as ignored }
          if not Event.Ignore then begin
             if (Event.ChannelState = csClosedState) and
-               (Event.Duration >= Settings.DwellTimes.TCritical) then begin
+               (Event.Duration >= EDRFile.Settings.DwellTimes.TCritical) then begin
                if NumOpeningsPerBurst > 0.0 then
                   DwellTHist.Bins[NumOpeningsPerBurst-1].y :=
                       DwellTHist.Bins[NumOpeningsPerBurst-1].y + 1.0 ;
@@ -1840,7 +1840,7 @@ var
 begin
 
     { Read records of data from file and add to histogram }
-    Settings.DwellTimes.TCritical := edTCritical.Value ;
+    EDRFile.Settings.DwellTimes.TCritical := edTCritical.Value ;
     NumOpeningsPerBurst := 0 ;
     LastOpenTime := 0.0 ;
     EventNum := DwellTHist.StartAt ;
@@ -1855,7 +1855,7 @@ begin
          { Add to histogram if not marked as ignored }
          if not Event.Ignore then begin
             if (Event.ChannelState = csClosedState) and
-               (Event.Duration >= Settings.DwellTimes.TCritical) then begin
+               (Event.Duration >= EDRFile.Settings.DwellTimes.TCritical) then begin
                { End of burst. Remove last open time from histogram if the
                  burst only contained a single opening }
                if NumOpeningsPerBurst = 1 then UpdateHistogram(LastOpenTime,-1.0) ;
@@ -1889,7 +1889,7 @@ var
 begin
 
     { Read records of data from file and add to histogram }
-    Settings.DwellTimes.TCritical := edTCritical.Value ;
+    EDRFile.Settings.DwellTimes.TCritical := edTCritical.Value ;
     NumOpeningsPerBurst := 0 ;
     EventNum := DwellTHist.StartAt ;
     LastOpenTime := 0.0 ;
@@ -1903,7 +1903,7 @@ begin
          { Add to histogram if not marked as ignored }
          if not Event.Ignore then begin
             if (Event.ChannelState = csClosedState) and
-               (Event.Duration >= Settings.DwellTimes.TCritical) then begin
+               (Event.Duration >= EDRFile.Settings.DwellTimes.TCritical) then begin
                { End of burst. Remove last open time from histogram if the
                  burst only contained a single opening }
                if NumOpeningsPerBurst = 1 then UpdateHistogram(LastOpenTime,1.0) ;
@@ -2080,7 +2080,7 @@ begin
 
         { Select type of equation to be fitted }
         DwellTFunc.Setup( TEqnType(cbDwellTEqn.Items.Objects[cbDwellTEqn.ItemIndex]),
-                          Settings.TUnits,
+                          EDRFile.Settings.TUnits,
                           '%')  ;
         if DwellTFunc.Equation = None then OK := False ;
 
@@ -2135,7 +2135,7 @@ begin
 
         if TDwellTHistType(cbDwellTHistType.Items.Objects[cbDwellTHistType.ItemIndex])
            = htOpeningsPerBurst then TScale := 1.0
-                                else TScale := Settings.TScale ;
+                                else TScale := EDRFile.Settings.TScale ;
 
         plDwellTHist.CreateLine( FittedLine, clRed, msNone, psSolid ) ;
         if OK and (DwellTFunc.Equation <> None) then begin
@@ -2268,8 +2268,8 @@ begin
        if PrintGraphFrm.ModalResult = mrOK then begin
           { Add title information to plot }
           plAmpHist.ClearPrinterTitle ;
-          plAmpHist.AddPrinterTitleLine( 'File ... ' + cdrFH.FileName ) ;
-          plAmpHist.AddPrinterTitleLine( CdrFH.IdentLine ) ;
+          plAmpHist.AddPrinterTitleLine( 'File ... ' + EDRFIle.Cdrfh.FileName ) ;
+          plAmpHist.AddPrinterTitleLine( EDRFIle.Cdrfh.IdentLine ) ;
           plAmpHist.AddPrinterTitleLine( 'Histogram : ' + cbAmpHistType.text ) ;
           for i := 0 to AmpResults.Count-1 do
               plAmpHist.AddPrinterTitleLine( AmpResults[i] ) ;
@@ -2287,8 +2287,8 @@ begin
        if PrintGraphFrm.ModalResult = mrOK then begin
           { Add title information to plot }
           plDwellTHist.ClearPrinterTitle ;
-          plDwellTHist.AddPrinterTitleLine( 'File ... ' + cdrFH.FileName ) ;
-          plDwellTHist.AddPrinterTitleLine( CdrFH.IdentLine ) ;
+          plDwellTHist.AddPrinterTitleLine( 'File ... ' + EDRFIle.Cdrfh.FileName ) ;
+          plDwellTHist.AddPrinterTitleLine( EDRFIle.Cdrfh.IdentLine ) ;
           plDwellTHist.AddPrinterTitleLine( 'Histogram : ' + cbDwellTHistType.text ) ;
           for i := 0 to DwellTResults.Count-1 do
               plDwellTHist.AddPrinterTitleLine( DwellTResults[i] ) ;
@@ -2300,7 +2300,7 @@ begin
     else if Page.ActivePage = StabPlotTab then begin
        if sgSummary.Visible then begin
           // Print summary table
-          PrintStringGrid( sgSummary ) ;
+          EDRFile.PrintStringGrid( sgSummary ) ;
           end
        else begin
           { Print stability plot }
@@ -2310,8 +2310,8 @@ begin
           if PrintGraphFrm.ModalResult = mrOK then begin
              { Add title information to plot }
              plStabPlot.ClearPrinterTitle ;
-             plStabPlot.AddPrinterTitleLine( 'File ... ' + cdrFH.FileName ) ;
-             plStabPlot.AddPrinterTitleLine( CdrFH.IdentLine ) ;
+             plStabPlot.AddPrinterTitleLine( 'File ... ' + EDRFIle.Cdrfh.FileName ) ;
+             plStabPlot.AddPrinterTitleLine( EDRFIle.Cdrfh.IdentLine ) ;
              plDwellTHist.AddPrinterTitleLine( 'Plot : ' + cbStabPlotType.text ) ;
              { Plot graph to printer }
              plStabPlot.Print ;
@@ -2329,8 +2329,8 @@ begin
        if PrintRecFrm.ModalResult = mrOK then begin
           PrintRecFrm.Display.ClearPrinterTitle ;
           PrintRecFrm.Display.AddPrinterTitleLine(
-                                                'File : ' + cdrFH.FileName ) ;
-          PrintRecFrm.Display.AddPrinterTitleLine( CdrFH.IdentLine ) ;
+                                                'File : ' + EDRFIle.Cdrfh.FileName ) ;
+          PrintRecFrm.Display.AddPrinterTitleLine( EDRFIle.Cdrfh.IdentLine ) ;
           PrintRecFrm.Display.Print ;
           end ;
        end ;
@@ -2401,7 +2401,7 @@ begin
     if Page.ActivePage = AmpHistTab then plAmpHist.CopyDataToClipboard ;
     if Page.ActivePage = DwellTHistTab then plDwellTHist.CopyDataToClipboard ;
     if Page.ActivePage = StabPlotTab then begin
-       if sgSummary.Visible then CopyStringGrid( sgSummary, False )
+       if sgSummary.Visible then EDRFile.CopyStringGrid( sgSummary, False )
                             else plStabPlot.CopyDataToClipboard ;
        end ;
     if Page.ActivePage = EditTransitionsTab then scEditDisplay.CopyDataToClipboard ;
@@ -2440,21 +2440,21 @@ begin
 
      edDetUnitCurrent.Value := (scDetDisplay.HorizontalCursors[DetCurs.IUnit]
                                - scDetDisplay.HorizontalCursors[DetCurs.Base])
-                               * Channel[ChanNum].ADCScale ;
-     Settings.DwellTimes.UnitCurrent := edDetUnitCurrent.Value ;
+                               * EDRFile.Channel[ChanNum].ADCScale ;
+     EDRFile.Settings.DwellTimes.UnitCurrent := edDetUnitCurrent.Value ;
 
-     if Settings.DwellTimes.UnitCurrent <> 0.0 then
+     if EDRFile.Settings.DwellTimes.UnitCurrent <> 0.0 then
         edThreshold.Value :=   (scDetDisplay.HorizontalCursors[DetCurs.Threshold]
                                 - scDetDisplay.HorizontalCursors[DetCurs.Base])
-                                * Channel[ChanNum].ADCScale / Settings.DwellTimes.UnitCurrent
+                                * EDRFile.Channel[ChanNum].ADCScale / EDRFile.Settings.DwellTimes.UnitCurrent
      else edThreshold.Value := 0.0 ;
-     Settings.DwellTimes.Threshold := edThreshold.Value ;
+     EDRFile.Settings.DwellTimes.Threshold := edThreshold.Value ;
 
-     OldValue := Channel[ChanNum].ADCZero ;
-     Channel[ChanNum].ADCZero := Round(scDetDisplay.HorizontalCursors[DetCurs.Base]) ;
+     OldValue := EDRFile.Channel[ChanNum].ADCZero ;
+     EDRFile.Channel[ChanNum].ADCZero := Round(scDetDisplay.HorizontalCursors[DetCurs.Base]) ;
      // Update header and view module
-     if OldValue <> Channel[ChanNum].ADCZero then begin
-        SaveCDRHeader( CDRFH ) ;
+     if OldValue <> EDRFile.Channel[ChanNum].ADCZero then begin
+        EDRFile.SaveHeader( EDRFile.CDRFH ) ;
         Main.UpdateViewSig ;
         end ;
 
@@ -2464,8 +2464,8 @@ begin
      SelectionCursor1 := scDetDisplay.xOffset + Round(scDetDisplay.VerticalCursors[DetCurs.C1]);
 
      { Update vertical display magnification so that changes are retained }
-     Channel[ChanNum].yMin := scDetDisplay.YMin[ChanNum] ;
-     Channel[ChanNum].yMax := scDetDisplay.YMax[ChanNum] ;
+     EDRFile.Channel[ChanNum].yMin := scDetDisplay.YMin[ChanNum] ;
+     EDRFile.Channel[ChanNum].yMax := scDetDisplay.YMax[ChanNum] ;
 
      end ;
 
@@ -2480,12 +2480,12 @@ begin
 
      // Amplitude histogram page
      if Page.ActivePage = AmpHistTab then begin
-        IUnit := Settings.DwellTimes.UnitCurrent ;
-        Settings.DwellTimes.Threshold := edThreshold.Value ;
+        IUnit := EDRFile.Settings.DwellTimes.UnitCurrent ;
+        EDRFile.Settings.DwellTimes.Threshold := edThreshold.Value ;
         if plAmpHist.Available then begin
-           AdjustAmpHistZeroLevel( Channel[ChanNum].ADCZero ) ;
+           AdjustAmpHistZeroLevel( EDRFile.Channel[ChanNum].ADCZero ) ;
            plAmpHist.VerticalCursors[AmpCurs.IUnit] := IUnit  ;
-           Settings.DwellTimes.UnitCurrent := IUnit ;
+           EDRFile.Settings.DwellTimes.UnitCurrent := IUnit ;
            edAHUnitCurrent.Value :=  IUnit ;
            plAmpHist.Invalidate ;
            end ;
@@ -2494,10 +2494,10 @@ begin
      // Transition detection page
      if Page.ActivePage = DetectTransitionsTab then begin
 
-        edDetRange.LoValue := Settings.DwellTimes.SampleRangeLo ;
-        edDetRange.HiValue := Settings.DwellTimes.SampleRangeHi ;
-        edDetUnitCurrent.Value := Settings.DwellTimes.UnitCurrent ;
-        edThreshold.Value := Settings.DwellTimes.Threshold ;
+        edDetRange.LoValue := EDRFile.Settings.DwellTimes.SampleRangeLo ;
+        edDetRange.HiValue := EDRFile.Settings.DwellTimes.SampleRangeHi ;
+        edDetUnitCurrent.Value := EDRFile.Settings.DwellTimes.UnitCurrent ;
+        edThreshold.Value := EDRFile.Settings.DwellTimes.Threshold ;
 
         if EventFile.NumEvents > 0 then EditTransitionsTab.Enabled := True
                                    else EditTransitionsTab.Enabled := False ;
@@ -2542,8 +2542,8 @@ begin
 
          edDwellEventRange.LoLimit := 1 ;
          edDwellEventRange.HiLimit := EventFile.NumEvents ;
-         edDwellEventRange.LoValue := Settings.DwellTimes.EventRangeLo ;
-         edDwellEventRange.HiValue := Settings.DwellTimes.EventRangeHi ;
+         edDwellEventRange.LoValue := EDRFile.Settings.DwellTimes.EventRangeLo ;
+         edDwellEventRange.HiValue := EDRFile.Settings.DwellTimes.EventRangeHi ;
          if EventFile.NumEvents > 0 then bNewDwellTHist.Enabled := True 
                                     else bNewDwellTHist.Enabled := False ;
 
@@ -2592,8 +2592,8 @@ begin
         TUnits := '' ;
         end
      else begin
-        TScale := Settings.TScale ;
-        TUnits := Settings.TUnits ;
+        TScale := EDRFile.Settings.TScale ;
+        TUnits := EDRFile.Settings.TUnits ;
         end ;
 
      { Set Fitting/area cursor labels }
@@ -2712,13 +2712,13 @@ begin
 
           // Read A/D samples from file
           NumBlocksPerBuffer := Min(iEnd - iStart + 1,BufSize) ;
-          ReadCDRBuffer(CdrFH,iStart,ADC,NumBlocksPerBuffer) ;
+          EDRFile.ReadBuffer(EDRFile.CdrFH,iStart,ADC,NumBlocksPerBuffer) ;
 
           // Add to sum
-          j := Channel[cbDetChannel.ItemIndex].ChannelOffset ;
+          j := EDRFile.Channel[cbDetChannel.ItemIndex].ChannelOffset ;
           for i := 0 to NumBlocksPerBuffer-1 do begin
               Sum := Sum + ADC[j] ;
-              j := j + CDRFH.NumChannels ;
+              j := j + EDRFIle.Cdrfh.NumChannels ;
               Inc(nSum) ;
               end ;
           iStart := iStart + NumBlocksPerBuffer ;
@@ -2757,8 +2757,8 @@ begin
         { Select type of equation to be fitted (linear,quadratic,cubic) }
         TrendLine.Func.Setup( TEqnType(
                               cbTrendEquation.Items.Objects[cbTrendEquation.ItemIndex]),
-                              Settings.TUnits,
-                              Channel[ChanNum].ADCUnits)  ;
+                              EDRFile.Settings.TUnits,
+                              EDRFile.Channel[ChanNum].ADCUnits)  ;
         { Copy data into fitting buffer }
         for i := 0 to TrendLine.NumPoints-1 do begin
            FitData^.x[i] := TrendLine.x[i] ;
@@ -2804,8 +2804,8 @@ begin
      { Set new equation in math function object }
      TrendLine.Func.Setup( TEqnType(
                            cbTrendEquation.Items.Objects[cbTrendEquation.ItemIndex]),
-                           Settings.TUnits,
-                           Channel[ChanNum].ADCUnits)  ;
+                           EDRFile.Settings.TUnits,
+                           EDRFile.Channel[ChanNum].ADCUnits)  ;
 
      { Do a fit if enough points are available }
      if TrendLine.NumPoints >= TrendLine.Func.NumParameters then begin
@@ -2835,30 +2835,30 @@ begin
      { Make a back up copy of original data file if one doesn't already exist }
      Main.StatusBar.SimpleText :=
      ' Single-channel Analysis : Making back-up of original data file' ;
-     MakeBackupFile ;
+     EDRFile.MakeBackupFile ;
 
-     bRestoreOriginal.Enabled := CdrFH.BackedUp and
-                                 FileExists(ChangeFileExt(CdrFH.FileName,'.bak')) ;
+     bRestoreOriginal.Enabled := EDRFIle.Cdrfh.BackedUp and
+                                 FileExists(ChangeFileExt(EDRFIle.Cdrfh.FileName,'.bak')) ;
 
      { Range of samples to have trend subtracted from them }
      if rbAllRecords.Checked then begin
         Det.StartAtSample := 0 ;
-        Det.EndAtSample := CdrFH.NumSamplesInFile div CdrFH.NumChannels ;
+        Det.EndAtSample := EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels ;
         end
      else begin
-        Det.StartAtSample := Settings.DwellTimes.SampleRangeLo ;
-        Det.EndAtSample := Settings.DwellTimes.SampleRangeHi ;
+        Det.StartAtSample := EDRFile.Settings.DwellTimes.SampleRangeLo ;
+        Det.EndAtSample := EDRFile.Settings.DwellTimes.SampleRangeHi ;
         end ;
 
      { Move data file pointer to start of data to be plotted }
      Det.SampleNum := Det.StartAtSample ;
      Main.StatusBar.SimpleText := 'Single-channel Analysis : Wait ... Removing trend' ;
 
-     NumSamplesPerBuffer := NumBlocksPerBuffer*CdrFH.NumChannels ;
+     NumSamplesPerBuffer := NumBlocksPerBuffer*EDRFIle.Cdrfh.NumChannels ;
 
      { Initial settings of while loop control flags }
      NewBufferNeeded := True ;
-     iPointer := Channel[ChanNum].ChannelOffset ;
+     iPointer := EDRFile.Channel[ChanNum].ChannelOffset ;
      BufferStart := Det.SampleNum ;
      Done := False ;
      while not Done do begin
@@ -2867,11 +2867,11 @@ begin
          if NewBufferNeeded then begin
             BufferStart := Det.SampleNum ;
             { Read into buffer }
-            if ReadCDRBuffer(CdrFH,BufferStart,ADC,NumBlocksPerBuffer)
+            if EDRFile.ReadBuffer(EDRFile.CdrFH,BufferStart,ADC,NumBlocksPerBuffer)
                <> NumBlocksPerBuffer then edStatus.Text := 'Read Error' ;
 
             { Set buffer pointer to first sample }
-            iPointer := Channel[ChanNum].ChannelOffset ;
+            iPointer := EDRFile.Channel[ChanNum].ChannelOffset ;
 
             NewBufferNeeded := False ;
             Application.ProcessMessages ;
@@ -2883,7 +2883,7 @@ begin
                                     - TrendLine.Func.Value( Det.SampleNum*1.0 ) ) ;
 
          { Next sample }
-         iPointer := iPointer + CdrFH.NumChannels ; ;
+         iPointer := iPointer + EDRFIle.Cdrfh.NumChannels ; ;
          Inc(Det.SampleNum) ;
 
          { End when last sample done }
@@ -2892,7 +2892,7 @@ begin
          { Write buffer back to file }
          if (iPointer >= NumSamplesPerBuffer) or Done then begin
             { Read into buffer }
-            if WriteCDRBuffer(CdrFH,BufferStart,ADC,NumBlocksPerBuffer)
+            if EDRFile.WriteBuffer(EDRFile.CdrFH,BufferStart,ADC,NumBlocksPerBuffer)
                <> NumBlocksPerBuffer then edStatus.Text := 'Write Error' ;
             NewBufferNeeded := True ;
             end ;
@@ -2903,7 +2903,7 @@ begin
      ' Single-channel Analysis : Trend removed from digitised signal.' ;
 
      { Set current baseline level to new value after trend removal }
-     Channel[ChanNum].ADCZero := Round(TrendLine.Func.Parameters[0]) ;
+     EDRFile.Channel[ChanNum].ADCZero := Round(TrendLine.Func.Parameters[0]) ;
 
      { Clear trend line }
      TrendLine.NumPoints := 0 ;
@@ -2921,7 +2921,7 @@ procedure TSingleChanAnalFrm.bRestoreOriginalClick(Sender: TObject);
   -------------------------------------- }
 begin
      Screen.Cursor := crHourGlass ;
-     RestoreFromBackupFile ;
+     EDRFile.RestoreFromBackupFile ;
      Screen.Cursor := crDefault ;
      end;
 
@@ -2930,7 +2930,7 @@ procedure TSingleChanAnalFrm.cbDetChannelChange(Sender: TObject);
 // Channel selected for event detection changed
 // --------------------------------------------
 begin
-     Settings.DwellTimes.ChanNum := cbDetChannel.ItemIndex ;
+     EDRFile.Settings.DwellTimes.ChanNum := cbDetChannel.ItemIndex ;
      ChannelChanged ;
      end;
 
@@ -2969,8 +2969,8 @@ procedure  TSingleChanAnalFrm.ZoomOutAll ;
   Set minimum display magnification
   --------------------------------- }
 begin
-     scDetDisplay.MaxADCValue := Channel[0].ADCMaxValue ;
-     scDetDisplay.MinADCValue := -Channel[0].ADCMaxValue -1 ;
+     scDetDisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+     scDetDisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue -1 ;
      scDetDisplay.ZoomOut ;
      scEditDisplay.MaxADCValue := scDetDisplay.MaxADCValue ;
      scEditDisplay.MinADCValue := scDetDisplay.MinADCValue ;
@@ -3041,7 +3041,7 @@ begin
           stChannelCurrents : ChannelCurrentStabPlot(StartAt,EndAt,BlockSize ) ;
           stMeanCurrent : MeanCurrentStabPlot( StartAt, EndAt, BlockSize, 0.0 ) ;
           stOpenProb :    MeanCurrentStabPlot( StartAt, EndAt, BlockSize,
-                                               Settings.DwellTimes.UnitCurrent*
+                                               EDRFile.Settings.DwellTimes.UnitCurrent*
                                                edStabPlotNumChannels.Value ) ;
           stAvgVsOpenTimes : StateAverageVsDwellTime( StartAt, EndAt, stAvgVsOpenTimes) ;
           stAvgVsClosedTimes : StateAverageVsDwellTime( StartAt, EndAt, stAvgVsClosedTimes) ;
@@ -3079,15 +3079,15 @@ var
    Done : Boolean ;
 begin
 
-     Settings.DwellTimes.EventRangeLo := Round(edStabPlotRange.LoValue) ;
-     Settings.DwellTimes.EventRangeHi := Round(edStabPlotRange.HiValue) ;
-     Settings.DwellTimes.EventBlockSize := Round(edStabPlotBlockSize.Value) ;
+     EDRFile.Settings.DwellTimes.EventRangeLo := Round(edStabPlotRange.LoValue) ;
+     EDRFile.Settings.DwellTimes.EventRangeHi := Round(edStabPlotRange.HiValue) ;
+     EDRFile.Settings.DwellTimes.EventBlockSize := Round(edStabPlotBlockSize.Value) ;
 
      { Plot graph of currently selected variables }
      plStabPlot.xAxisAutoRange := True ;
      plStabPlot.yAxisAutoRange := True ;
      plStabPlot.xAxisLabel := 'Time (s) ' ;
-     plStabPlot.yAxisLabel := cbStabPlotType.Text + ' (' + Settings.TUnits + ')' ;
+     plStabPlot.yAxisLabel := cbStabPlotType.Text + ' (' + EDRFile.Settings.TUnits + ')' ;
 
      plStabPlot.MaxPointsPerLine := Max( ((EndAt - StartAt + 1) div BlockSize) + 1,1000) ;
 
@@ -3111,8 +3111,8 @@ begin
          { Add duration to average, if it is the correct type of state }
          if not Event.Ignore then begin
             if Event.ChannelState = RequiredState then begin
-               SumY := SumY + Event.Duration*Settings.TScale ;
-               SumX := SumX + Event.StartAt*cdrFH.dt ;
+               SumY := SumY + Event.Duration*EDRFile.Settings.TScale ;
+               SumX := SumX + Event.StartAt*EDRFIle.Cdrfh.dt ;
                Inc(nAvg) ;
                end ;
             end ;
@@ -3166,16 +3166,16 @@ var
    Event : TEvent ;
 begin
 
-     Settings.DwellTimes.EventRangeLo := Round(edStabPlotRange.LoValue) ;
-     Settings.DwellTimes.EventRangeHi := Round(edStabPlotRange.HiValue) ;
-     Settings.DwellTimes.EventBlockSize := Round(edStabPlotBlockSize.Value) ;
+     EDRFile.Settings.DwellTimes.EventRangeLo := Round(edStabPlotRange.LoValue) ;
+     EDRFile.Settings.DwellTimes.EventRangeHi := Round(edStabPlotRange.HiValue) ;
+     EDRFile.Settings.DwellTimes.EventBlockSize := Round(edStabPlotBlockSize.Value) ;
 
     { Plot graph of currently selected variables }
     plStabPlot.xAxisAutoRange := True ;
     plStabPlot.yAxisAutoRange := True ;
     plStabPlot.xAxisLabel := 'Time (s) ' ;
     plStabPlot.yAxisLabel := cbStabPlotType.Text
-                             + ' (' + Channel[ChanNum].ADCUnits + ')';
+                             + ' (' + EDRFile.Channel[ChanNum].ADCUnits + ')';
     plStabPlot.MaxPointsPerLine := Max( ((EndAt - StartAt +1) div BlockSize) + 1,1000) ;
 
     { Clear data points line }
@@ -3196,7 +3196,7 @@ begin
             // Calculate average and add to runningaverage
             if AverageEventAmplitude( Event, AverageAmplitude, StDev ) then begin
                SumY := SumY + AverageAmplitude ;
-               SumX := SumX + Event.StartAt*CDRFH.dt ;
+               SumX := SumX + Event.StartAt*EDRFIle.Cdrfh.dt ;
                Inc(nAvg) ;
                end ;
             end ;
@@ -3255,11 +3255,11 @@ var
    ADC : Array[0..MaxBlocksPerBuffer*MaxChannels-1] of SmallInt ;
 begin
 
-     Settings.DwellTimes.SampleRangeLo := Round(edStabPlotRange.LoValue) ;
-     Settings.DwellTimes.SampleRangeHi := Round(edStabPlotRange.HiValue) ;
-     Settings.DwellTimes.SampleBlockSize := Round(edStabPlotBlockSize.Value) ;
+     EDRFile.Settings.DwellTimes.SampleRangeLo := Round(edStabPlotRange.LoValue) ;
+     EDRFile.Settings.DwellTimes.SampleRangeHi := Round(edStabPlotRange.HiValue) ;
+     EDRFile.Settings.DwellTimes.SampleBlockSize := Round(edStabPlotBlockSize.Value) ;
      RegionSize := Max(RegionSize,1) ;
-     Settings.DwellTimes.NumChannelsPerPatch := Round(edStabPlotNumChannels.Value);
+     EDRFile.Settings.DwellTimes.NumChannelsPerPatch := Round(edStabPlotNumChannels.Value);
 
      { Plot graph of currently selected variables }
      plStabPlot.xAxisAutoRange := True ;
@@ -3271,7 +3271,7 @@ begin
         plStabPlot.yAxisLabel := cbStabPlotType.Text
      else
         plStabPlot.yAxisLabel := cbStabPlotType.Text
-                                 + ' (' + Channel[ChanNum].ADCUnits + ')';
+                                 + ' (' + EDRFile.Channel[ChanNum].ADCUnits + ')';
 
      plStabPlot.MaxPointsPerLine := Max( ((EndAt - StartAt +1) div RegionSize) + 1,1000) ;
 
@@ -3284,11 +3284,11 @@ begin
     SumX := 0.0 ;
     SumY := 0.0 ;
     nAvg := 0 ;
-    EndAt := Min(EndAt,(CdrFH.NumSamplesInFile div CdrFH.NumChannels) - 1) ;
+    EndAt := Min(EndAt,(EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels) - 1) ;
 
     { Sample/buffer pointers }
     BlockPointer := StartAt ;
-    NumSamplesPerBuffer := MaxBlocksPerBuffer*CdrFH.NumChannels ;
+    NumSamplesPerBuffer := MaxBlocksPerBuffer*EDRFIle.Cdrfh.NumChannels ;
     BufPointer := NumSamplesPerBuffer ;
 
     Done := False ;
@@ -3297,8 +3297,8 @@ begin
          { Get buffer of samples from file }
          if BufPointer >= NumSamplesPerBuffer then begin
             NumBlocksToRead := Min(MaxBlocksPerBuffer,EndAt-BlockPointer + 1) ;
-            ReadCDRBuffer(CdrFH,BlockPointer,ADC,NumBlocksToRead) ;
-            BufPointer := Channel[ChanNum].ChannelOffset ;
+            EDRFile.ReadBuffer(EDRFile.CdrFH,BlockPointer,ADC,NumBlocksToRead) ;
+            BufPointer := EDRFile.Channel[ChanNum].ChannelOffset ;
             end ;
 
          { Add sample to average, if it is the correct type of state }
@@ -3308,8 +3308,8 @@ begin
 
         { Add average of block to plot when block is done }
         if (nAvg >= RegionSize) then begin
-           AvgTime := (SumX/nAvg)*CdrFH.dt ;
-           Avg := ((SumY/nAvg)-Channel[ChanNum].ADCZero)*Channel[ChanNum].ADCScale ;
+           AvgTime := (SumX/nAvg)*EDRFIle.Cdrfh.dt ;
+           Avg := ((SumY/nAvg)-EDRFile.Channel[ChanNum].ADCZero)*EDRFile.Channel[ChanNum].ADCScale ;
            { If divide factor non-zero divide by it to convert current to
              channel open probability }
            if DivideFactor <> 0.0 then Avg := Avg/DivideFactor ;
@@ -3321,12 +3321,12 @@ begin
            { Report progress }
            Main.StatusBar.SimpleText := format(
            ' Single-channel Analysis : Mean current stability Plot %.1f/%.1fa',
-           [BlockPointer*CDRFH.dt,EndAt*CDRFH.dt] ) ;
+           [BlockPointer*EDRFIle.Cdrfh.dt,EndAt*EDRFIle.Cdrfh.dt] ) ;
            end ;
 
         { Next sample block }
         Inc(BlockPointer) ;
-        BufPointer := BufPointer + CdrFH.NumChannels ;
+        BufPointer := BufPointer + EDRFIle.Cdrfh.NumChannels ;
 
         if (BlockPointer > EndAt) or
            (not bAbortStabPlot.Enabled) then Done := True ;
@@ -3342,7 +3342,7 @@ begin
     { Report progress }
     Main.StatusBar.SimpleText := format(
     ' Single-channel Analysis : Mean current stability plot created (%.1fs)',
-    [(BlockPointer-StartAt)*CDRFH.dt] ) ;
+    [(BlockPointer-StartAt)*EDRFIle.Cdrfh.dt] ) ;
 
     end ;
 
@@ -3374,9 +3374,9 @@ begin
      case StabPlotType of
         stCursorDuration : plStabPlot.yAxisLabel := 'Duration (ms)' ;
         stCursorAverage : plStabPlot.yAxisLabel := 'Average ' +
-                          '(' + Channel[ChanNum].ADCUnits + ')';
+                          '(' + EDRFile.Channel[ChanNum].ADCUnits + ')';
         stCursorSD : plStabPlot.yAxisLabel := 'S.D. ' +
-                          '(' + Channel[ChanNum].ADCUnits + ')';
+                          '(' + EDRFile.Channel[ChanNum].ADCUnits + ')';
         end ;
 
      plStabPlot.MaxPointsPerLine := Max( ((EndAt - StartAt +1) div RegionSize) + 1,1000) ;
@@ -3471,14 +3471,14 @@ var
    UseEvent : Boolean ;
 begin
 
-     Settings.DwellTimes.EventRangeLo := Round(edStabPlotRange.LoValue) ;
-     Settings.DwellTimes.EventRangeHi := Round(edStabPlotRange.HiValue) ;
+     EDRFile.Settings.DwellTimes.EventRangeLo := Round(edStabPlotRange.LoValue) ;
+     EDRFile.Settings.DwellTimes.EventRangeHi := Round(edStabPlotRange.HiValue) ;
 
       { Plot graph of currently selected variables }
       plStabPlot.xAxisAutoRange := True ;
       plStabPlot.yAxisAutoRange := True ;
       plStabPlot.xAxisLabel := 'Open Time (ms) ' ;
-      plStabPlot.yAxisLabel := format('Avg. Current (%s)',[Channel[ChanNum].ADCUnits]) ;
+      plStabPlot.yAxisLabel := format('Avg. Current (%s)',[EDRFile.Channel[ChanNum].ADCUnits]) ;
       plStabPlot.MaxPointsPerLine :=  Max( ((EndAt - StartAt) div 2) + 1,1000) ;
 
       { Clear data points line }
@@ -3559,8 +3559,8 @@ var
 
 begin
 
-      Settings.DwellTimes.TCritical := edStabPlotTCritical.Value ;
-      Settings.DwellTimes.NumChannelsPerPatch := Round(edStabPlotNumChannels.Value) ;
+      EDRFile.Settings.DwellTimes.TCritical := edStabPlotTCritical.Value ;
+      EDRFile.Settings.DwellTimes.NumChannelsPerPatch := Round(edStabPlotNumChannels.Value) ;
 
       { Read records of data from file and add to histogram }
       Done := False ;
@@ -3598,7 +3598,7 @@ begin
             Inc(NumClosedEvents) ;
             TimeClosed := TimeClosed + Event.Duration ;
 
-            if Event.Duration <= Settings.DwellTimes.TCritical then begin
+            if Event.Duration <= EDRFile.Settings.DwellTimes.TCritical then begin
                TimeClosedInBurst :=  TimeClosedInBurst + Event.Duration ;
                end
             else begin
@@ -3659,12 +3659,12 @@ begin
 
       // File name
       sgSummary.Cells[0,Row] := ' File ' ;
-      sgSummary.Cells[1,Row] := CDRFH.FileName ;
+      sgSummary.Cells[1,Row] := EDRFIle.Cdrfh.FileName ;
       Inc(Row) ;
 
       // ID
       sgSummary.Cells[0,Row] := ' Comment ' ;
-      sgSummary.Cells[1,Row] := CDRFH.IdentLine ;
+      sgSummary.Cells[1,Row] := EDRFIle.Cdrfh.IdentLine ;
       Inc(Row) ;
 
 
@@ -3674,16 +3674,16 @@ begin
       Inc(Row) ;
 
       // Open events
-      sgSummary.Cells[0,Row] := format(' Mean open time (%s) ',[Settings.TUnits]) ;
-      sgSummary.Cells[1,Row] := format(' %.4g ',[MeanOpenTime*Settings.TScale]) ;
+      sgSummary.Cells[0,Row] := format(' Mean open time (%s) ',[EDRFile.Settings.TUnits]) ;
+      sgSummary.Cells[1,Row] := format(' %.4g ',[MeanOpenTime*EDRFile.Settings.TScale]) ;
       Inc(Row) ;
       sgSummary.Cells[0,Row] := ' No. open events ' ;
       sgSummary.Cells[1,Row] := format(' %d ',[NumOpenEvents]) ;
       Inc(Row) ;
 
       // Closed events
-      sgSummary.Cells[0,Row] := format(' Mean closed time (%s) ',[Settings.TUnits]) ;
-      sgSummary.Cells[1,Row] := format(' %.4g ',[MeanClosedTime*Settings.TScale]) ;
+      sgSummary.Cells[0,Row] := format(' Mean closed time (%s) ',[EDRFile.Settings.TUnits]) ;
+      sgSummary.Cells[1,Row] := format(' %.4g ',[MeanClosedTime*EDRFile.Settings.TScale]) ;
       Inc(Row) ;
       sgSummary.Cells[0,Row] := ' No. closed events ' ;
       sgSummary.Cells[1,Row] := format(' %d ',[NumClosedEvents]) ;
@@ -3696,8 +3696,8 @@ begin
       Inc(Row) ;
 
       // Burst duration
-      sgSummary.Cells[0,Row] := format(' Mean burst duration (%s) ',[Settings.TUnits]) ;
-      sgSummary.Cells[1,Row] := format(' %.4g ',[MeanBurstDuration*Settings.TScale]) ;
+      sgSummary.Cells[0,Row] := format(' Mean burst duration (%s) ',[EDRFile.Settings.TUnits]) ;
+      sgSummary.Cells[1,Row] := format(' %.4g ',[MeanBurstDuration*EDRFile.Settings.TScale]) ;
       Inc(Row) ;
       // No. of bursts
       sgSummary.Cells[0,Row] := ' No. of bursts ' ;
@@ -3708,12 +3708,12 @@ begin
       sgSummary.Cells[1,Row] := format(' %.4g ',[NumOpeningsPerBurst]) ;
       Inc(Row) ;
       // Mean closed time within burst
-      sgSummary.Cells[0,Row] := format(' Mean closed time within burst (%s) ',[Settings.TUnits]) ;
-      sgSummary.Cells[1,Row] := format(' %.4g ',[MeanClosedTimeInBurst*Settings.TScale]) ;
+      sgSummary.Cells[0,Row] := format(' Mean closed time within burst (%s) ',[EDRFile.Settings.TUnits]) ;
+      sgSummary.Cells[1,Row] := format(' %.4g ',[MeanClosedTimeInBurst*EDRFile.Settings.TScale]) ;
       Inc(Row) ;
       // Mean closed time between bursts
-      sgSummary.Cells[0,Row] := format(' Mean closed time between bursts (%s) ',[Settings.TUnits]) ;
-      sgSummary.Cells[1,Row] := format(' %.4g ',[MeanClosedTimeBetweenBursts*Settings.TScale]) ;
+      sgSummary.Cells[0,Row] := format(' Mean closed time between bursts (%s) ',[EDRFile.Settings.TUnits]) ;
+      sgSummary.Cells[1,Row] := format(' %.4g ',[MeanClosedTimeBetweenBursts*EDRFile.Settings.TScale]) ;
       Inc(Row) ;
       // Open channel probability (within burst)
       sgSummary.Cells[0,Row] := format(' P.open (within burst n= %d channels) ',
@@ -3721,8 +3721,8 @@ begin
       sgSummary.Cells[1,Row] := format(' %.4g ',[POpenInBurst]) ;
       Inc(Row) ;
       // Critical closed time
-      sgSummary.Cells[0,Row] := format(' T.critical closed time (%s)',[Settings.TUnits]) ;
-      sgSummary.Cells[1,Row] := format(' %.4g ',[Settings.DwellTimes.TCritical*Settings.TScale]) ;
+      sgSummary.Cells[0,Row] := format(' T.critical closed time (%s)',[EDRFile.Settings.TUnits]) ;
+      sgSummary.Cells[1,Row] := format(' %.4g ',[EDRFile.Settings.DwellTimes.TCritical*EDRFile.Settings.TScale]) ;
       Inc(Row) ;
       // No. of events ignored
       sgSummary.Cells[0,Row] := ' No. events ignored ' ;
@@ -3810,13 +3810,13 @@ begin
              edStabPlotRange.Units := '' ;
              edStabPlotRange.HiLimit := EventFile.NumEvents ;
              edStabPlotRange.LoLimit := 1 ;
-             edStabPlotRange.LoValue := Settings.DwellTimes.EventRangeLo ;
-             edStabPlotRange.HiValue := Settings.DwellTimes.EventRangeHi ;
+             edStabPlotRange.LoValue := EDRFile.Settings.DwellTimes.EventRangeLo ;
+             edStabPlotRange.HiValue := EDRFile.Settings.DwellTimes.EventRangeHi ;
              edStabPlotBlockSize.Scale := edStabPlotRange.Scale ;
              edStabPlotBlockSize.Units := edStabPlotRange.Units ;
              edStabPlotBlockSize.LoLimit := Max( 1, EventFile.NumEvents div plStabPlot.MaxPointsPerLine) ;
              edStabPlotBlockSize.HiLimit := EventFile.NumEvents ;
-             edStabPlotBlockSize.Value := Settings.DwellTimes.EventBlockSize ;
+             edStabPlotBlockSize.Value := EDRFile.Settings.DwellTimes.EventBlockSize ;
              bUseCursorsForStabPlotRange.Enabled := False ;
              end ;
 
@@ -3828,8 +3828,8 @@ begin
              edStabPlotRange.Units := '' ;
              edStabPlotRange.HiLimit := EventFile.NumEvents ;
              edStabPlotRange.LoLimit := 1 ;
-             edStabPlotRange.LoValue := Settings.DwellTimes.EventRangeLo ;
-             edStabPlotRange.HiValue := Settings.DwellTimes.EventRangeHi ;
+             edStabPlotRange.LoValue := EDRFile.Settings.DwellTimes.EventRangeLo ;
+             edStabPlotRange.HiValue := EDRFile.Settings.DwellTimes.EventRangeHi ;
              edStabPlotBlockSize.HiLimit := EventFile.NumEvents ;
              bUseCursorsForStabPlotRange.Enabled := False ;
              end ;
@@ -3838,20 +3838,20 @@ begin
              StabPlotBlockSizePanel.Visible := True ;
              StabPlotTCriticalPanel.Visible := False ;
              StabPlotNumChannelsPanel.Visible := True ;
-             edStabPlotRange.Scale := CdrFH.dt ;
+             edStabPlotRange.Scale := EDRFIle.Cdrfh.dt ;
              edStabPlotRange.Units := 's' ;
-             edStabPlotRange.HiLimit := ((CdrFH.NumSamplesInFile div CdrFH.NumChannels) - 1) ;
+             edStabPlotRange.HiLimit := ((EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels) - 1) ;
              edStabPlotRange.LoLimit := 0.0 ;
-             edStabPlotRange.LoValue := Settings.DwellTimes.SampleRangeLo ;
-             edStabPlotRange.HiValue := Settings.DwellTimes.SampleRangeHi ;
+             edStabPlotRange.LoValue := EDRFile.Settings.DwellTimes.SampleRangeLo ;
+             edStabPlotRange.HiValue := EDRFile.Settings.DwellTimes.SampleRangeHi ;
 
              edStabPlotBlockSize.Scale := edStabPlotRange.Scale ;
              edStabPlotBlockSize.Units := edStabPlotRange.Units ;
-             edStabPlotBlockSize.LoLimit := Max( CdrFH.dt*10,
+             edStabPlotBlockSize.LoLimit := Max( EDRFIle.Cdrfh.dt*10,
                                                  edStabPlotRange.HiLimit/plStabPlot.MaxPointsPerLine) ;
-             edStabPlotBlockSize.HiLimit := CDRFH.NumSamplesInFile div CDRFH.NumChannels ;
-             edStabPlotBlockSize.Value := Settings.DwellTimes.SampleBlockSize ;
-             edStabPlotNumChannels.Value := Settings.DwellTimes.NumChannelsPerPatch ;
+             edStabPlotBlockSize.HiLimit := EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels ;
+             edStabPlotBlockSize.Value := EDRFile.Settings.DwellTimes.SampleBlockSize ;
+             edStabPlotNumChannels.Value := EDRFile.Settings.DwellTimes.NumChannelsPerPatch ;
              bUseCursorsForStabPlotRange.Enabled := True ;
              end ;
 
@@ -3859,21 +3859,21 @@ begin
              StabPlotBlockSizePanel.Visible := False ;
              StabPlotTCriticalPanel.Visible := True ;
              StabPlotNumChannelsPanel.Visible := True ;
-             edStabPlotTCritical.Scale := Settings.TScale ;
-             edStabPlotTCritical.Units := Settings.TUnits ;
-             edStabPlotTCritical.value := Settings.DwellTimes.TCritical ;
+             edStabPlotTCritical.Scale := EDRFile.Settings.TScale ;
+             edStabPlotTCritical.Units := EDRFile.Settings.TUnits ;
+             edStabPlotTCritical.value := EDRFile.Settings.DwellTimes.TCritical ;
              edStabPlotRange.Scale := 1.0 ;
              edStabPlotRange.Units := '' ;
              edStabPlotRange.HiLimit := EventFile.NumEvents ;
              edStabPlotRange.LoLimit := 1 ;
-             edStabPlotRange.LoValue := Settings.DwellTimes.EventRangeLo ;
-             edStabPlotRange.HiValue := Settings.DwellTimes.EventRangeHi ;
+             edStabPlotRange.LoValue := EDRFile.Settings.DwellTimes.EventRangeLo ;
+             edStabPlotRange.HiValue := EDRFile.Settings.DwellTimes.EventRangeHi ;
              edStabPlotBlockSize.Scale := edStabPlotRange.Scale ;
              edStabPlotBlockSize.Units := edStabPlotRange.Units ;
              edStabPlotBlockSize.LoLimit := Max( 1, EventFile.NumEvents div plStabPlot.MaxPointsPerLine) ;
              edStabPlotBlockSize.HiLimit := EventFile.NumEvents ;
-             edStabPlotBlockSize.Value := Settings.DwellTimes.EventBlockSize ;
-             edStabPlotNumChannels.Value := Settings.DwellTimes.NumChannelsPerPatch ;
+             edStabPlotBlockSize.Value := EDRFile.Settings.DwellTimes.EventBlockSize ;
+             edStabPlotNumChannels.Value := EDRFile.Settings.DwellTimes.NumChannelsPerPatch ;
              bUseCursorsForStabPlotRange.Enabled := False ;
              end ;
 
@@ -3882,18 +3882,18 @@ begin
              StabPlotTCriticalPanel.Visible := False ;
              StabPlotNumChannelsPanel.Visible := False ;
              StabPlotNumChannelsPanel.Visible := False ;
-             edStabPlotRange.Scale := CdrFH.dt ;
+             edStabPlotRange.Scale := EDRFIle.Cdrfh.dt ;
              edStabPlotRange.Units := 's' ;
-             edStabPlotRange.HiLimit := ((CdrFH.NumSamplesInFile div CdrFH.NumChannels) - 1) ;
+             edStabPlotRange.HiLimit := ((EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels) - 1) ;
              edStabPlotRange.LoLimit := 0.0 ;
-             edStabPlotRange.LoValue := Settings.DwellTimes.SampleRangeLo ;
-             edStabPlotRange.HiValue := Settings.DwellTimes.SampleRangeHi ;
+             edStabPlotRange.LoValue := EDRFile.Settings.DwellTimes.SampleRangeLo ;
+             edStabPlotRange.HiValue := EDRFile.Settings.DwellTimes.SampleRangeHi ;
              edStabPlotBlockSize.Scale := edStabPlotRange.Scale ;
              edStabPlotBlockSize.Units := edStabPlotRange.Units ;
-             edStabPlotBlockSize.LoLimit := Max( CdrFH.dt*10,
+             edStabPlotBlockSize.LoLimit := Max( EDRFIle.Cdrfh.dt*10,
                                                  edStabPlotRange.HiLimit/plStabPlot.MaxPointsPerLine) ;
-             edStabPlotBlockSize.HiLimit := CDRFH.NumSamplesInFile div CDRFH.NumChannels ;
-             edStabPlotBlockSize.Value := Settings.DwellTimes.SampleBlockSize ;
+             edStabPlotBlockSize.HiLimit := EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels ;
+             edStabPlotBlockSize.Value := EDRFile.Settings.DwellTimes.SampleBlockSize ;
              bUseCursorsForStabPlotRange.Enabled := True ;
 
              end ;
@@ -4050,8 +4050,8 @@ var
 begin
 
      { Update vertical display magnification so that changes are retained }
-     Channel[ChanNum].yMin := scEditDisplay.YMin[ChanNum] ;
-     Channel[ChanNum].yMax := scEditDisplay.YMax[ChanNum] ;
+     EDRFile.Channel[ChanNum].yMin := scEditDisplay.YMin[ChanNum] ;
+     EDRFile.Channel[ChanNum].yMax := scEditDisplay.YMax[ChanNum] ;
 
      if not ckEnableCursorMeasurement.Checked then Exit ;
 
@@ -4077,7 +4077,7 @@ begin
      YZero := 0.0 ;
      n := 0 ;
      for i := Min(i0,i1) to Max(i0,i1) do begin
-         YZero := YZero + EditBuf[i*CDRFH.NumChannels + scEditDisplay.ChanOffsets[ChanNum]] ;
+         YZero := YZero + EditBuf[i*EDRFIle.Cdrfh.NumChannels + scEditDisplay.ChanOffsets[ChanNum]] ;
          Inc(n) ;
          end ;
      if n > 0 then YZero := YZero / n ;
@@ -4088,7 +4088,7 @@ begin
      Y := 0.0 ;
      n := 0 ;
      for i := Min(i0,i1) to Max(i0,i1) do begin
-         Y := Y + EditBuf[i*CDRFH.NumChannels + scEditDisplay.ChanOffsets[ChanNum]] ;
+         Y := Y + EditBuf[i*EDRFIle.Cdrfh.NumChannels + scEditDisplay.ChanOffsets[ChanNum]] ;
          Inc(n) ;
          end ;
      if n > 0 then Y := Y / n ;
@@ -4096,7 +4096,7 @@ begin
      YSD := 0.0 ;
      n := 0 ;
      for i := Min(i0,i1) to Max(i0,i1) do begin
-         YResidual := Y - EditBuf[i*CDRFH.NumChannels + scEditDisplay.ChanOffsets[ChanNum]] ;
+         YResidual := Y - EditBuf[i*EDRFIle.Cdrfh.NumChannels + scEditDisplay.ChanOffsets[ChanNum]] ;
          YSD := YSD + YResidual*YResidual ;
          Inc(n) ;
          end ;
@@ -4110,9 +4110,9 @@ begin
      CursorMeasurements[NumCursorMeasurements].SDCurrent :=
          YSD*scEditDisplay.ChanScale[ChanNum] ;
      CursorMeasurements[NumCursorMeasurements].Duration :=
-         Abs(i0-i1)*CDRFH.dt*1000.0 ;
+         Abs(i0-i1)*EDRFIle.Cdrfh.dt*1000.0 ;
      CursorMeasurements[NumCursorMeasurements].TStart := (
-         scEditDisplay.XOffset + i0)*CDRFH.dt ;
+         scEditDisplay.XOffset + i0)*EDRFIle.Cdrfh.dt ;
 
      // Display cursor measurements
      s := format( ' T= %.4g s<br>',
@@ -4135,20 +4135,20 @@ procedure TSingleChanAnalFrm.ChangeDisplayGrid ;
   Update grid pattern on oscilloscope display
   -------------------------------------------- }
 begin
-     scDetDisplay.MaxADCValue := Channel[0].ADCMaxValue ;
-     scDetDisplay.MinADCValue := -Channel[0].ADCMaxValue -1 ;
-     scDetDisplay.DisplayGrid := Settings.DisplayGrid ;
+     scDetDisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+     scDetDisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue -1 ;
+     scDetDisplay.DisplayGrid := EDRFile.Settings.DisplayGrid ;
 
-     scDetDisplay.TScale := CdrFH.dt*Settings.TScale ;
-     scDetDisplay.TUnits := Settings.TUnits ;
+     scDetDisplay.TScale := EDRFIle.Cdrfh.dt*EDRFile.Settings.TScale ;
+     scDetDisplay.TUnits := EDRFile.Settings.TUnits ;
      scDetDisplay.Invalidate ;
 
-     scEditDisplay.MaxADCValue := Channel[0].ADCMaxValue ;
-     scEditDisplay.MinADCValue := -Channel[0].ADCMaxValue -1 ;
-     scEditDisplay.DisplayGrid := Settings.DisplayGrid ;
+     scEditDisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+     scEditDisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue -1 ;
+     scEditDisplay.DisplayGrid := EDRFile.Settings.DisplayGrid ;
 
-     scEditDisplay.TScale := CdrFH.dt*Settings.TScale ;
-     scEditDisplay.TUnits := Settings.TUnits ;
+     scEditDisplay.TScale := EDRFIle.Cdrfh.dt*EDRFile.Settings.TScale ;
+     scEditDisplay.TUnits := EDRFile.Settings.TUnits ;
      scEditDisplay.Invalidate ;
      
      end ;
@@ -4190,19 +4190,19 @@ begin
      AmpHistTypePage.PageIndex := AllPointsPage ;
 
      // Time range to be included in histogram
-     edAHRange.Scale := CdrFH.dt ;
+     edAHRange.Scale := EDRFIle.Cdrfh.dt ;
      edAHRange.LoLimit := 0.0 ;
-     edAHRange.HiLimit := CdrFH.NumSamplesInFile div CdrFH.NumChannels ;
-     edAHRange.HiValue := Min(Settings.DwellTimes.SampleRangeHi,edAHRange.HiLimit) ;
-     edAHRange.LoValue := Min(Settings.DwellTimes.SampleRangeLo,edAHRange.HiLimit) ;
+     edAHRange.HiLimit := EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels ;
+     edAHRange.HiValue := Min(EDRFile.Settings.DwellTimes.SampleRangeHi,edAHRange.HiLimit) ;
+     edAHRange.LoValue := Min(EDRFile.Settings.DwellTimes.SampleRangeLo,edAHRange.HiLimit) ;
      if edAHRange.LoValue >= edAHRange.HiValue then edAHRange.LoValue := 0.0 ;
 
      edAHRange.Units := 's' ;
 
      { Fill data source channel selection list }
      cbAmpHistChannel.Clear ;
-     for ch := 0 to CdrFH.NumChannels-1 do begin
-         cbAmpHistChannel.items.add( format('Ch.%d %s',[ch,Channel[ch].ADCName]) ) ;
+     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
+         cbAmpHistChannel.items.add( format('Ch.%d %s',[ch,EDRFile.Channel[ch].ADCName]) ) ;
          end ;
      cbAmpHistChannel.ItemIndex := ChanNum ;
 
@@ -4216,18 +4216,18 @@ begin
      { Number of bins in histogram }
 
      edAHNumBins.HiLimit := High(AmpHist.Bins) + 1 ;
-     AmplitudeRange := (2*Channel[0].ADCMaxValue + 1)*Channel[ChanNum].ADCScale ;
-     edAHBinWidth.LoLimit := Max( Channel[ChanNum].ADCScale,
+     AmplitudeRange := (2*EDRFile.Channel[0].ADCMaxValue + 1)*EDRFile.Channel[ChanNum].ADCScale ;
+     edAHBinWidth.LoLimit := Max( EDRFile.Channel[ChanNum].ADCScale,
                                        AmplitudeRange/High(AmpHist.Bins)) ;
-     edAHBinWidth.LoLimit := Channel[ChanNum].ADCScale ;
+     edAHBinWidth.LoLimit := EDRFile.Channel[ChanNum].ADCScale ;
      edAHBinWidth.HiLimit := AmplitudeRange / 4.0 ;
-    // edAmpHistBinWidth.Value := Channel[ChanNum].ADCScale*4 ;
-     edAHBinWidth.Units := Channel[ChanNum].ADCUnits ;
+    // edAmpHistBinWidth.Value := EDRFile.Channel[ChanNum].ADCScale*4 ;
+     edAHBinWidth.Units := EDRFile.Channel[ChanNum].ADCUnits ;
 
-     edAHBinsLower.Units := Channel[ChanNum].ADCUnits ;
-     edAHBinsUpper.Units := Channel[ChanNum].ADCUnits ;
-     edAHUnitCurrent.Units := Channel[ChanNum].ADCUnits ;
-     edAHUnitCurrent.Value := Settings.DwellTimes.UnitCurrent ;
+     edAHBinsLower.Units := EDRFile.Channel[ChanNum].ADCUnits ;
+     edAHBinsUpper.Units := EDRFile.Channel[ChanNum].ADCUnits ;
+     edAHUnitCurrent.Units := EDRFile.Channel[ChanNum].ADCUnits ;
+     edAHUnitCurrent.Value := EDRFile.Settings.DwellTimes.UnitCurrent ;
 
      { Initialise display cursors }
      plAmpHist.ClearVerticalCursors ;
@@ -4281,19 +4281,19 @@ begin
     while not Done do begin
 
        { Read a record from file and add its data to histogram }
-       NumBlocks := ReadCDRBuffer(CdrFH,BlockPointer,ADC,NumBlocksPerBuffer) ;
+       NumBlocks := EDRFile.ReadBuffer(EDRFile.CdrFH,BlockPointer,ADC,NumBlocksPerBuffer) ;
 
        if NumBlocks = NumBlocksPerBuffer then begin
-          j := Channel[ChanNum].ChannelOffset ;
+          j := EDRFile.Channel[ChanNum].ChannelOffset ;
           for i := 0 to NumBlocksPerBuffer-1 do begin
               { Get amplitude value }
-              y := (ADC[j] - Channel[ChanNum].ADCZero)*Channel[ChanNum].ADCScale ;
+              y := (ADC[j] - EDRFile.Channel[ChanNum].ADCZero)*EDRFile.Channel[ChanNum].ADCScale ;
               { Find index of histogram bin }
               iBin := Round( (y - AmpHist.RangeLo)*BinScale ) ;
               iBin := IntLimitTo( iBin, 0, AmpHist.MaxBin ) ;
               { Increment bin count }
               AmpHist.Bins[iBin].y := AmpHist.Bins[iBin].y + 1.0 ;
-              j := j + CdrFH.NumChannels ;
+              j := j + EDRFIle.Cdrfh.NumChannels ;
               end ;
           end
        else Done := True ;
@@ -4301,7 +4301,7 @@ begin
        { Report progress }
        Main.StatusBar.SimpleText := format(
        'Single-channel Analysis : Compiling histogram %.1f/%.1f',
-       [BlockPointer*CDRFH.dt,AmpHist.EndAt*CDRFH.dt]) ;
+       [BlockPointer*EDRFIle.Cdrfh.dt,AmpHist.EndAt*EDRFIle.Cdrfh.dt]) ;
 
        { Increment to next record }
        BlockPointer := BlockPointer + NumBlocksPerBuffer ;
@@ -4339,7 +4339,7 @@ var
 //    SelectedState := Integer(cbChannelState.Items.Objects[cbChannelState.ItemIndex]) ;
     SelectedState := cbChannelState.ItemIndex - 1 ;
     MarginPoints := Round(edMarginPoints.Value) ;
-    LastSampleInBuffer := NumBlocksPerBuffer*CdrFH.NumChannels - 1 ;
+    LastSampleInBuffer := NumBlocksPerBuffer*EDRFIle.Cdrfh.NumChannels - 1 ;
 
     BinScale := 1.0/edAHBinWidth.Value ;
 
@@ -4363,18 +4363,18 @@ var
 
           BlockPointer := Event.StartAt ;
           NewBufferNeeded := True ;
-          SamplePointer := Channel[ChanNum].ChannelOffset ;
+          SamplePointer := EDRFile.Channel[ChanNum].ChannelOffset ;
           while BlockPointer <= Event.EndAt do begin
 
               { Get A/D samples from file }
               if NewBufferNeeded then begin
-                 ReadCDRBuffer(CdrFH,BlockPointer,ADC,NumBlocksPerBuffer) ;
+                 EDRFile.ReadBuffer(EDRFile.CdrFH,BlockPointer,ADC,NumBlocksPerBuffer) ;
                  NewBufferNeeded := False ;
-                 SamplePointer := Channel[ChanNum].ChannelOffset ;
+                 SamplePointer := EDRFile.Channel[ChanNum].ChannelOffset ;
                  end ;
 
               { Get amplitude value }
-              y := (ADC[SamplePointer] - Channel[ChanNum].ADCZero)*Channel[ChanNum].ADCScale ;
+              y := (ADC[SamplePointer] - EDRFile.Channel[ChanNum].ADCZero)*EDRFile.Channel[ChanNum].ADCScale ;
 
               { Find index of histogram bin }
               iBin := Round( (y - AmpHist.RangeLo)*BinScale ) ;
@@ -4382,7 +4382,7 @@ var
 
               { Increment bin count }
               AmpHist.Bins[iBin].y := AmpHist.Bins[iBin].y + 1.0 ;
-              SamplePointer := SamplePointer + CdrFH.NumChannels ;
+              SamplePointer := SamplePointer + EDRFIle.Cdrfh.NumChannels ;
 
               // Next sample
               if SamplePointer > LastSampleInBuffer then NewBufferNeeded := True ;
@@ -4501,30 +4501,30 @@ begin
      if Event.EndAt >= Event.StartAt then begin
 
         NumScans := Event.EndAt - Event.StartAt + 1 ;
-        GetMem( ADC, NumScans*CDRFH.NumChannels*2 ) ;
+        GetMem( ADC, NumScans*EDRFIle.Cdrfh.NumChannels*2 ) ;
 
         // Read data from file
-        ReadCDRBuffer(CdrFH,Event.StartAt,ADC^,NumScans) ;
+        EDRFile.ReadBuffer(EDRFile.CdrFH,Event.StartAt,ADC^,NumScans) ;
 
         // Calculate average
         Sum := 0.0 ;
         j := 0 ;
         for i := 0 to NumScans-1 do begin
             Sum := Sum + ADC^[j] ;
-            j := j + CDRFH.NumChannels ;
+            j := j + EDRFIle.Cdrfh.NumChannels ;
             end ;
         Avg := Sum/NumScans;
-        AverageAmplitude := (Avg - Channel[ChanNum].ADCZero)*Channel[ChanNum].ADCScale;
+        AverageAmplitude := (Avg - EDRFile.Channel[ChanNum].ADCZero)*EDRFile.Channel[ChanNum].ADCScale;
 
         // Calculate standard deviation
         Sum := 0.0 ;
         j := 0 ;
         for i := 0 to NumScans-1 do begin
             Sum := Sum + (ADC^[j] - Avg)*(ADC^[j] - Avg) ;
-            j := j + CDRFH.NumChannels ;
+            j := j + EDRFIle.Cdrfh.NumChannels ;
             end ;
         if (NumScans > 1) and (Sum > 0.0) then begin
-           StDev := SQRT(Sum/(NumScans-1))*Channel[ChanNum].ADCScale ;
+           StDev := SQRT(Sum/(NumScans-1))*EDRFile.Channel[ChanNum].ADCScale ;
            end
         else StDev := 0.0 ;
 
@@ -4558,7 +4558,7 @@ var
 begin
 
     { Determine number of bytes to be read from file for each buffer }
-    NumSamplesPerBuffer := NumBlocksPerBuffer*CdrFH.NumChannels ;
+    NumSamplesPerBuffer := NumBlocksPerBuffer*EDRFIle.Cdrfh.NumChannels ;
 
     { Number of samples to average }
     NumAvg := IntLimitTo(Round(edNumPatlakAvg.Value),1,High(Ring)+1) ;
@@ -4578,14 +4578,14 @@ begin
     while not Done do begin
         { Get new buffer of samples, if needed }
         if SamplePointer >= NumSamplesPerBuffer then begin
-           if ReadCDRBuffer(CdrFH,BlockPointer,ADC,NumBlocksPerBuffer)
+           if EDRFile.ReadBuffer(EDRFile.CdrFH,BlockPointer,ADC,NumBlocksPerBuffer)
               <> NumBlocksPerBuffer then Done := True ;
-           SamplePointer := Channel[ChanNum].ChannelOffset ;
+           SamplePointer := EDRFile.Channel[ChanNum].ChannelOffset ;
 
            { Report progress }
            Main.StatusBar.SimpleText := format(
            'Single-channel Analysis : Compiling histogram %.1f/%.1f',
-           [BlockPointer*CDRFH.dt,AmpHist.EndAt*CDRFH.dt]) ;
+           [BlockPointer*EDRFIle.Cdrfh.dt,AmpHist.EndAt*EDRFIle.Cdrfh.dt]) ;
 
            { Allow other events to be serviced }
            Application.ProcessMessages ;
@@ -4595,11 +4595,11 @@ begin
            Sum := 0.0 ;
            SumSquares := 0.0 ;
            for iRing := 0 to NumAvg-1 do begin
-               y := (ADC[SamplePointer] - Channel[ChanNum].ADCZero)*Channel[ChanNum].ADCScale ;
+               y := (ADC[SamplePointer] - EDRFile.Channel[ChanNum].ADCZero)*EDRFile.Channel[ChanNum].ADCScale ;
                Ring[iRing] := y ;
                Sum := Sum + y ;
                SumSquares := SumSquares + y*y ;
-               SamplePointer := SamplePointer + CdrFH.NumChannels ;
+               SamplePointer := SamplePointer + EDRFIle.Cdrfh.NumChannels ;
                end ;
            FirstBuffer := False ;
            iRing := NumAvg-1 ;
@@ -4609,11 +4609,11 @@ begin
            if iRing = NumAvg then iRing := 0 ;
            Sum := Sum - Ring[iRing] ;
            SumSquares := SumSquares - Ring[iRing]*Ring[iRing] ;
-           y := (ADC[SamplePointer] - Channel[ChanNum].ADCZero)*Channel[ChanNum].ADCScale ;
+           y := (ADC[SamplePointer] - EDRFile.Channel[ChanNum].ADCZero)*EDRFile.Channel[ChanNum].ADCScale ;
            Sum := Sum + y ;
            SumSquares := SumSquares + y*y ;
            Ring[iRing] := y ;
-           SamplePointer := SamplePointer + CdrFH.NumChannels ;
+           SamplePointer := SamplePointer + EDRFIle.Cdrfh.NumChannels ;
            end ;
 
         { Calculate mean and variance of segment }
@@ -4661,33 +4661,33 @@ begin
      Screen.Cursor := crHourGlass ;
      { Ensure all text box parameters are up to date }
 
-     Settings.DwellTimes.SampleRangeLo := Round(edAHRange.LoValue) ;
-     Settings.DwellTimes.SampleRangeHi := Round(edAHRange.HiValue) ;
+     EDRFile.Settings.DwellTimes.SampleRangeLo := Round(edAHRange.LoValue) ;
+     EDRFile.Settings.DwellTimes.SampleRangeHi := Round(edAHRange.HiValue) ;
 
      if rbAmpWholeFile.Checked then begin
         AmpHist.StartAt := Round( edAHRange.LoLimit ) ;
         AmpHist.EndAt := Round( edAHRange.HiLimit ) ;
         end
      else begin
-        AmpHist.StartAt := Settings.DwellTimes.SampleRangeLo ;
-        AmpHist.EndAt :=   Settings.DwellTimes.SampleRangeHi ;
+        AmpHist.StartAt := EDRFile.Settings.DwellTimes.SampleRangeLo ;
+        AmpHist.EndAt :=   EDRFile.Settings.DwellTimes.SampleRangeHi ;
         end ;
 
           // Clear histogram and set up bin ranges
      if not AHBinRangePanel.Visible then begin
         AmpHist.NumBins := Round(edAHNumBins.Value) ;
 
-        AmpHist.RangeLo := (-Channel[0].ADCMaxValue -1
-                         - Channel[ChanNum].ADCZero)*Channel[ChanNum].ADCScale ;
+        AmpHist.RangeLo := (-EDRFile.Channel[0].ADCMaxValue -1
+                         - EDRFile.Channel[ChanNum].ADCZero)*EDRFile.Channel[ChanNum].ADCScale ;
         edAHBinsLower.Value := AmpHist.RangeLo ;
 
-        AmpHist.RangeHi := (Channel[0].ADCMaxValue
-                          - Channel[ChanNum].ADCZero)*Channel[ChanNum].ADCScale ;
+        AmpHist.RangeHi := (EDRFile.Channel[0].ADCMaxValue
+                          - EDRFile.Channel[ChanNum].ADCZero)*EDRFile.Channel[ChanNum].ADCScale ;
         edAHBinsUpper.Value := AmpHist.RangeHi ;
 
         edAHBinWidth.Value := (AmpHist.RangeHi - AmpHist.RangeLo) / AmpHist.NumBins ;
         AHBinRangePanel.Visible := True ;
-        edAHBinWidth.Units := Channel[ChanNum].ADCUnits ;
+        edAHBinWidth.Units := EDRFile.Channel[ChanNum].ADCUnits ;
         edAHBinsLower.Units := edAHBinWidth.Units ;
         edAHBinsUpper.Units := edAHBinWidth.Units ;
         end
@@ -4775,7 +4775,7 @@ begin
      plAmpHist.xAxisMax := AmpHist.Bins[AmpHist.MaxBin].Hi ;
      plAmpHist.XAxisTick := plAmpHist.TickSpacing( plAmpHist.xAxisMax - plAmpHist.xAxisMin) ;
      plAmpHist.yAxisAutoRange := True ;
-     plAmpHist.xAxisLabel := cbAmpHistType.text + ' (' + Channel[ChanNum].ADCUnits + ')' ;
+     plAmpHist.xAxisLabel := cbAmpHistType.text + ' (' + EDRFile.Channel[ChanNum].ADCUnits + ')' ;
      plAmpHist.yAxisLabel := '%' ;
      plAmpHist.CreateHistogram( 0 ) ;
 
@@ -4807,9 +4807,9 @@ begin
      plAmpHist.VerticalCursors[AmpCurs.Read] := AmpHist.Bins[AmpHist.MaxBin div 2].Mid ;
 
      // Keep signal zero level
-     AmpHistADCZero := Channel[ChanNum].ADCZero ;
+     AmpHistADCZero := EDRFile.Channel[ChanNum].ADCZero ;
 
-     plAmpHist.VerticalCursors[AmpCurs.IUnit] := Settings.DwellTimes.UnitCurrent ;
+     plAmpHist.VerticalCursors[AmpCurs.IUnit] := EDRFile.Settings.DwellTimes.UnitCurrent ;
 
      { Enable copy and print menu items }
      Main.CopyAndPrintMenus( True, True ) ;
@@ -4859,7 +4859,7 @@ begin
      shAmpHistLine.visible := true ;
      lbAmpHistArea.caption := format(' Mean= %.3g %s /Area= %.3g %% ',
                              [XMean,
-                             Channel[ChanNum].ADCUnits,
+                             EDRFile.Channel[ChanNum].ADCUnits,
                               YSum] ) ;
 
      { Display mean signal level and histogram % between cursors }
@@ -4879,9 +4879,9 @@ begin
      shAmpHistLine.Visible := True ;
 
      // Ensure that unit-c cursor remains fixed
-     //if plAmpHist.VerticalCursors[AmpCurs.IUnit] <> Settings.DwellTimes.UnitCurrent then
-     Settings.DwellTimes.UnitCurrent := plAmpHist.VerticalCursors[AmpCurs.IUnit] ;
-     edAHUnitCurrent.Value := Settings.DwellTimes.UnitCurrent ;
+     //if plAmpHist.VerticalCursors[AmpCurs.IUnit] <> EDRFile.Settings.DwellTimes.UnitCurrent then
+     EDRFile.Settings.DwellTimes.UnitCurrent := plAmpHist.VerticalCursors[AmpCurs.IUnit] ;
+     edAHUnitCurrent.Value := EDRFile.Settings.DwellTimes.UnitCurrent ;
 
      end;
 
@@ -4893,7 +4893,7 @@ procedure TSingleChanAnalFrm.bSetZeroClick(Sender: TObject);
 begin
 
      AdjustAmpHistZeroLevel( Round(plAmpHist.VerticalCursors[AmpCurs.Read]
-                             /Channel[ChanNum].ADCScale) + AmpHistADCZero ) ;
+                             /EDRFile.Channel[ChanNum].ADCScale) + AmpHistADCZero ) ;
 
      end ;
 
@@ -4910,17 +4910,17 @@ var
 begin
 
      // Calculate new zero current level (in A/D converter units)
-     OldZeroCurrent := AmpHistADCZero*Channel[ChanNum].ADCScale ;
+     OldZeroCurrent := AmpHistADCZero*EDRFile.Channel[ChanNum].ADCScale ;
 
      // Update channel being analysed
-     Channel[ChanNum].ADCZero := NewADCZero ;
+     EDRFile.Channel[ChanNum].ADCZero := NewADCZero ;
      // Make sure it is saved in file header
-     SaveCDRHeader( cdrFH ) ;
+     EDRFile.SaveHeader( EDRFile.cdrFH ) ;
      // And View module zero levels are updated
      Main.UpdateViewSig ;
 
      // Calculate offset needed to correct AmpHist bins for new zero
-     ZeroCurrent := NewADCZero*Channel[ChanNum].ADCScale ;
+     ZeroCurrent := NewADCZero*EDRFile.Channel[ChanNum].ADCScale ;
      Shift := OldZeroCurrent - ZeroCurrent ;
 
      // Update bins
@@ -4951,7 +4951,7 @@ procedure TSingleChanAnalFrm.bSetUnitCurrentClick(Sender: TObject);
   Set unitary current amplitude
   -----------------------------}
 begin
-     Settings.DwellTimes.UnitCurrent := plAmpHist.VerticalCursors[AmpCurs.Read] ;
+     EDRFile.Settings.DwellTimes.UnitCurrent := plAmpHist.VerticalCursors[AmpCurs.Read] ;
      plAmpHist.VerticalCursors[AmpCurs.IUnit] := plAmpHist.VerticalCursors[AmpCurs.Read] ;
      plAmpHist.Invalidate ;
      end;
@@ -4982,7 +4982,7 @@ begin
 
         { Select type of equation to be fitted }
         AmpFunc.Setup( TEqnType(cbAmpHistEqn.Items.Objects[cbAmpHistEqn.ItemIndex]),
-                       Channel[ChanNum].ADCUnits,
+                       EDRFile.Channel[ChanNum].ADCUnits,
                        '%')  ;
         if AmpFunc.Equation = None then OK := False ;
 
@@ -5301,8 +5301,8 @@ begin
      if TAmpHistType(cbAmpHistType.Items.Objects[cbAmpHistType.ItemIndex])
          = htAllPoints then begin
         edAHRange.LoLimit := 0.0 ;
-        edAHRange.Scale := CdrFH.dt ;
-        edAHRange.HiLimit := CdrFH.RecordDuration / CdrFH.dt ;
+        edAHRange.Scale := EDRFIle.Cdrfh.dt ;
+        edAHRange.HiLimit := EDRFIle.Cdrfh.RecordDuration / EDRFIle.Cdrfh.dt ;
         edAHRange.Units := 's' ;
         AmpHistTypePage.PageIndex := AllPointsPage ;
         bUseCursorsForAmpHistRange.Enabled := True ;
@@ -5310,8 +5310,8 @@ begin
      else if TAmpHistType(cbAmpHistType.Items.Objects[cbAmpHistType.ItemIndex])
          = htAmplitudesFile then begin
         edAHRange.LoLimit := 0.0 ;
-        edAHRange.Scale := CdrFH.dt ;
-        edAHRange.HiLimit := CdrFH.RecordDuration / CdrFH.dt ;
+        edAHRange.Scale := EDRFIle.Cdrfh.dt ;
+        edAHRange.HiLimit := EDRFIle.Cdrfh.RecordDuration / EDRFIle.Cdrfh.dt ;
         edAHRange.Units := 's' ;
         AmpHistTypePage.PageIndex := AllPointsPage ;
         bUseCursorsForAmpHistRange.Enabled := True ;
@@ -5319,11 +5319,11 @@ begin
      else if TAmpHistType(cbAmpHistType.Items.Objects[cbAmpHistType.ItemIndex])
          = htPatlakAverage then begin
         edAHRange.LoLimit := 0.0 ;
-        edAHRange.Scale := CdrFH.dt ;
-        edAHRange.HiLimit := CdrFH.RecordDuration / CdrFH.dt ;
+        edAHRange.Scale := EDRFIle.Cdrfh.dt ;
+        edAHRange.HiLimit := EDRFIle.Cdrfh.RecordDuration / EDRFIle.Cdrfh.dt ;
         edAHRange.Units := 's' ;
         AmpHistTypePage.PageIndex := PatlakAveragePage ;
-        edPatlakSDLimit.Units := Channel[ChanNum].ADCUnits ;
+        edPatlakSDLimit.Units := EDRFile.Channel[ChanNum].ADCUnits ;
         bUseCursorsForAmpHistRange.Enabled := True ;
         end
      else if TAmpHistType(cbAmpHistType.Items.Objects[cbAmpHistType.ItemIndex])
@@ -5370,7 +5370,7 @@ begin
      SaveDialog.Title := 'Save data file';
 
      // Default file name
-     SaveDialog.FileName := ChangeFileExt( CDRFH.FileName, '.txt' ) ;
+     SaveDialog.FileName := ChangeFileExt( EDRFIle.Cdrfh.FileName, '.txt' ) ;
      if rbClosedTimes.Checked then FileNameEnding := ' (closed times).txt'
      else if rbOpenTimes.Checked then  FileNameEnding := ' (open times).txt'
      else if rbEventAmplitudes.Checked then  FileNameEnding := ' (event list + amps).txt'
@@ -5421,8 +5421,8 @@ procedure TSingleChanAnalFrm.bFTestClick(Sender: TObject);
 //
 begin
      FTestFrm.ClearPrinterTitleLines ;
-     FTestFrm.AddPrinterTitleLine( 'File ... ' + CdrFH.FileName ) ;
-     FTestFrm.AddPrinterTitleLine( CdrFH.IdentLine ) ;
+     FTestFrm.AddPrinterTitleLine( 'File ... ' + EDRFIle.Cdrfh.FileName ) ;
+     FTestFrm.AddPrinterTitleLine( EDRFIle.Cdrfh.IdentLine ) ;
      FTestFrm.AddPrinterTitleLine( 'Histogram : ' + cbDwellTHistType.Text ) ;
      FTestFrm.ShowModal ;
      end;
@@ -5444,7 +5444,7 @@ begin
      SaveDialog.Filter := ' Text Files (*.txt)|*.txt' ;
      SaveDialog.Title := 'Save histogram data';
 
-     SaveDialog.FileName := ChangeFileExt( CDRFH.FileName, '.txt' ) ;
+     SaveDialog.FileName := ChangeFileExt( EDRFIle.Cdrfh.FileName, '.txt' ) ;
      SaveDialog.FileName := ANSIReplaceStr( SaveDialog.FileName,
                                             '.txt',
                                             ' (dwell time histogram).txt' ) ;
@@ -5470,7 +5470,7 @@ procedure TSingleChanAnalFrm.cbAmpHistChannelChange(Sender: TObject);
 // Channel selected for amplitude histogram changed
 // ------------------------------------------------
 begin
-     Settings.DwellTimes.ChanNum := cbAmpHistChannel.ItemIndex ;
+     EDRFile.Settings.DwellTimes.ChanNum := cbAmpHistChannel.ItemIndex ;
      ChannelChanged ;
      end;
 
@@ -5481,24 +5481,24 @@ procedure TSingleChanAnalFrm.ChannelChanged ;
 // -------------------------------------------
 begin
 
-     ChanNum := Settings.DwellTimes.ChanNum ;
+     ChanNum := EDRFile.Settings.DwellTimes.ChanNum ;
 
      AHBinRangePanel.Visible := False ;
 
      // Initialise amplitude histogram
      InitialiseAmpHist ;
 
-     edDetUnitCurrent.Units := Channel[ChanNum].ADCUnits ;
+     edDetUnitCurrent.Units := EDRFile.Channel[ChanNum].ADCUnits ;
 
      { Initialise continuous and detected event displays with new channel }
      InitialiseDisplays ;
 
      if bDetect.Enabled then DisplayRecord ;
 
-     if cbDetChannel.ItemIndex <> Settings.DwellTimes.ChanNum  then
-        cbDetChannel.ItemIndex := Settings.DwellTimes.ChanNum ;
-     if cbAmpHistChannel.ItemIndex <> Settings.DwellTimes.ChanNum  then
-        cbAmpHistChannel.ItemIndex := Settings.DwellTimes.ChanNum ;
+     if cbDetChannel.ItemIndex <> EDRFile.Settings.DwellTimes.ChanNum  then
+        cbDetChannel.ItemIndex := EDRFile.Settings.DwellTimes.ChanNum ;
+     if cbAmpHistChannel.ItemIndex <> EDRFile.Settings.DwellTimes.ChanNum  then
+        cbAmpHistChannel.ItemIndex := EDRFile.Settings.DwellTimes.ChanNum ;
 
      end ;
 
@@ -5509,9 +5509,9 @@ procedure TSingleChanAnalFrm.bUseCursorsClick(Sender: TObject);
 // ------------------------------------------
 begin
      edDetRange.LoValue := Min(SelectionCursor0,SelectionCursor1 ) ;
-     Settings.DwellTimes.SampleRangeLo := Round(edDetRange.LoValue) ;
+     EDRFile.Settings.DwellTimes.SampleRangeLo := Round(edDetRange.LoValue) ;
      edDetRange.HiValue := Max(SelectionCursor0,SelectionCursor1 ) ;
-     Settings.DwellTimes.SampleRangeHi := Round(edDetRange.HiValue) ;
+     EDRFile.Settings.DwellTimes.SampleRangeHi := Round(edDetRange.HiValue) ;
      end;
 
 procedure TSingleChanAnalFrm.bGetC0Click(Sender: TObject);
@@ -5573,7 +5573,7 @@ begin
         ShowMessage('Internal Error : Event record wrong size');
 
      { Event data file has a .EDE file ending }
-     EventFile.Name := ChangeFileExt( CdrFH.FileName, EventFileExtension ) ;
+     EventFile.Name := ChangeFileExt( EDRFIle.Cdrfh.FileName, EventFileExtension ) ;
      if FileExists( EventFile.Name ) then begin
         EventFile.Handle := FileOpen(EventFile.Name, fmOpenReadWrite ) ;
         { Read number of events from start of file  }
@@ -5586,9 +5586,9 @@ begin
         EventFile.Handle := FileCreate(EventFile.Name) ;
         EventFile.NumEvents := 0 ;
         // Reset sample range
-        Settings.DwellTimes.SampleRangeLo := 0 ;
-        Settings.DwellTimes.SampleRangeHi := CdrFH.NumSamplesInFile div CdrFH.NumChannels ;
-        Settings.DwellTimes.SampleBlockSize :=  Max(Settings.DwellTimes.SampleRangeHi div 20,1) ;
+        EDRFile.Settings.DwellTimes.SampleRangeLo := 0 ;
+        EDRFile.Settings.DwellTimes.SampleRangeHi := EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels ;
+        EDRFile.Settings.DwellTimes.SampleBlockSize :=  Max(EDRFile.Settings.DwellTimes.SampleRangeHi div 20,1) ;
         end ;
 
      if EventFile.Handle < 0 then begin
@@ -5662,9 +5662,9 @@ begin
            ShowMessage('Error reading Event file') ;
 
         // Fix incorrect zero level which occurred
-        if (Event.ZeroLevel > Channel[0].ADCMaxValue) or
-           (Event.ZeroLevel < (-Channel[0].ADCMaxValue-1)) then
-           Event.ZeroLevel := Channel[0].ADCZero ;
+        if (Event.ZeroLevel > EDRFile.Channel[0].ADCMaxValue) or
+           (Event.ZeroLevel < (-EDRFile.Channel[0].ADCMaxValue-1)) then
+           Event.ZeroLevel := EDRFile.Channel[0].ADCZero ;
 
         Event.Available := True ;
         end
@@ -5682,7 +5682,7 @@ var
     i : Integer ;
 begin
      for i := 0 to erAmpResults.Lines.Count-1 do
-         WriteToLogFile( erAmpResults.Lines[i] ) ;
+         EDRFile.WriteToLogFile( erAmpResults.Lines[i] ) ;
      end;
 
 procedure TSingleChanAnalFrm.bSaveToLogSummaryClick(Sender: TObject);
@@ -5696,7 +5696,7 @@ begin
      for Row := 0 to sgSummary.RowCount-1 do begin
           s := sgSummary.Cells[0,Row] ;
           s := s + ' = ' + sgSummary.Cells[1,Row] ;
-          WriteToLogFile(s) ;
+          EDRFile.WriteToLogFile(s) ;
           end ;
      end;
 
@@ -5708,7 +5708,7 @@ var
     i : Integer ;
 begin
      for i := 0 to erDwellTResults.Lines.Count-1 do
-         WriteToLogFile( erDwellTResults.Lines[i] ) ;
+         EDRFile.WriteToLogFile( erDwellTResults.Lines[i] ) ;
      end;
 
 procedure TSingleChanAnalFrm.edDetDisplayWidthKeyPress(Sender: TObject;
@@ -5718,8 +5718,8 @@ procedure TSingleChanAnalFrm.edDetDisplayWidthKeyPress(Sender: TObject;
 // ---------------------------------------------------------------
 begin
      if key = #13 then begin
-         Settings.DwellTimes.RecordSize := Round(edDetDisplayWidth.Value) ;
-         edDetDisplayWidth.Value := Settings.DwellTimes.RecordSize ;
+         EDRFile.Settings.DwellTimes.RecordSize := Round(edDetDisplayWidth.Value) ;
+         edDetDisplayWidth.Value := EDRFile.Settings.DwellTimes.RecordSize ;
          InitialiseDisplays ;
          DisplayRecord ;
          end ;
@@ -5733,8 +5733,8 @@ procedure TSingleChanAnalFrm.edEditDisplayWidthKeyPress(Sender: TObject;
 // ---------------------------------------------------------------
 begin
      if key = #13 then begin
-         Settings.DwellTimes.RecordSize := Round(edEditDisplayWidth.Value) ;
-         edEditDisplayWidth.Value := Settings.DwellTimes.RecordSize ;
+         EDRFile.Settings.DwellTimes.RecordSize := Round(edEditDisplayWidth.Value) ;
+         edEditDisplayWidth.Value := EDRFile.Settings.DwellTimes.RecordSize ;
          InitialiseDisplays ;
          DisplayEvent ;
          end ;
@@ -5759,7 +5759,7 @@ begin
      edNumCursorMeasurements.Value := NumCursorMeasurements ;
 
      // Save cursor measurements list
-     SaveCursorMeasurementsToFile( ChangeFileExt( CDRFH.FileName, '.crm' )) ;
+     SaveCursorMeasurementsToFile( ChangeFileExt( EDRFIle.Cdrfh.FileName, '.crm' )) ;
 
      end ;
 
@@ -5783,8 +5783,8 @@ begin
      WriteLn( FileVar,
               'Time (s)' + #9 +
               'Duration (ms)' + #9 +
-              'Average (' + Channel[ChanNum].ADCUnits + ')'  + #9 +
-              'S.D. (' + Channel[ChanNum].ADCUnits + ')'
+              'Average (' + EDRFile.Channel[ChanNum].ADCUnits + ')'  + #9 +
+              'S.D. (' + EDRFile.Channel[ChanNum].ADCUnits + ')'
               ) ;
 
      // Write measurements
@@ -5856,7 +5856,7 @@ begin
      SaveDialog.Filter := ' Text Files (*.txt)|*.txt' ;
      SaveDialog.Title := 'Cursor measurements file';
 
-     SaveDialog.FileName := ChangeFileExt( CDRFH.FileName, '.txt' ) ;
+     SaveDialog.FileName := ChangeFileExt( EDRFIle.Cdrfh.FileName, '.txt' ) ;
      SaveDialog.FileName := ANSIReplaceStr( SaveDialog.FileName,
                                             '.txt',
                                             ' (cursor measurements).txt' ) ;
@@ -5972,8 +5972,8 @@ procedure TSingleChanAnalFrm.bHalveDetDisplayClick(Sender: TObject);
 // ------------------------------------------------
 begin
       edDetDisplayWidth.Value := edDetDisplayWidth.Value*0.5 ;
-      Settings.DwellTimes.RecordSize := Round(edDetDisplayWidth.Value) ;
-      edDetDisplayWidth.Value := Settings.DwellTimes.RecordSize ;
+      EDRFile.Settings.DwellTimes.RecordSize := Round(edDetDisplayWidth.Value) ;
+      edDetDisplayWidth.Value := EDRFile.Settings.DwellTimes.RecordSize ;
       InitialiseDisplays ;
       DisplayRecord ;
       end ;
@@ -5984,8 +5984,8 @@ procedure TSingleChanAnalFrm.bTDisplayDoubleClick(Sender: TObject);
 // ------------------------------------------------
 begin
       edDetDisplayWidth.Value := edDetDisplayWidth.Value*2.0 ;
-      Settings.DwellTimes.RecordSize := Round(edDetDisplayWidth.Value) ;
-      edDetDisplayWidth.Value := Settings.DwellTimes.RecordSize ;
+      EDRFile.Settings.DwellTimes.RecordSize := Round(edDetDisplayWidth.Value) ;
+      edDetDisplayWidth.Value := EDRFile.Settings.DwellTimes.RecordSize ;
       InitialiseDisplays ;
       DisplayRecord ;
       end ;
@@ -5996,8 +5996,8 @@ procedure TSingleChanAnalFrm.bHalveEditDisplayDurationClick(Sender: TObject);
 // ----------------------------
 begin
      edEditDisplayWidth.Value := edEditDisplayWidth.Value*0.5 ;
-     Settings.DwellTimes.RecordSize := Round(edEditDisplayWidth.Value) ;
-     edEditDisplayWidth.Value := Settings.DwellTimes.RecordSize ;
+     EDRFile.Settings.DwellTimes.RecordSize := Round(edEditDisplayWidth.Value) ;
+     edEditDisplayWidth.Value := EDRFile.Settings.DwellTimes.RecordSize ;
      InitialiseDisplays ;
      DisplayEvent ;
      end;
@@ -6009,8 +6009,8 @@ procedure TSingleChanAnalFrm.BDoubleEditDisiplayDurationClick(
 // ----------------------------
 begin
      edEditDisplayWidth.Value := edEditDisplayWidth.Value*2.0 ;
-     Settings.DwellTimes.RecordSize := Round(edEditDisplayWidth.Value) ;
-     edEditDisplayWidth.Value := Settings.DwellTimes.RecordSize ;
+     EDRFile.Settings.DwellTimes.RecordSize := Round(edEditDisplayWidth.Value) ;
+     edEditDisplayWidth.Value := EDRFile.Settings.DwellTimes.RecordSize ;
      InitialiseDisplays ;
      DisplayEvent ;
      end;
@@ -6022,8 +6022,8 @@ procedure TSingleChanAnalFrm.edAHUnitCurrentKeyPress(Sender: TObject;
 // -----------------------
 begin
      if Key = #13 then begin
-        Settings.DwellTimes.UnitCurrent := edAHUnitCurrent.Value ;
-        plAmpHist.VerticalCursors[AmpCurs.IUnit] := Settings.DwellTimes.UnitCurrent ;
+        EDRFile.Settings.DwellTimes.UnitCurrent := edAHUnitCurrent.Value ;
+        plAmpHist.VerticalCursors[AmpCurs.IUnit] := EDRFile.Settings.DwellTimes.UnitCurrent ;
         end ;
 
      end;
@@ -6032,8 +6032,8 @@ procedure TSingleChanAnalFrm.edAHRangeKeyPress(Sender: TObject;
   var Key: Char);
 begin
      if Key = #13 then begin
-          Settings.DwellTimes.SampleRangeLo := Round(edAHRange.LoValue) ;
-          Settings.DwellTimes.SampleRangeHi := Round(edAHRange.HiValue) ;
+          EDRFile.Settings.DwellTimes.SampleRangeLo := Round(edAHRange.LoValue) ;
+          EDRFile.Settings.DwellTimes.SampleRangeHi := Round(edAHRange.HiValue) ;
           end ;
      end;
 
@@ -6058,7 +6058,7 @@ procedure TSingleChanAnalFrm.edThresholdKeyPress(Sender: TObject;
   var Key: Char);
 begin
      if Key = #13 then begin
-        Settings.DwellTimes.Threshold := edThreshold.Value ;
+        EDRFile.Settings.DwellTimes.Threshold := edThreshold.Value ;
         UpdateCursors( scDetDisplay ) ;
         end ;
       end;

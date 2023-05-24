@@ -290,7 +290,7 @@ implementation
 
 {$R *.dfm}
 
-uses global, fileio , Mdiform, maths , Setaxes, Printrec, Printgra;
+uses Mdiform, maths , Setaxes, Printrec, Printgra, EDRFileUnit;
 
 type
     TADCBuf = Array[0..9999999] of SmallInt ;
@@ -310,13 +310,13 @@ begin
      { Set block of CDR file to be scanned }
      edRange.LoLimit := 0.0 ;
      edRange.LoValue := 0.0 ;
-     edRange.HiValue := CdrFH.RecordDuration ;
-     edRange.HiLimit := CdrFH.RecordDuration ;
+     edRange.HiValue := EDRFile.cdrfh.RecordDuration ;
+     edRange.HiLimit := EDRFile.cdrfh.RecordDuration ;
 
      { Fill channel selection list }
      cbChannel.Clear ;
-     for ch := 0 to CdrFH.NumChannels-1 do
-          cbChannel.items.add( format('Ch.%d %s',[ch,Channel[ch].ADCName]) ) ;
+     for ch := 0 to EDRFile.cdrfh.NumChannels-1 do
+          cbChannel.items.add( format('Ch.%d %s',[ch,EDRFile.Channel[ch].ADCName]) ) ;
      cbChannel.ItemIndex := 0 ;
 
      // Create menu of ploting parameters
@@ -373,10 +373,10 @@ begin
 
     // Create name of ECG analysis file (EC1 extension)
     ECGFileName := '' ;
-    for i := 1 to Length(CdrFH.FileName) do begin
-        if CdrFH.FileName[i] = '.' then
+    for i := 1 to Length(EDRFile.cdrfh.FileName) do begin
+        if EDRFile.cdrfh.FileName[i] = '.' then
            ECGFileName := ECGFileName + format('[Ch%d]',[cbChannel.ItemIndex]) ;
-        ECGFileName := ECGFileName + CdrFH.FileName[i] ;
+        ECGFileName := ECGFileName + EDRFile.cdrfh.FileName[i] ;
         end ;
     ECGFileName := ChangeFileExt( ECGFileName, ECGFileExtension ) ;
 
@@ -393,28 +393,28 @@ begin
 
        // Copy file parameters from selected analysis channel
        ECGFile.NumChannelsPerScan := NumECGFileChannels ;
-       ECGFile.NumScansPerRecord := CdrFH.NumSamplesInFile div CdrFH.NumChannels ;
-       ECGFile.MaxADCValue := Channel[0].ADCMaxValue ;
-       ECGFile.MinADCValue := -Channel[0].ADCMaxValue -1 ;
-       ECGFile.ScanInterval := CdrFH.dt ;
-       ECGFile.IdentLine := CdrFH.IdentLine ;
+       ECGFile.NumScansPerRecord := EDRFile.cdrfh.NumSamplesInFile div EDRFile.cdrfh.NumChannels ;
+       ECGFile.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+       ECGFile.MinADCValue := -EDRFile.Channel[0].ADCMaxValue -1 ;
+       ECGFile.ScanInterval := EDRFile.cdrfh.dt ;
+       ECGFile.IdentLine := EDRFile.cdrfh.IdentLine ;
        ECGFile.RecordNum := 1 ;
 
        SelCh :=  cbChannel.ItemIndex ;
        for ch := 0 to NumECGFileChannels-1 do begin
            ECGFile.ChannelOffset[ch] := ch ;
-           ECGFile.ChannelADCVoltageRange[ch] := CdrFH.ADCVoltageRange ;
-           ECGFile.ChannelName[ch] := Channel[SelCh].ADCName ;
-           ECGFile.ChannelUnits[ch] := Channel[SelCh].ADCUnits ;
-           ECGFile.ChannelScale[ch] := Channel[SelCh].ADCSCale ;
-           ECGFile.ChannelCalibrationFactor[ch] := Channel[SelCh].ADCCalibrationFactor ;
-           ECGFile.ChannelGain[ch] := Channel[SelCh].ADCAmplifierGain ;
+           ECGFile.ChannelADCVoltageRange[ch] := EDRFile.cdrfh.ADCVoltageRange ;
+           ECGFile.ChannelName[ch] := EDRFile.Channel[SelCh].ADCName ;
+           ECGFile.ChannelUnits[ch] := EDRFile.Channel[SelCh].ADCUnits ;
+           ECGFile.ChannelScale[ch] := EDRFile.Channel[SelCh].ADCSCale ;
+           ECGFile.ChannelCalibrationFactor[ch] := EDRFile.Channel[SelCh].ADCCalibrationFactor ;
+           ECGFile.ChannelGain[ch] := EDRFile.Channel[SelCh].ADCAmplifierGain ;
            end ;
 
        // Copy data from selected channel to "raw" channel of ECG file
 
        InScan := 0 ;
-       NumScansInFile := CdrFH.NumSamplesInFile div CdrFH.NumChannels ;
+       NumScansInFile := EDRFile.cdrfh.NumSamplesInFile div EDRFile.cdrfh.NumChannels ;
        NumScansToCopy := NumScansInFile ;
        OutScan := 0 ;
        for i := 0 to NumScansPerBuf*NumECGFileChannels-1 do OutBuf[i] := 0 ;
@@ -423,15 +423,15 @@ begin
 
             // Read from buffer
             NumScansToRead := MinInt( [NumScansToCopy,NumScansPerBuf] ) ;
-            NumScansRead := ReadCDRBuffer( CDRFH, InScan, InBuf, NumScansToRead ) ;
+            NumScansRead := EDRFile.ReadBuffer( EDRFile.CDRFH, InScan, InBuf, NumScansToRead ) ;
             if NumScansRead <= 0 then Done := True ;
 
             // Copy required channel into ECG file channels
-            jIn := Channel[SelCh].ChannelOffset ;
+            jIn := EDRFile.Channel[SelCh].ChannelOffset ;
             jOut := 0 ;
             for i := 0 to NumScansRead-1 do begin
                 for ch := 0 to NumECGFileChannels-1 do OutBuf[jOut+ch] := InBuf[jIn] ;
-                jIn := jIn + CdrFH.NumChannels ;
+                jIn := jIn + EDRFile.cdrfh.NumChannels ;
                 jOut := jOut + NumECGFileChannels ;
                 end ;
 
@@ -463,7 +463,7 @@ begin
     InitialiseAvgDisplay ;
     InitialiseSpecDisplay ;
 
-    NyquistFreq := 1.0 / (CDRFH.dt*2.0) ;
+    NyquistFreq := 1.0 / (EDRFile.cdrfh.dt*2.0) ;
     cbHPFilter.Clear ;
     cbHPFilter.Items.AddObject( format(' %.3g Hz',[0.001*NyquistFreq]),TObject(1)) ;
     cbHPFilter.Items.AddObject( format(' %.3g Hz',[0.002*NyquistFreq]),TObject(2)) ;
@@ -489,32 +489,32 @@ var
 begin
 
      { Continuous record display channel }
-     scECGDisplay.MaxADCValue := Channel[0].ADCMaxValue ;
-     scECGDisplay.MinADCValue := -Channel[0].ADCMaxValue - 1 ;
+     scECGDisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+     scECGDisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue - 1 ;
      scECGDisplay.MaxPoints := Round(edECGDisplayPoints.Value) ;
      scECGDisplay.NumPoints := scECGDisplay.MaxPoints ;
      scECGDisplay.NumChannels := NumECGFileChannels ;
      scECGDisplay.xMin := 0 ;
      scECGDisplay.xMax := scECGDisplay.NumPoints - 1  ;
-     scECGDisplay.DisplayGrid := Settings.DisplayGrid ;
+     scECGDisplay.DisplayGrid := EDRFile.Settings.DisplayGrid ;
 
      scECGDisplay.SetDataBuf( @ADC ) ;
 
      { Set display scaling information }
      SelCh := cbChannel.ItemIndex ;
      for ch := 0 to scECGDisplay.NumChannels-1 do begin
-         scECGDisplay.ChanUnits[ch] := Channel[SelCh].ADCUnits ;
-         scECGDisplay.ChanName[ch] := Channel[SelCh].ADCName ;
-         scECGDisplay.yMin[ch] := Channel[SelCh].yMin ;
-         scECGDisplay.yMax[ch] := Channel[SelCh].yMax ;
-         scECGDisplay.ChanScale[ch] := Channel[SelCh].ADCScale ;
-         scECGDisplay.ChanUnits[ch] := Channel[SelCh].ADCUnits ;
-         scECGDisplay.ChanZero[ch] := Channel[SelCh].ADCZero ;
+         scECGDisplay.ChanUnits[ch] := EDRFile.Channel[SelCh].ADCUnits ;
+         scECGDisplay.ChanName[ch] := EDRFile.Channel[SelCh].ADCName ;
+         scECGDisplay.yMin[ch] := EDRFile.Channel[SelCh].yMin ;
+         scECGDisplay.yMax[ch] := EDRFile.Channel[SelCh].yMax ;
+         scECGDisplay.ChanScale[ch] := EDRFile.Channel[SelCh].ADCScale ;
+         scECGDisplay.ChanUnits[ch] := EDRFile.Channel[SelCh].ADCUnits ;
+         scECGDisplay.ChanZero[ch] := EDRFile.Channel[SelCh].ADCZero ;
          scECGDisplay.ChanOffsets[ch] := ch ;
          scECGDisplay.ChanColor[ch] := clBlue ;
          scECGDisplay.ChanVisible[ch] := True ;
          end ;
-     scECGDisplay.TScale := CdrFH.dt*TMinutesScale ;
+     scECGDisplay.TScale := EDRFile.cdrfh.dt*TMinutesScale ;
      scECGDisplay.TUnits := 'mins' ;
 
      { Create display cursors }
@@ -526,7 +526,7 @@ begin
      ECGCursor := scECGDisplay.AddVerticalCursor( -1, clBlue, '' ) ;
 
      // Set upper limit of display slider bar range
-     sbECGDisplay.Max := (CdrFH.NumSamplesInFile div CdrFH.NumChannels)
+     sbECGDisplay.Max := (EDRFile.cdrfh.NumSamplesInFile div EDRFile.cdrfh.NumChannels)
                        - scECGDisplay.MaxPoints ;
      sbECGDisplay.LargeChange := scECGDisplay.MaxPoints div 4 ;
 
@@ -542,14 +542,14 @@ var
 begin
 
      { Continuous record display channel }
-     scAvgDisplay.MaxADCValue := Channel[0].ADCMaxValue ;
-     scAvgDisplay.MinADCValue := -Channel[0].ADCMaxValue - 1 ;
+     scAvgDisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+     scAvgDisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue - 1 ;
      scAvgDisplay.MaxPoints := Round(edECGDisplayPoints.Value) ;
      scAvgDisplay.NumPoints := scAvgDisplay.MaxPoints ;
      scAvgDisplay.NumChannels := 1 ;
      scAvgDisplay.xMin := 0 ;
      scAvgDisplay.xMax := scAvgDisplay.NumPoints - 1  ;
-     scAvgDisplay.DisplayGrid := Settings.DisplayGrid ;
+     scAvgDisplay.DisplayGrid := EDRFile.Settings.DisplayGrid ;
 
      scAvgDisplay.SetDataBuf( @AvgDisplayBuf ) ;
 
@@ -566,7 +566,7 @@ begin
          scAvgDisplay.ChanColor[ch] := scECGDisplay.ChanColor[RawCh] ;
          scAvgDisplay.ChanVisible[ch] := True
          end ;
-     scAvgDisplay.TScale := CdrFH.dt ;
+     scAvgDisplay.TScale := EDRFile.cdrfh.dt ;
      scAvgDisplay.TUnits := 's' ;
 
      { Create display cursors }
@@ -579,7 +579,7 @@ begin
      AvgI1Cursor := scAvgDisplay.AddVerticalCursor( -1, clgray, 'a' ) ;
 
      // Set upper limit of display slider bar range
-{     sbECGDisplay.Max := (CdrFH.NumSamplesInFile div CdrFH.NumChannels)
+{     sbECGDisplay.Max := (EDRFile.cdrfh.NumSamplesInFile div EDRFile.cdrfh.NumChannels)
                        - scAvgDisplay.MaxPoints ;
      sbECGDisplay.LargeChange := scAvgDisplay.MaxPoints div 4 ;}
 
@@ -605,14 +605,14 @@ begin
      edSpecDisplay.LoValue := edSpecDisplay.HiValue ;
 
      { Continuous record display channel }
-     scSpecDisplay.MaxADCValue := Channel[0].ADCMaxValue ;
-     scSpecDisplay.MinADCValue := -Channel[0].ADCMaxValue - 1 ;
+     scSpecDisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+     scSpecDisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue - 1 ;
      scSpecDisplay.MaxPoints := NumFFTPoints ;
      scSpecDisplay.NumPoints := scSpecDisplay.MaxPoints ;
      scSpecDisplay.NumChannels := 1 ;
      scSpecDisplay.xMin := 0 ;
      scSpecDisplay.xMax := scSpecDisplay.NumPoints - 1  ;
-     scSpecDisplay.DisplayGrid := Settings.DisplayGrid ;
+     scSpecDisplay.DisplayGrid := EDRFile.Settings.DisplayGrid ;
 
      scSpecDisplay.SetDataBuf( @SpecBuf ) ;
 
@@ -766,7 +766,7 @@ begin
      Main.mnECGFrm.Enabled := True ;
 
      { Update EDR file header }
-     SaveCDRHeader( CDRfH ) ;
+     EDRFile.SaveHeader( EDRFile.CDRfH ) ;
 
      // Close ECG data file
      ECGFile.CloseDataFile ;
@@ -1379,7 +1379,7 @@ begin
      //bAbort.Enabled := True ;
 
      // Number of samples to skip after an event has been detected
-     DeadScans := Round( edDeadTime.Value / CdrFH.dt ) ;
+     DeadScans := Round( edDeadTime.Value / EDRFile.cdrfh.dt ) ;
 
      { Let user clear event list }
      if RWave.Num > 0 then begin
@@ -1397,8 +1397,8 @@ begin
         EndScan := ECGFile.NumScansPerRecord-1 ;
         end
      else begin
-        StartScan := Round( edRange.LoValue/CdrFH.dt ) ;
-        EndScan :=   Round( edRange.HiValue/CdrFH.dt ) - 1 ;
+        StartScan := Round( edRange.LoValue/EDRFile.cdrfh.dt ) ;
+        EndScan :=   Round( edRange.HiValue/EDRFile.cdrfh.dt ) - 1 ;
         end ;
 
     // R wave detection threshold and polarity
@@ -1416,7 +1416,7 @@ begin
     iDif := 0 ;
     RWaveDetected := False ;
     RWaveOnsetDetected := False ;
-    MaxScansPerRWave := Round(MaxRWaveDuration/CdrFH.dt) ;
+    MaxScansPerRWave := Round(MaxRWaveDuration/EDRFile.cdrfh.dt) ;
     QRSZero := Round(scECGDisplay.yMin[HPFCh]) ;
     QRSTick := QRSZero + Round( (scECGDisplay.yMax[HPFCh]
                                 - scECGDisplay.yMin[HPFCh]) / 20.0) ;
@@ -1545,8 +1545,8 @@ begin
         if UpdateStatusBar then begin
            Main.StatusBar.SimpleText := format(
                                         ' QRS Detection: %.2f/%.2f s (%d waves detected)',
-                                          [iScan*CdrFH.dt,
-                                           EndScan*CdrFH.dt,
+                                          [iScan*EDRFile.cdrfh.dt,
+                                           EndScan*EDRFile.cdrfh.dt,
                                            RWave.Num] ) ;
            UpdateStatusBar := False ;
            end ;
@@ -1556,7 +1556,7 @@ begin
     // Save list of events in file
     Main.StatusBar.SimpleText := format(' Detect Events : %d events detected.',
                                           [RWave.Num] ) ;
-    WriteToLogFile(Main.StatusBar.SimpleText) ;
+    EDRFile.WriteToLogFile(Main.StatusBar.SimpleText) ;
 
     // Remove final detection flag line
     scECGDisplay.CreateLine( 0, clRed, psSolid, 1 ) ;
@@ -2139,8 +2139,8 @@ begin
         // Update for changes in display magnification
         for ch := 0 to scAvgDisplay.NumChannels-1 do
             if scAvgDisplay.ChanVisible[ch] then ChannelOnDisplay := ch ;
-        Channel[cbChannel.ItemIndex].yMin := scAvgDisplay.yMin[ChannelOnDisplay] ;
-        Channel[cbChannel.ItemIndex].yMax := scAvgDisplay.yMax[ChannelOnDisplay] ;
+        EDRFile.Channel[cbChannel.ItemIndex].yMin := scAvgDisplay.yMin[ChannelOnDisplay] ;
+        EDRFile.Channel[cbChannel.ItemIndex].yMax := scAvgDisplay.yMax[ChannelOnDisplay] ;
         UpdateDisplayMagnifications ;
 
         end;
@@ -2157,12 +2157,12 @@ begin
      // ECG display
      Update := False ;
      for ch := 0 to scECGDisplay.NumChannels-1 do begin
-            if scECGDisplay.YMax[ch] <> Channel[cbChannel.ItemIndex].YMax then begin
-               scECGDisplay.YMax[ch] := Channel[cbChannel.ItemIndex].YMax ;
+            if scECGDisplay.YMax[ch] <> EDRFile.Channel[cbChannel.ItemIndex].YMax then begin
+               scECGDisplay.YMax[ch] := EDRFile.Channel[cbChannel.ItemIndex].YMax ;
                Update := True ;
                end ;
-            if scECGDisplay.YMin[ch] <> Channel[cbChannel.ItemIndex].YMin then begin
-               scECGDisplay.YMin[ch] := Channel[cbChannel.ItemIndex].YMin ;
+            if scECGDisplay.YMin[ch] <> EDRFile.Channel[cbChannel.ItemIndex].YMin then begin
+               scECGDisplay.YMin[ch] := EDRFile.Channel[cbChannel.ItemIndex].YMin ;
                Update := True ;
                end ;
             end ;
@@ -2171,12 +2171,12 @@ begin
      // Average ECG display
      Update := False ;
      for ch := 0 to scAvgDisplay.NumChannels-1 do begin
-            if scAvgDisplay.YMax[ch] <> Channel[cbChannel.ItemIndex].YMax then begin
-               scAvgDisplay.YMax[ch] := Channel[cbChannel.ItemIndex].YMax ;
+            if scAvgDisplay.YMax[ch] <> EDRFile.Channel[cbChannel.ItemIndex].YMax then begin
+               scAvgDisplay.YMax[ch] := EDRFile.Channel[cbChannel.ItemIndex].YMax ;
                Update := True ;
                end ;
-            if scAvgDisplay.YMin[ch] <> Channel[cbChannel.ItemIndex].YMin then begin
-               scAvgDisplay.YMin[ch] := Channel[cbChannel.ItemIndex].YMin ;
+            if scAvgDisplay.YMin[ch] <> EDRFile.Channel[cbChannel.ItemIndex].YMin then begin
+               scAvgDisplay.YMin[ch] := EDRFile.Channel[cbChannel.ItemIndex].YMin ;
                Update := True ;
                end ;
             end ;
@@ -2185,12 +2185,12 @@ begin
      // Spectrum time window display
      Update := False ;
      for ch := 0 to scSpecDisplay.NumChannels-1 do begin
-            if scSpecDisplay.YMax[ch] <> Channel[cbChannel.ItemIndex].YMax then begin
-               scSpecDisplay.YMax[ch] := Channel[cbChannel.ItemIndex].YMax ;
+            if scSpecDisplay.YMax[ch] <> EDRFile.Channel[cbChannel.ItemIndex].YMax then begin
+               scSpecDisplay.YMax[ch] := EDRFile.Channel[cbChannel.ItemIndex].YMax ;
                Update := True ;
                end ;
-            if scSpecDisplay.YMin[ch] <> Channel[cbChannel.ItemIndex].YMin then begin
-               scSpecDisplay.YMin[ch] := Channel[cbChannel.ItemIndex].YMin ;
+            if scSpecDisplay.YMin[ch] <> EDRFile.Channel[cbChannel.ItemIndex].YMin then begin
+               scSpecDisplay.YMin[ch] := EDRFile.Channel[cbChannel.ItemIndex].YMin ;
                Update := True ;
                end ;
             end ;
@@ -2254,8 +2254,8 @@ begin
 
 
         ch := cbChannel.ItemIndex ;
-        Channel[ch].yMin := scECGDisplay.yMin[ChannelOnDisplay] ;
-        Channel[ch].yMax := scECGDisplay.yMax[ChannelOnDisplay] ;
+        EDRFile.Channel[ch].yMin := scECGDisplay.yMin[ChannelOnDisplay] ;
+        EDRFile.Channel[ch].yMax := scECGDisplay.yMax[ChannelOnDisplay] ;
         UpdateDisplayMagnifications ;
 
         end;
@@ -2623,8 +2623,8 @@ begin
 
      for ch := 0 to scSpecDisplay.NumChannels-1 do
          if scSpecDisplay.ChanVisible[ch] then ChannelOnDisplay := ch ;
-     Channel[cbChannel.ItemIndex].yMin := scSpecDisplay.yMin[ChannelOnDisplay] ;
-     Channel[cbChannel.ItemIndex].yMax := scSpecDisplay.yMax[ChannelOnDisplay] ;
+     EDRFile.Channel[cbChannel.ItemIndex].yMin := scSpecDisplay.yMin[ChannelOnDisplay] ;
+     EDRFile.Channel[cbChannel.ItemIndex].yMax := scSpecDisplay.yMax[ChannelOnDisplay] ;
      UpdateDisplayMagnifications ;
 
      end;

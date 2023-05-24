@@ -85,6 +85,12 @@ object EditMarkersFrm: TEditMarkersFrm
       Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goEditing]
       ParentFont = False
       TabOrder = 0
+      ColWidths = (
+        74
+        74)
+      RowHeights = (
+        20
+        20)
     end
     object bDeleteMarker: TButton
       Left = 8

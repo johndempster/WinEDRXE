@@ -29,8 +29,8 @@ interface
 
 uses
   SysUtils, WinTypes, WinProcs, Messages, Classes, Graphics, Controls,
-  Forms, Dialogs, StdCtrls, ExtCtrls, global, printers, ClipBrd, fileio,
-  Grids, CDRZero, RangeEdit, ScopeDisplay,
+  Forms, Dialogs, StdCtrls, ExtCtrls, printers, ClipBrd,
+  Grids, CDRZero, RangeEdit, ScopeDisplay, EDRFileUnit,
   ValidatedEdit, maths, seslabio, math, system.strutils ;
 
 type
@@ -146,22 +146,22 @@ begin
      Resize ;
 
      { Display ident. info. }
-     EdIdent.text := CdrFH.IdentLine ;
+     EdIdent.text := EDRFIle.Cdrfh.IdentLine ;
 
      Main.SetCopyMenu(True,True) ;
 
      // Initialise time readout units
-     if Settings.TScale = 1000.0 then rbTDisplayUnitsMsecs.Checked := True
+     if EDRFile.Settings.TScale = 1000.0 then rbTDisplayUnitsMsecs.Checked := True
                                  else rbTDisplayUnitsSecs.Checked := True ;
-     edStartTime.Scale := Settings.TSCale ;
-     edStartTime.Units := Settings.TUnits ;
-     edTDisplay.Value := Settings.DisplayDuration ;
-     edTDisplay.Scale := Settings.TSCale ;
-     edTDisplay.Units := Settings.TUnits ;
+     edStartTime.Scale := EDRFile.Settings.TSCale ;
+     edStartTime.Units := EDRFile.Settings.TUnits ;
+     edTDisplay.Value := EDRFile.Settings.DisplayDuration ;
+     edTDisplay.Scale := EDRFile.Settings.TSCale ;
+     edTDisplay.Units := EDRFile.Settings.TUnits ;
 
-     ckFixedZeroLevels.Checked := Settings.FixedZeroLevels ;
+     ckFixedZeroLevels.Checked := EDRFile.Settings.FixedZeroLevels ;
 
-     if CdrFH.NumSamplesInFile > 0 then Main.mnPrint.enabled := True ;
+     if EDRFIle.Cdrfh.NumSamplesInFile > 0 then Main.mnPrint.enabled := True ;
 
      // Update display channels and plot signal
      NewData ;
@@ -179,7 +179,7 @@ begin
      FreeMem( DisplayBuf ) ;
 
      { Save data to file header }
-     SaveCDRHeader( CdrFH ) ;
+     EDRFile.SaveHeader( EDRFile.CdrFH ) ;
 
      Main.mnViewSig.Enabled := True ;
 
@@ -228,7 +228,7 @@ procedure TViewSigFrm.edIdentKeyPress(Sender: TObject; var Key: Char);
   Write to log file
   -------------------------------------------}
 begin
-     if key = #13 then WriteToLogFile( edIdent.text ) ;
+     if key = #13 then EDRFile.WriteToLogFile( edIdent.text ) ;
      end;
 
 
@@ -242,8 +242,8 @@ begin
      PrintRecFrm.ShowModal ;
      if PrintRecFrm.ModalResult = mrOK then begin
         scDisplay.ClearPrinterTitle ;
-        scDisplay.AddPrinterTitleLine( 'File : ' + cdrFH.FileName ) ;
-        scDisplay.AddPrinterTitleLine( CdrFH.IdentLine ) ;
+        scDisplay.AddPrinterTitleLine( 'File : ' + EDRFIle.Cdrfh.FileName ) ;
+        scDisplay.AddPrinterTitleLine( EDRFIle.Cdrfh.IdentLine ) ;
         scDisplay.Print ;
         end ;
      end ;
@@ -265,7 +265,7 @@ procedure TViewSigFrm.FormActivate(Sender: TObject);
 begin
      { Enable copy and print menus }
      Main.CopyAndPrintMenus( True, True ) ;
-     ckFixedZeroLevels.Checked := Settings.FixedZeroLevels ;
+     ckFixedZeroLevels.Checked := EDRFile.Settings.FixedZeroLevels ;
      end;
 
 
@@ -281,8 +281,8 @@ procedure  TViewSigFrm.ZoomOutAll ;
   Set minimum display magnification
   --------------------------------- }
 begin
-     scDisplay.MaxADCValue := Channel[0].ADCMaxValue ;
-     scDisplay.MinADCValue := -Channel[0].ADCMaxValue -1 ;
+     scDisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+     scDisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue -1 ;
      scDisplay.ZoomOut ;
      end ;
 
@@ -296,26 +296,26 @@ var
 begin
 
      { Get header data from file }
-     GetCDRHeader( CdrFH ) ;
+     EDRFile.GetHeader( EDRFile.CdrFH ) ;
 
-     scdisplay.MinADCValue := -Channel[0].ADCMaxValue -1;
-     scdisplay.MaxADCValue := Channel[0].ADCMaxValue ;
+     scdisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue -1;
+     scdisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
 
-     scdisplay.NumChannels := CdrFH.NumChannels ;
-     for ch := 0 to CdrFH.NumChannels-1 do begin
-        scdisplay.yMin[ch] := Channel[ch].yMin ;
-        scdisplay.yMax[ch] := Channel[ch].yMax ;
-        scdisplay.ChanName[ch] := Channel[ch].ADCName ;
-        scdisplay.ChanScale[ch] := Channel[ch].ADCScale ;
-        scdisplay.ChanUnits[ch] := Channel[ch].ADCUnits ;
-        scdisplay.ChanZero[ch] := Channel[ch].ADCZero ;
-        scdisplay.ChanVisible[ch] := Channel[ch].InUse ;
-        scdisplay.ChanOffsets[ch] := Channel[ch].ChannelOffset ;
+     scdisplay.NumChannels := EDRFIle.Cdrfh.NumChannels ;
+     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
+        scdisplay.yMin[ch] := EDRFile.Channel[ch].yMin ;
+        scdisplay.yMax[ch] := EDRFile.Channel[ch].yMax ;
+        scdisplay.ChanName[ch] := EDRFile.Channel[ch].ADCName ;
+        scdisplay.ChanScale[ch] := EDRFile.Channel[ch].ADCScale ;
+        scdisplay.ChanUnits[ch] := EDRFile.Channel[ch].ADCUnits ;
+        scdisplay.ChanZero[ch] := EDRFile.Channel[ch].ADCZero ;
+        scdisplay.ChanVisible[ch] := EDRFile.Channel[ch].InUse ;
+        scdisplay.ChanOffsets[ch] := EDRFile.Channel[ch].ChannelOffset ;
         scdisplay.ChanColor[ch] := clBlue ;
         end ;
 
-     Channel[0].xMin := 0.0 ;
-     Channel[0].xMax := (CdrFH.NumSamplesInFile div CdrFH.NumChannels)*CdrFH.dt ;
+     EDRFile.Channel[0].xMin := 0.0 ;
+     EDRFile.Channel[0].xMax := (EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels)*EDRFIle.Cdrfh.dt ;
 
      { Create vertical cursors }
      scDisplay.ClearVerticalCursors ;
@@ -327,23 +327,23 @@ begin
 
      { Create a set of zero level cursors }
      scDisplay.ClearHorizontalCursors ;
-     for ch := 0 to CDRFH.NumChannels-1 do begin
+     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
          Cursors.Base[ch] := scDisplay.AddHorizontalCursor(ch,clRed,True,'z' ) ;
-         scDisplay.HorizontalCursors[ch] := Channel[ch].ADCZero ;
+         scDisplay.HorizontalCursors[ch] := EDRFile.Channel[ch].ADCZero ;
          end ;
 
-     for ch := 0 to CdrFH.NumChannels-1 do begin
-         scdisplay.HorizontalCursors[Cursors.Base[ch]] := Channel[ch].ADCZero ;
+     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
+         scdisplay.HorizontalCursors[Cursors.Base[ch]] := EDRFile.Channel[ch].ADCZero ;
          end ;
 
      sbStartTime.Min := 0 ;
-     sbStartTime.Max := (CdrFH.NumSamplesInFile div CdrFH.NumChannels) - 1 ;
+     sbStartTime.Max := (EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels) - 1 ;
 
 
      // Number of chart markers still available
-     edNumMarkers.text := format('%d',[MaxMarkers-MarkerList.Count]);
+     edNumMarkers.text := format('%d',[MaxMarkers-EDRFile.MarkerList.Count]);
 
-     edTDisplay.LoLimit := CDRFH.dt*32 ;
+     edTDisplay.LoLimit := EDRFIle.Cdrfh.dt*32 ;
 
      // Set display calibration bars
      ChangeDisplayGrid ;
@@ -371,7 +371,7 @@ begin
      TStart := sbStartTime.Position*scDisplay.TScale ;
      TEnd := TStart + scDisplay.NumPoints*scDisplay.TScale ;
      Main.SaveDialog.FileName := AnsiReplaceText(
-                                 LowerCase(ExtractFileName(CdrFH.FileName)),
+                                 LowerCase(ExtractFileName(EDRFIle.Cdrfh.FileName)),
                                  '.edr',
                                  format('.%.3f-%.3fs.csv',
                                  [TStart,TEnd] ));
@@ -387,7 +387,7 @@ procedure TViewSigFrm.ChangeDisplayGrid ;
   -------------------------------------------- }
 begin
 
-     scDisplay.DisplayGrid := Settings.DisplayGrid ;
+     scDisplay.DisplayGrid := EDRFile.Settings.DisplayGrid ;
 
      end ;
 
@@ -398,8 +398,8 @@ procedure TViewSigFrm.edIdentChange(Sender: TObject);
   -------------------------------------------}
 begin
      { Update ident line if it is changed }
-     CdrFH.IdentLine := edIdent.text ;
-     SaveCDRHeader(CdrFH) ;
+     EDRFIle.Cdrfh.IdentLine := edIdent.text ;
+     EDRFile.SaveHeader(EDRFile.CdrFH) ;
      end;
 
 
@@ -419,31 +419,31 @@ var
     TimeScale : Single ;
 begin
 
-     edIdent.Text := CDRFH.IdentLine ;
+     edIdent.Text := EDRFIle.Cdrfh.IdentLine ;
 
      // Find starting scan number
-     StartScan := Round(edStartTime.Value/CDRFH.dt) ;
+     StartScan := Round(edStartTime.Value/EDRFIle.Cdrfh.dt) ;
      scDisplay.XOffset := StartScan ;
 
      // No. of multi-channel scans to be displayed
-     MaxScans := CDRFH.NumSamplesInFile div CDRFH.NumChannels ;
-     edTDisplay.Value := Min( edTDisplay.Value, Max(1.0,MaxScans*CDRFH.dt*1.1));
-     scDisplay.MaxPoints := Round(edTDisplay.Value/CDRFH.dt) ;
-     NumScans := Max( Min(Round(edTDisplay.Value/CDRFH.dt),MaxScans-StartScan),1 ) ;
+     MaxScans := EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels ;
+     edTDisplay.Value := Min( edTDisplay.Value, Max(1.0,MaxScans*EDRFIle.Cdrfh.dt*1.1));
+     scDisplay.MaxPoints := Round(edTDisplay.Value/EDRFIle.Cdrfh.dt) ;
+     NumScans := Max( Min(Round(edTDisplay.Value/EDRFIle.Cdrfh.dt),MaxScans-StartScan),1 ) ;
      scDisplay.NumPoints := NumScans ;
 
      // Allocate memory buffer
      if DisplayBuf <> Nil then FreeMem(DisplayBuf) ;
-     NumBytesInBuf := scDisplay.MaxPoints*CDRFH.NumChannels*2 ;
+     NumBytesInBuf := scDisplay.MaxPoints*EDRFIle.Cdrfh.NumChannels*2 ;
      DisplayBuf := GetMemory( NumBytesInBuf) ;
 
-     scDisplay.TScale := CDRFH.dt*Settings.TScale ;
-     scDisplay.TUnits := Settings.TUnits ;
+     scDisplay.TScale := EDRFIle.Cdrfh.dt*EDRFile.Settings.TScale ;
+     scDisplay.TUnits := EDRFile.Settings.TUnits ;
 
      // Read data from file
-     FilePointer := CDRFH.NumBytesInHeader + StartScan*CDRFH.NumChannels*2 ;
-     FileSeek( CDRFH.FileHandle, FilePointer, 0 ) ;
-     FileRead(CDRFH.FileHandle,DisplayBuf^,NumBytesInBuf) ;
+     FilePointer := EDRFIle.Cdrfh.NumBytesInHeader + StartScan*EDRFIle.Cdrfh.NumChannels*2 ;
+     FileSeek( EDRFIle.Cdrfh.FileHandle, FilePointer, 0 ) ;
+     FileRead(EDRFIle.Cdrfh.FileHandle,DisplayBuf^,NumBytesInBuf) ;
 
      scDisplay.xMin := 0 ;
      scDisplay.xMax := Max(scDisplay.MaxPoints-1,1) ;
@@ -456,12 +456,12 @@ begin
 
      // Add markers (if any appear on display
      scDisplay.ClearMarkers ;
-     TimeScale := scDisplay.TScale/Settings.TScale ;
-     for i := 0 to MarkerList.Count-1 do begin
-         MarkerTime := Single(MarkerList.Objects[i]) ;
+     TimeScale := scDisplay.TScale/EDRFile.Settings.TScale ;
+     for i := 0 to EDRFile.MarkerList.Count-1 do begin
+         MarkerTime := Single(EDRFile.MarkerList.Objects[i]) ;
          MarkerAt := Round(MarkerTime/TimeScale) - scDisplay.XOffset ;
          if (MarkerAt >= 0) and (MarkerAt < scDisplay.MaxPoints) then
-            scDisplay.AddMarker( MarkerAt, MarkerList.Strings[i] );
+            scDisplay.AddMarker( MarkerAt, EDRFile.MarkerList.Strings[i] );
          end ;
 
      scDisplay.Invalidate ;
@@ -478,7 +478,7 @@ procedure TViewSigFrm.edTDisplayKeyPress(Sender: TObject; var Key: Char);
 begin
      if Key = #13 then begin
         DisplayFromFile ;
-        Settings.DisplayDuration := edTDisplay.Value ;
+        EDRFile.Settings.DisplayDuration := edTDisplay.Value ;
         end ;
      end;
 
@@ -489,7 +489,7 @@ procedure TViewSigFrm.edStartTimeKeyPress(Sender: TObject; var Key: Char);
 // ---------------------------------
 begin
      if Key = #13 then begin
-        sbStartTime.Position := Round(edStartTime.Value/CDRFH.dt) ;
+        sbStartTime.Position := Round(edStartTime.Value/EDRFIle.Cdrfh.dt) ;
         DisplayFromFile ;
         end ;
      end;
@@ -500,7 +500,7 @@ procedure TViewSigFrm.sbStartTimeChange(Sender: TObject);
 // Display window position scroll bar changed
 // ------------------------------------------
 begin
-    edStartTime.Value := CDRFH.dt*(sbStartTime.Position) ;
+    edStartTime.Value := EDRFIle.Cdrfh.dt*(sbStartTime.Position) ;
     DisplayFromFile ;
     end;
 
@@ -516,40 +516,40 @@ begin
       { Time zero cursor }
       Cursor0Pos := Round(scDisplay.VerticalCursors[Cursors.C0]) ;
       if Cursor0Pos >= 0 then begin
-         TZeroScan := Round((scDisplay.XOffset + Cursor0Pos)*scDisplay.TScale/(CDRFH.dt*Settings.TScale)) ;
+         TZeroScan := Round((scDisplay.XOffset + Cursor0Pos)*scDisplay.TScale/(EDRFIle.Cdrfh.dt*EDRFile.Settings.TScale)) ;
          end ;
 
       { Read out cursor }
       Cursor1Pos := Round(scDisplay.VerticalCursors[Cursors.C1]) ;
 
-      Channel[0].CursorTime := (Cursor1Pos + scDisplay.XOffset)*scDisplay.TScale
-                                - (TZeroScan*CDRFH.dt*Settings.TScale);
+      EDRFile.Channel[0].CursorTime := (Cursor1Pos + scDisplay.XOffset)*scDisplay.TScale
+                                - (TZeroScan*EDRFIle.Cdrfh.dt*EDRFile.Settings.TScale);
 
       for ch := 0 to scDisplay.NumChannels-1 do begin
 
           { Get signal baseline cursor }
-          if Settings.FixedZeroLevels then begin
-             if scDisplay.HorizontalCursors[ch] <> Channel[ch].ADCZero then
-                scDisplay.HorizontalCursors[ch] := Channel[ch].ADCZero ;
+          if EDRFile.Settings.FixedZeroLevels then begin
+             if scDisplay.HorizontalCursors[ch] <> EDRFile.Channel[ch].ADCZero then
+                scDisplay.HorizontalCursors[ch] := EDRFile.Channel[ch].ADCZero ;
              end
           else begin
-             Channel[ch].ADCZero := Round(scDisplay.HorizontalCursors[ch]) ;
+             EDRFile.Channel[ch].ADCZero := Round(scDisplay.HorizontalCursors[ch]) ;
              end ;
 
           { Signal level at cursor }
-          Channel[ch].CursorValue := Channel[ch].ADCScale *
+          EDRFile.Channel[ch].CursorValue := EDRFile.Channel[ch].ADCScale *
                                     ( DisplayBuf^[(Cursor1Pos*scDisplay.NumChannels)
-                                      + Channel[ch].ChannelOffset] - Channel[ch].ADCZero ) ;
+                                      + EDRFile.Channel[ch].ChannelOffset] - EDRFile.Channel[ch].ADCZero ) ;
           end ;
 
       { Update channel descriptors with any changes to display }
       for ch := 0 to scDisplay.NumChannels-1 do begin
-          Channel[Ch].InUse := scDisplay.ChanVisible[ch] ;
-          Channel[Ch].yMin := scDisplay.YMin[Ch] ;
-          Channel[Ch].yMax := scDisplay.YMax[Ch] ;
+          EDRFile.Channel[Ch].InUse := scDisplay.ChanVisible[ch] ;
+          EDRFile.Channel[Ch].yMin := scDisplay.YMin[Ch] ;
+          EDRFile.Channel[Ch].yMax := scDisplay.YMax[Ch] ;
           end ;
-      Channel[0].xMin := scDisplay.xMin ;
-      Channel[0].xMax := scDisplay.xMax ;
+      EDRFile.Channel[0].xMin := scDisplay.xMin ;
+      EDRFile.Channel[0].xMax := scDisplay.xMax ;
 
       TScopeDisplay(Sender).CursorChangeInProgress := False ;
 
@@ -561,12 +561,12 @@ procedure TViewSigFrm.rbTUnitsSecondsClick(Sender: TObject);
 // Set time readout units to seconds
 // ---------------------------------
 begin
-    Settings.TUnits := 's' ;
-    Settings.TSCale := 1.0 ;
-    edStartTime.Scale := Settings.TSCale ;
-    edStartTime.Units := Settings.TUnits ;
-    edTDisplay.Scale := Settings.TSCale ;
-    edTDisplay.Units := Settings.TUnits ;
+    EDRFile.Settings.TUnits := 's' ;
+    EDRFile.Settings.TSCale := 1.0 ;
+    edStartTime.Scale := EDRFile.Settings.TSCale ;
+    edStartTime.Units := EDRFile.Settings.TUnits ;
+    edTDisplay.Scale := EDRFile.Settings.TSCale ;
+    edTDisplay.Units := EDRFile.Settings.TUnits ;
     DisplayFromFile ;
     end;
 
@@ -575,12 +575,12 @@ procedure TViewSigFrm.rbTUnitsMsecsClick(Sender: TObject);
 // Set time readout units to seconds
 // ---------------------------------
 begin
-    Settings.TUnits := 'ms' ;
-    Settings.TSCale := 1000.0 ;
-    edStartTime.Scale := Settings.TSCale ;
-    edStartTime.Units := Settings.TUnits ;
-    edTDisplay.Scale := Settings.TSCale ;
-    edTDisplay.Units := Settings.TUnits ;
+    EDRFile.Settings.TUnits := 'ms' ;
+    EDRFile.Settings.TSCale := 1000.0 ;
+    edStartTime.Scale := EDRFile.Settings.TSCale ;
+    edStartTime.Units := EDRFile.Settings.TUnits ;
+    edTDisplay.Scale := EDRFile.Settings.TSCale ;
+    edTDisplay.Units := EDRFile.Settings.TUnits ;
 
     DisplayFromFile ;
     end;
@@ -594,19 +594,19 @@ var
      TimeScale : Single ;
 begin
 
-     if MarkerList.Count < MaxMarkers then begin
+     if EDRFile.MarkerList.Count < MaxMarkers then begin
 
-          TimeScale := scDisplay.TScale/Settings.TScale ;
+          TimeScale := scDisplay.TScale/EDRFile.Settings.TScale ;
 
           // Mark replay
           MarkerTime := (scDisplay.VerticalCursors[Cursors.C1] + scDisplay.XOffset)*TimeScale ;
           // Plot marker on chart
-          MarkerList.AddObject( EdMarker.text, TObject(MarkerTime) ) ;
+          EDRFile.MarkerList.AddObject( EdMarker.text, TObject(MarkerTime) ) ;
           scDisplay.AddMarker( Round(MarkerTime/TimeScale) - scDisplay.XOffset,
                                EdMarker.text );
 
           end ;
-     edNumMarkers.text := format('%d',[MaxMarkers-MarkerList.Count]);
+     edNumMarkers.text := format('%d',[MaxMarkers-EDRFile.MarkerList.Count]);
      end;
 
 
@@ -615,12 +615,12 @@ procedure TViewSigFrm.rbTUnitsMinutesClick(Sender: TObject);
 // Set time readout units to minutes
 // ---------------------------------
 begin
-    Settings.TUnits := 'm' ;
-    Settings.TSCale := 1.0/60.0 ;
-    edStartTime.Scale := Settings.TSCale ;
-    edStartTime.Units := Settings.TUnits ;
-    edTDisplay.Scale := Settings.TSCale ;
-    edTDisplay.Units := Settings.TUnits ;
+    EDRFile.Settings.TUnits := 'm' ;
+    EDRFile.Settings.TSCale := 1.0/60.0 ;
+    edStartTime.Scale := EDRFile.Settings.TSCale ;
+    edStartTime.Units := EDRFile.Settings.TUnits ;
+    edTDisplay.Scale := EDRFile.Settings.TSCale ;
+    edTDisplay.Units := EDRFile.Settings.TUnits ;
     DisplayFromFile ;
     end;
 
@@ -633,18 +633,18 @@ begin
      if (Button = mbRight) and (scDisplay.ActiveHorizontalCursor >=0) then begin
         // If right-mouse button down, display zero baseline level selection dialog box
         ZeroFrm.ChSel := scDisplay.ActiveHorizontalCursor ;
-        ZeroFrm.ZeroLevel := Channel[ZeroFrm.ChSel].ADCZero ;
-        ZeroFrm.ChanName := Channel[ZeroFrm.ChSel].ADCName ;
+        ZeroFrm.ZeroLevel := EDRFile.Channel[ZeroFrm.ChSel].ADCZero ;
+        ZeroFrm.ChanName := EDRFile.Channel[ZeroFrm.ChSel].ADCName ;
         ZeroFrm.NewZeroAt := Round(scDisplay.ScreenCoordToX( ZeroFrm.ChSel, X )) ;
         ZeroFrm.Left := ViewSigFrm.Left + Main.Left + 10 + scDisplay.Left + X;
         ZeroFrm.Top := ViewSigFrm.Top + Main.Top + 10 + scDisplay.Top + Y ;
         ZeroFrm.ShowModal ;
-        Channel[ZeroFrm.ChSel].ADCZero := ZeroFrm.ZeroLevel ;
-        Channel[ZeroFrm.ChSel].ADCZero := Max(-Channel[ZeroFrm.ChSel].ADCMaxValue-1,ZeroFrm.ZeroLevel) ;
-        Channel[ZeroFrm.ChSel].ADCZero := Min(Channel[ZeroFrm.ChSel].ADCMaxValue,ZeroFrm.ZeroLevel) ;
-        Channel[ZeroFrm.ChSel].ADCZeroAt := -1 ;
-        SaveCDRHeader( CDRfH ) ;
-        scDisplay.HorizontalCursors[ZeroFrm.ChSel] := Channel[ZeroFrm.ChSel].ADCZero ;
+        EDRFile.Channel[ZeroFrm.ChSel].ADCZero := ZeroFrm.ZeroLevel ;
+        EDRFile.Channel[ZeroFrm.ChSel].ADCZero := Max(-EDRFile.Channel[ZeroFrm.ChSel].ADCMaxValue-1,ZeroFrm.ZeroLevel) ;
+        EDRFile.Channel[ZeroFrm.ChSel].ADCZero := Min(EDRFile.Channel[ZeroFrm.ChSel].ADCMaxValue,ZeroFrm.ZeroLevel) ;
+        EDRFile.Channel[ZeroFrm.ChSel].ADCZeroAt := -1 ;
+        EDRFile.SaveHeader( EDRFile.CDRfH ) ;
+        scDisplay.HorizontalCursors[ZeroFrm.ChSel] := EDRFile.Channel[ZeroFrm.ChSel].ADCZero ;
         end
      end;
 
@@ -662,12 +662,12 @@ procedure TViewSigFrm.rbTDisplayUnitMinsClick(Sender: TObject);
 // Set time readout units to minutes
 // ---------------------------------
 begin
-    Settings.TUnits := 'm' ;
-    Settings.TSCale := 1.0/60.0 ;
-    edStartTime.Scale := Settings.TSCale ;
-    edStartTime.Units := Settings.TUnits ;
-    edTDisplay.Scale := Settings.TSCale ;
-    edTDisplay.Units := Settings.TUnits ;
+    EDRFile.Settings.TUnits := 'm' ;
+    EDRFile.Settings.TSCale := 1.0/60.0 ;
+    edStartTime.Scale := EDRFile.Settings.TSCale ;
+    edStartTime.Units := EDRFile.Settings.TUnits ;
+    edTDisplay.Scale := EDRFile.Settings.TSCale ;
+    edTDisplay.Units := EDRFile.Settings.TUnits ;
     DisplayFromFile ;
     end;
 
@@ -676,12 +676,12 @@ procedure TViewSigFrm.rbTDisplayUnitsSecsClick(Sender: TObject);
 // Set time readout units to seconds
 // ---------------------------------
 begin
-    Settings.TUnits := 's' ;
-    Settings.TSCale := 1.0 ;
-    edStartTime.Scale := Settings.TSCale ;
-    edStartTime.Units := Settings.TUnits ;
-    edTDisplay.Scale := Settings.TSCale ;
-    edTDisplay.Units := Settings.TUnits ;
+    EDRFile.Settings.TUnits := 's' ;
+    EDRFile.Settings.TSCale := 1.0 ;
+    edStartTime.Scale := EDRFile.Settings.TSCale ;
+    edStartTime.Units := EDRFile.Settings.TUnits ;
+    edTDisplay.Scale := EDRFile.Settings.TSCale ;
+    edTDisplay.Units := EDRFile.Settings.TUnits ;
     DisplayFromFile ;
     end;
 
@@ -693,7 +693,7 @@ procedure TViewSigFrm.bTDisplayDoubleClick(Sender: TObject);
 begin
      edTDisplay.Value := edTDisplay.Value*2.0 ;
      DisplayFromFile ;
-     Settings.DisplayDuration := edTDisplay.Value ;
+     EDRFile.Settings.DisplayDuration := edTDisplay.Value ;
      end;
 
 
@@ -704,7 +704,7 @@ procedure TViewSigFrm.bTDisplayHalfClick(Sender: TObject);
 begin
      edTDisplay.Value := edTDisplay.Value*0.5 ;
      DisplayFromFile ;
-     Settings.DisplayDuration := edTDisplay.Value ;
+     EDRFile.Settings.DisplayDuration := edTDisplay.Value ;
      end;
 
 
@@ -713,12 +713,12 @@ procedure TViewSigFrm.rbTDisplayUnitsMSecsClick(Sender: TObject);
 // Set time readout units to milliseconds
 // --------------------------------------
 begin
-    Settings.TUnits := 'ms' ;
-    Settings.TSCale := 1000.0 ;
-    edStartTime.Scale := Settings.TSCale ;
-    edStartTime.Units := Settings.TUnits ;
-    edTDisplay.Scale := Settings.TSCale ;
-    edTDisplay.Units := Settings.TUnits ;
+    EDRFile.Settings.TUnits := 'ms' ;
+    EDRFile.Settings.TSCale := 1000.0 ;
+    edStartTime.Scale := EDRFile.Settings.TSCale ;
+    edStartTime.Units := EDRFile.Settings.TUnits ;
+    edTDisplay.Scale := EDRFile.Settings.TSCale ;
+    edTDisplay.Units := EDRFile.Settings.TUnits ;
     DisplayFromFile ;
     end;
 
@@ -766,14 +766,14 @@ var
 begin
 
       // Initialise
-      for ch := 0 to CDRFH.NumChannels-1 do Sum[ch] := 0.0 ;
+      for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do Sum[ch] := 0.0 ;
       NumAvg := 0 ;
-      NumBytesPerScan := CDRFH.NumChannels*2 ;
+      NumBytesPerScan := EDRFIle.Cdrfh.NumChannels*2 ;
       GetMem( Buf, NumBytesPerScan*NumScansPerBuf ) ;
 
       // No of scans to average
       TScan := Round((scDisplay.XOffset + scDisplay.VerticalCursors[Cursors.C1])
-                      *scDisplay.TScale/(CDRFH.dt*Settings.TScale)) ;
+                      *scDisplay.TScale/(EDRFIle.Cdrfh.dt*EDRFile.Settings.TScale)) ;
       NumScansToDo := Abs(TScan - TZeroScan) + 1 ;
       // Start at scan
       iScan := Min(TScan,TZeroScan) ;
@@ -783,16 +783,16 @@ begin
       while NumScansToDo > 0 do begin
 
           // Read data into buffer from file
-          FilePointer := CDRFH.NumBytesInHeader + iScan*CDRFH.NumChannels*2 ;
-          FileSeek( CDRFH.FileHandle, FilePointer, 0 ) ;
+          FilePointer := EDRFIle.Cdrfh.NumBytesInHeader + iScan*EDRFIle.Cdrfh.NumChannels*2 ;
+          FileSeek( EDRFIle.Cdrfh.FileHandle, FilePointer, 0 ) ;
           NumScansToRead := Min(NumScansPerBuf,NumScansToDo) ;
-          NumScansInBuf := FileRead(CDRFH.FileHandle,Buf^,NumBytesPerScan*NumScansToRead)
+          NumScansInBuf := FileRead(EDRFIle.Cdrfh.FileHandle,Buf^,NumBytesPerScan*NumScansToRead)
                            div NumBytesPerScan ;
 
           // Add buffer data to sum
           j := 0 ;
           for i := 0 to NumScansInBuf-1 do begin
-              for ch := 0 to CDRFH.NumChannels-1 do begin
+              for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
                   Sum[ch] := Sum[ch] + Buf^[j] ;
                   Inc(j) ;
                   end ;
@@ -810,17 +810,17 @@ begin
       meCursor.Clear ;
 
       meCursor.Lines.Add( format( 't= %.4g - %.4g s ',
-                          [TZeroScan*CDRFH.dt*Settings.TScale,
-                           TScan*CDRFH.dt*Settings.TScale])) ;
+                          [TZeroScan*EDRFIle.Cdrfh.dt*EDRFile.Settings.TScale,
+                           TScan*EDRFIle.Cdrfh.dt*EDRFile.Settings.TScale])) ;
       meCursor.Lines.Add(format( 'No. Samples=  %d ',[NumAvg])) ;
-      for ch := 0 to CDRFH.NumChannels-1 do begin
+      for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
           { Add to readout list }
-          Avg := Channel[ch].ADCScale*
-                 ( (Sum[ch]/Max(NumAvg,1)) - Channel[ch].ADCZero) ;
+          Avg := EDRFile.Channel[ch].ADCScale*
+                 ( (Sum[ch]/Max(NumAvg,1)) - EDRFile.Channel[ch].ADCZero) ;
           meCursor.Lines.Add(format( '%s= %.4g %s',
-                                     [Channel[ch].ADCName,
+                                     [EDRFile.Channel[ch].ADCName,
                                       Avg,
-                                      Channel[ch].ADCUnits] ) );
+                                      EDRFile.Channel[ch].ADCUnits] ) );
           end ;
 
       FreeMem( Buf ) ;
@@ -832,7 +832,7 @@ procedure TViewSigFrm.ckFixedZeroLevelsClick(Sender: TObject);
 // Enable/Disable fixed zero levels
 // --------------------------------
 begin
-     Settings.FixedZeroLevels := ckFixedZeroLevels.Checked ;
+     EDRFile.Settings.FixedZeroLevels := ckFixedZeroLevels.Checked ;
      end;
 
 end.

@@ -387,7 +387,7 @@ var
 
 implementation
 
-uses MDIForm, Rec, DirectorySelectUnit, Sealtest;
+uses MDIForm, Rec, DirectorySelectUnit, Sealtest, EDRFileUnit;
 
 {$R *.dfm}
 
@@ -768,14 +768,14 @@ begin
 
      AdjustWaveformPalettes ;
 
-     if (Settings.VProgramFileName = '') or
-        ANSIContainsText(Settings.VProgramFileName,'\ .') then begin
+     if (EDRFile.Settings.VProgramFileName = '') or
+        ANSIContainsText(EDRFile.Settings.VProgramFileName,'\ .') then begin
         // Create empty protocol
         bNew.Click ;
         end
      else begin
         // Load currently selected protocol
-        FileName := ChangeFileExt(Settings.VProgramFileName,'.xml') ;
+        FileName := ChangeFileExt(EDRFile.Settings.VProgramFileName,'.xml') ;
         Caption := 'Protocol: ' + FileName ;
         LoadProtocolFromXMLFile( FileName ) ;
         end ;
@@ -1993,7 +1993,7 @@ begin
     if Prot.NextProtocolFileName <> '' then
         cbNextProtocol.ItemIndex := Max(0,
                                     cbNextProtocol.Items.IndexOf(
-                                    ExtractFileNameOnly(Prot.NextProtocolFileName)))
+                                    EDRFile.ExtractFileNameOnly(Prot.NextProtocolFileName)))
      else cbNextProtocol.ItemIndex := 0 ;
 
 
@@ -2028,7 +2028,7 @@ begin
      Prot.RepeatedProtocol := rbRepeatedProtocol.Checked ;
      // Linked protocol
      if cbNextProtocol.ItemIndex > 0 then begin
-        Prot.NextProtocolFileName := Main.VProtDirectory + cbNextProtocol.Text + '.xml' ;
+        Prot.NextProtocolFileName := EDRFile.VProtDirectory + cbNextProtocol.Text + '.xml' ;
         end
      else Prot.NextProtocolFileName := '' ;
 
@@ -2132,7 +2132,7 @@ begin
     Result := FileName ;
 
     // Select this protocol for use (if none already selected)
-    if Settings.VProgramFileName = '' then Settings.VProgramFileName := FileName ;
+    if EDRFile.Settings.VProgramFileName = '' then EDRFile.Settings.VProgramFileName := FileName ;
 
     end ;
 
@@ -2188,7 +2188,7 @@ begin
      SaveDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofPathMustExist] ;
      SaveDialog.Title := 'Save Stimulus Protocol' ;
      SaveDialog.FileName := {Main.VProtDirectory + }'*.xml' ;
-     SaveDialog.InitialDir := Main.VProtDirectory ;
+     SaveDialog.InitialDir := EDRFile.VProtDirectory ;
 
      if SaveDialog.execute then begin
         FileName := SaveProtocolToXMLFile(SaveDialog.FileName) ;
@@ -2212,14 +2212,14 @@ begin
 
      OpenDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofPathMustExist] ;
      OpenDialog.FileName := {Main.VProtDirectory + }'*.xml' ;
-     OpenDialog.InitialDir := Main.VProtDirectory ;
+     OpenDialog.InitialDir :=EDRFile.VProtDirectory ;
      OpenDialog.Title := 'Load Stimulus Protocol' ;
      if OpenDialog.execute then begin
         FileName := OpenDialog.FileName ;
         Caption := 'Protocol: ' + FileName ;
         LoadProtocolFromXMLFile( FileName ) ;
         // Select this protocol for use (if none already selected)
-        if Settings.VProgramFileName = '' then Settings.VProgramFileName := FileName ;
+        if EDRFile.Settings.VProgramFileName = '' then EDRFile.Settings.VProgramFileName := FileName ;
         end ;
 
      end ;
@@ -2265,7 +2265,7 @@ procedure TEditProtocolFrm.bSetStimFolderClick(Sender: TObject);
 //  Set voltage protocol file folder
 // -----------------------------
 begin
-    DirectorySelectFrm.Directory := Main.VProtDirectory ;
+    DirectorySelectFrm.Directory := EDRFile.VProtDirectory ;
     DirectorySelectFrm.Left := Main.Left +
                                EditProtocolFrm.Left +
                                bSetStimFolder.Left +
@@ -2277,7 +2277,7 @@ begin
 
     DirectorySelectFrm.ShowModal ;
     if DirectorySelectFrm.ModalResult = mrOK then begin
-       Main.VProtDirectory := DirectorySelectFrm.Directory ;
+       EDRFile.VProtDirectory := DirectorySelectFrm.Directory ;
         // Populate Next Protocol list
         Stimulator.CreateProtocolList( cbNextProtocol ) ;
        end ;
@@ -2292,8 +2292,8 @@ procedure TEditProtocolFrm.bLoadFileClick(Sender: TObject);
 begin
 
      OpenWaveDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofPathMustExist] ;
-     OpenWaveDialog.FileName := Main.VProtDirectory + '*.txt' ;
-     OpenWaveDialog.InitialDir := Main.VProtDirectory ;
+     OpenWaveDialog.FileName := EDRFile.VProtDirectory + '*.txt' ;
+     OpenWaveDialog.InitialDir := EDRFile.VProtDirectory ;
 //     SetCurrentDir(Main.VProtDirectory) ;
      OpenWaveDialog.Title := 'Load user-defined waveform' ;
 

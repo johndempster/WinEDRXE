@@ -114,9 +114,9 @@ unit Sealtest;
 interface
 
 uses WinTypes, WinProcs, Classes, Graphics, Forms, Controls, Buttons,
-  StdCtrls, ExtCtrls, global, shared, SysUtils, Spin,
+  StdCtrls, ExtCtrls, EDRFileUnit, SysUtils, Spin,
   math, maths, dialogs,
-  ValEdit, ScopeDisplay, SESLabIO, ComCtrls, ValidatedEdit, FileIO,ampmodule, strutils ;
+  ValEdit, ScopeDisplay, SESLabIO, ComCtrls, ValidatedEdit, ampmodule, strutils ;
 
 const
     Idle = 0 ;
@@ -361,7 +361,7 @@ implementation
 
 {$R *.DFM}
 
-uses Mdiform, mmsystem , Rec, TritonPanelUnit, EPC9PanelUnit;
+uses Mdiform, mmsystem , Rec, TritonPanelUnit, EPC9PanelUnit ;
 
 const
      //NumDACChannels = 2 ;
@@ -457,23 +457,23 @@ begin
      for ch := 0 to NumTestChannels-1 do begin
          Main.SESLabIO.ADCChannelZero[ch] := 0 ;
          { Create horizontal cursors }
-         scDisplay.AddHorizontalCursor(ch,Settings.Colors.Cursors,True,'z') ;
+         scDisplay.AddHorizontalCursor(ch,EDRFile.Settings.Colors.Cursors,True,'z') ;
          scDisplay.yMax[ch] := Main.SESLabIO.ADCMaxValue ;
          scDisplay.yMin[ch] := Main.SESLabIO.ADCMinValue ;
          end ;
 
      // Ensure no. of cell parameter averages is valid
-     Settings.SealTest.NumAverages := Min(Max(Settings.SealTest.NumAverages,1),MaxAverage) ;
-     edNumAverages.Value := Settings.SealTest.NumAverages ;
+     EDRFile.Settings.SealTest.NumAverages := Min(Max(EDRFile.Settings.SealTest.NumAverages,1),MaxAverage) ;
+     edNumAverages.Value := EDRFile.Settings.SealTest.NumAverages ;
 
      // Gaccess calculation mode
-     rbGaFromPeak.Checked := Settings.SealTest.GaFromPeak ;
-     rbGaFromExp.Checked := not Settings.SealTest.GaFromPeak ;
+     rbGaFromPeak.Checked := EDRFile.Settings.SealTest.GaFromPeak ;
+     rbGaFromExp.Checked := not EDRFile.Settings.SealTest.GaFromPeak ;
 
      scDisplay.xMin := 0 ;
      scDisplay.xMax := NumTestSamples-1  ;
 
-     scDisplay.TUnits := Settings.TUnits ;
+     scDisplay.TUnits := EDRFile.Settings.TUnits ;
 
      // Show available output channels
      ckPulseToAO0.Visible := False ;
@@ -492,23 +492,23 @@ begin
      SetClampMode ;
 
      { Test pulse amplitude & width }
-     edPulseHeight1.Value := Settings.SealTest.PulseHeight1 ;
-     edPulseHeight2.Value := Settings.SealTest.PulseHeight2 ;
-     edPulseHeight3.Value := Settings.SealTest.PulseHeight3 ;
-     edPulseWidth.Value := Settings.SealTest.PulseWidth ;
+     edPulseHeight1.Value := EDRFile.Settings.SealTest.PulseHeight1 ;
+     edPulseHeight2.Value := EDRFile.Settings.SealTest.PulseHeight2 ;
+     edPulseHeight3.Value := EDRFile.Settings.SealTest.PulseHeight3 ;
+     edPulseWidth.Value := EDRFile.Settings.SealTest.PulseWidth ;
 
      { Update holding potential text boxes }
 
 
-     edHoldingVoltage1.Value := Settings.SealTest.HoldingVoltage1 ;
-     edHoldingVoltage2.Value := Settings.SealTest.HoldingVoltage2 ;
-     edHoldingVoltage3.Value := Settings.SealTest.HoldingVoltage3 ;
+     edHoldingVoltage1.Value := EDRFile.Settings.SealTest.HoldingVoltage1 ;
+     edHoldingVoltage2.Value := EDRFile.Settings.SealTest.HoldingVoltage2 ;
+     edHoldingVoltage3.Value := EDRFile.Settings.SealTest.HoldingVoltage3 ;
 
-     edZapAmplitude.Value := Settings.SealTest.ZapAmplitude ;
-     edZapDuration.Value := Settings.SealTest.ZapDuration ;
+     edZapAmplitude.Value := EDRFile.Settings.SealTest.ZapAmplitude ;
+     edZapDuration.Value := EDRFile.Settings.SealTest.ZapDuration ;
 
      { Select test pulse to use }
-     case Settings.SealTest.Use of
+     case EDRFile.Settings.SealTest.Use of
           2 : rbUseHoldingVoltage2.checked := True ;
           3 : rbUseHoldingVoltage3.checked := True ;
           else rbUseHoldingVoltage1.checked := True ;
@@ -644,9 +644,9 @@ begin
                    { Start recording sweep(s) }
 
                    if cbCurrentChannel.ItemIndex >= 0 then
-                      Settings.SealTest.CurrentChannel := cbCurrentChannel.ItemIndex ;
+                      EDRFile.Settings.SealTest.CurrentChannel := cbCurrentChannel.ItemIndex ;
                    if cbVoltageChannel.ItemIndex >= 0 then
-                      Settings.SealTest.VoltageChannel := cbVoltageChannel.ItemIndex ;
+                      EDRFile.Settings.SealTest.VoltageChannel := cbVoltageChannel.ItemIndex ;
 
                    // Save old channel units
                    for ch := 0 to NumTestChannels-1 do
@@ -827,18 +827,18 @@ begin
 
     // Use current default holding potential for selected AO channel
     TestDAC := Min(Max(TestDAC,0),Main.SESLabIO.DACNumChannels-1) ;
-    case Settings.SealTest.Use of
+    case EDRFile.Settings.SealTest.Use of
           2 : begin
-             Settings.SealTest.HoldingVoltage2 :=  Main.SESLabIO.DACHoldingVoltage[TestDAC] ;
-             edHoldingVoltage2.Value := Settings.SealTest.HoldingVoltage2 ;
+             EDRFile.Settings.SealTest.HoldingVoltage2 :=  Main.SESLabIO.DACHoldingVoltage[TestDAC] ;
+             edHoldingVoltage2.Value := EDRFile.Settings.SealTest.HoldingVoltage2 ;
               end ;
           3 : begin
-              Settings.SealTest.HoldingVoltage3 :=  Main.SESLabIO.DACHoldingVoltage[TestDAC] ;
-              edHoldingVoltage3.Value := Settings.SealTest.HoldingVoltage3 ;
+              EDRFile.Settings.SealTest.HoldingVoltage3 :=  Main.SESLabIO.DACHoldingVoltage[TestDAC] ;
+              edHoldingVoltage3.Value := EDRFile.Settings.SealTest.HoldingVoltage3 ;
               end ;
           else begin
-              Settings.SealTest.HoldingVoltage1 :=  Main.SESLabIO.DACHoldingVoltage[TestDAC] ;
-              edHoldingVoltage1.Value := Settings.SealTest.HoldingVoltage1 ;
+              EDRFile.Settings.SealTest.HoldingVoltage1 :=  Main.SESLabIO.DACHoldingVoltage[TestDAC] ;
+              edHoldingVoltage1.Value := EDRFile.Settings.SealTest.HoldingVoltage1 ;
               end ;
           end ;
 
@@ -975,24 +975,24 @@ var
 begin
 
      { Select test pulse to use }
-     case Settings.SealTest.Use of
+     case EDRFile.Settings.SealTest.Use of
           2 : begin
-              Main.SESLabIO.DACHoldingVoltage[TestDAC] := Settings.SealTest.HoldingVoltage2 ;
-              Settings.SealTest.PulseHeight := Settings.SealTest.PulseHeight2 ;
+              Main.SESLabIO.DACHoldingVoltage[TestDAC] := EDRFile.Settings.SealTest.HoldingVoltage2 ;
+              EDRFile.Settings.SealTest.PulseHeight := EDRFile.Settings.SealTest.PulseHeight2 ;
               end ;
           3 : begin
-              Main.SESLabIO.DACHoldingVoltage[TestDAC] := Settings.SealTest.HoldingVoltage3 ;
-              Settings.SealTest.PulseHeight := Settings.SealTest.PulseHeight3 ;
+              Main.SESLabIO.DACHoldingVoltage[TestDAC] := EDRFile.Settings.SealTest.HoldingVoltage3 ;
+              EDRFile.Settings.SealTest.PulseHeight := EDRFile.Settings.SealTest.PulseHeight3 ;
               end ;
           else begin
-              Main.SESLabIO.DACHoldingVoltage[TestDAC] := Settings.SealTest.HoldingVoltage1 ;
-              Settings.SealTest.PulseHeight := Settings.SealTest.PulseHeight1 ;
+              Main.SESLabIO.DACHoldingVoltage[TestDAC] := EDRFile.Settings.SealTest.HoldingVoltage1 ;
+              EDRFile.Settings.SealTest.PulseHeight := EDRFile.Settings.SealTest.PulseHeight1 ;
               end ;
           end ;
 
      if not bZap.Enabled then
         begin
-        Settings.SealTest.PulseHeight := edZapAmplitude.Value ;
+        EDRFile.Settings.SealTest.PulseHeight := edZapAmplitude.Value ;
         end;
 
      { D/A channel voltage -> bits scaling factors }
@@ -1002,7 +1002,7 @@ begin
          end ;
 
      { Test pulse duration and recording sweep length }
-     TestPulse.Duration := Settings.SealTest.PulseWidth ;
+     TestPulse.Duration := EDRFile.Settings.SealTest.PulseWidth ;
 
      if not bZap.Enabled then
         begin
@@ -1044,7 +1044,7 @@ begin
                       Round(DACScale[ch]*Main.SESLabIO.DACHoldingVoltage[ch]))) ;
          // Test level
          iOnLevel :=  Max(Main.SESLabIO.DACMinValue,Min(Main.SESLabIO.DACMaxValue,
-                      Round(DACScale[ch]*(Main.SESLabIO.DACHoldingVoltage[ch] + Settings.SealTest.PulseHeight)))) ;
+                      Round(DACScale[ch]*(Main.SESLabIO.DACHoldingVoltage[ch] + EDRFile.Settings.SealTest.PulseHeight)))) ;
 
          // Create DAC waveform buffer
          j := ch ;
@@ -1261,8 +1261,8 @@ begin
      else ScaleToAmps := 1. ;
 
      // Holding voltage and current
-     Main.Vm := ScaleToVolts*VHold ;
-     Main.Im := ScaleToAmps*IHold ;
+     EDRFIle.Vm := ScaleToVolts*VHold ;
+     EDRFIle.Im := ScaleToAmps*IHold ;
 
      // Voltage and current pulse amplitude in Volts and Amps
      Voltage := VPulse*ScaleToVolts ;
@@ -1284,7 +1284,7 @@ begin
      if iResistance >= Round(EdNumAverages.Value) then iResistance := 0 ;
      NumResistances := Min(NumResistances + 1,Round(EdNumAverages.Value));
 
-     Main.RSeal := EdResistance.Value ;
+     EDRFile.RSeal := EdResistance.Value ;
 
      { Calculate peak current from first half of pulse }
      PeakCurrent := 0. ;
@@ -1351,15 +1351,15 @@ begin
 
      edGAccess.Value := Average( GAccess, NumAverages, edGAccess.Value ) ;
      if Abs(edGAccess.Value) > 1E-20 then  edRAccess.Value := 1.0 / edGAccess.Value ;
-     Main.Ga := edGAccess.Value ;
+     EDRFile.Ga := edGAccess.Value ;
 
      edGMembrane.Value := Average( GMembrane, NumAverages, edGMembrane.Value ) ;
      if Abs(edGmembrane.Value) > 1E-20 then edRmembrane.Value := 1.0 / edGmembrane.Value ;
-     Main.Gm := edGmembrane.Value ;
+     EDRFile.Gm := edGmembrane.Value ;
 
      EdCmembrane.Value := Average( Capacity, NumAverages, EdCmembrane.Value ) ;
      EdCmembrane1.Value := EdCmembrane.Value ;
-     Main.Cm := EdCmembrane.Value ;
+     EDRFile.Cm := EdCmembrane.Value ;
 
      except
         Main.StatusBar.SimpleText := 'SealTest: Floating Point Error' ;
@@ -1448,7 +1448,7 @@ procedure TSealTestFrm.edHoldingVoltage1KeyPress(Sender: TObject; var Key: Char)
   ------------------------------------}
 begin
      if key = #13 then begin
-         Settings.SealTest.HoldingVoltage1 := edHoldingVoltage1.Value ;
+         EDRFile.Settings.SealTest.HoldingVoltage1 := edHoldingVoltage1.Value ;
         NewTestPulse := True ;
         end ;
 
@@ -1461,7 +1461,7 @@ procedure TSealTestFrm.edHoldingVoltage2KeyPress(Sender: TObject; var Key: Char)
   ------------------------------------}
 begin
      if key = #13 then begin
-        Settings.SealTest.HoldingVoltage2 := edHoldingVoltage2.Value ;
+        EDRFile.Settings.SealTest.HoldingVoltage2 := edHoldingVoltage2.Value ;
         NewTestPulse := True ;
         end ;
 
@@ -1475,7 +1475,7 @@ procedure TSealTestFrm.EdHoldingVoltage3KeyPress(Sender: TObject;
   ------------------------------------}
 begin
      if key = #13 then begin
-        Settings.SealTest.HoldingVoltage3 := edHoldingVoltage3.Value ;
+        EDRFile.Settings.SealTest.HoldingVoltage3 := edHoldingVoltage3.Value ;
         NewTestPulse := True ;
         end ;
      end ;
@@ -1487,9 +1487,9 @@ procedure TSealTestFrm.rbUseHoldingVoltage1Click(Sender: TObject);
   ---------------------------------}
 begin
      { Set holding voltage and pulse height to group #1 }
-     Settings.SealTest.Use := 1 ;
-     Settings.SealTest.HoldingVoltage1 := edHoldingVoltage1.Value ;
-     Settings.SealTest.PulseHeight1 := edPulseHeight1.Value ;
+     EDRFile.Settings.SealTest.Use := 1 ;
+     EDRFile.Settings.SealTest.HoldingVoltage1 := edHoldingVoltage1.Value ;
+     EDRFile.Settings.SealTest.PulseHeight1 := edPulseHeight1.Value ;
      NewTestPulse := True ;
      end;
 
@@ -1500,9 +1500,9 @@ procedure TSealTestFrm.rbUseHoldingVoltage2Click(Sender: TObject);
   ---------------------------------}
 begin
      { Set holding voltage and pulse height to group #2 }
-     Settings.SealTest.Use := 2 ;
-     Settings.SealTest.HoldingVoltage2 := edHoldingVoltage2.Value ;
-     Settings.SealTest.PulseHeight2 := edPulseHeight2.Value ;
+     EDRFile.Settings.SealTest.Use := 2 ;
+     EDRFile.Settings.SealTest.HoldingVoltage2 := edHoldingVoltage2.Value ;
+     EDRFile.Settings.SealTest.PulseHeight2 := edPulseHeight2.Value ;
      NewTestPulse := True ;
      end;
 
@@ -1514,9 +1514,9 @@ procedure TSealTestFrm.rbUseHoldingVoltage3Click(Sender: TObject);
   ---------------------------------}
 begin
      { Set holding voltage and pulse height to group #3 }
-     Settings.SealTest.Use := 3 ;
-     Settings.SealTest.HoldingVoltage3 := edHoldingVoltage3.Value ;
-     Settings.SealTest.PulseHeight3 :=edPulseHeight3.Value ;
+     EDRFile.Settings.SealTest.Use := 3 ;
+     EDRFile.Settings.SealTest.HoldingVoltage3 := edHoldingVoltage3.Value ;
+     EDRFile.Settings.SealTest.PulseHeight3 :=edPulseHeight3.Value ;
      NewTestPulse := True ;
      end;
 
@@ -1528,7 +1528,7 @@ procedure TSealTestFrm.edPulseHeight1KeyPress(Sender: TObject;
   -------------------------------}
 begin
      if key = #13 then begin
-        Settings.SealTest.PulseHeight1 := edPulseHeight1.Value ;
+        EDRFile.Settings.SealTest.PulseHeight1 := edPulseHeight1.Value ;
         NewTestPulse := True ;
         end ;
      end;
@@ -1541,7 +1541,7 @@ procedure TSealTestFrm.edPulseheight2KeyPress(Sender: TObject;
     -----------------------------}
 begin
      if key = #13 then begin
-        Settings.SealTest.PulseHeight2 := edPulseHeight2.Value ;
+        EDRFile.Settings.SealTest.PulseHeight2 := edPulseHeight2.Value ;
         NewTestPulse := True ;
         end ;
      end;
@@ -1553,7 +1553,7 @@ procedure TSealTestFrm.edPulseWidthKeyPress(Sender: TObject; var Key: Char);
   ----------------------------}
 begin
      if key = #13 then begin
-        Settings.SealTest.PulseWidth := edPulseWidth.Value ;
+        EDRFile.Settings.SealTest.PulseWidth := edPulseWidth.Value ;
         { Note. Force a re-start of D/A waveform so that D/A cycle
           time is updated }
         if Main.SESLabIO.DACActive then Main.SESLabIO.DACStop ;
@@ -1675,7 +1675,7 @@ begin
      scDisplay.MaxADCValue := Main.SESLabIO.ADCMaxValue ;
      scDisplay.MinADCValue := Main.SESLabIO.ADCMinValue ;
 
-     scDisplay.DisplayGrid := Settings.DisplayGrid ;
+     scDisplay.DisplayGrid := EDRFile.Settings.DisplayGrid ;
 
      // Update visible channels
      for ch := 0 to scDisplay.NumChannels-1 do begin
@@ -1726,15 +1726,15 @@ procedure TSealTestFrm.bSaveToLogClick(Sender: TObject);
 begin
 
      if CellParametersPage.ActivePage = CellTab then begin
-        WriteToLogFile( format( 'Gaccess= %.5g %s',
+        EDRFile.WriteToLogFile( format( 'Gaccess= %.5g %s',
                      [edGAccess.Value*edGAccess.Scale,edGAccess.Units])) ;
-        WriteToLogFile( format( 'Gmembrane= %.5g %s',
+        EDRFile.WriteToLogFile( format( 'Gmembrane= %.5g %s',
                      [edGMembrane.Value*edGMembrane.Scale,edGMembrane.Units])) ;
-        WriteToLogFile( format( 'Cmembrane= %.5g %s',
+        EDRFile.WriteToLogFile( format( 'Cmembrane= %.5g %s',
                      [edCMembrane.Value*edCMembrane.Scale,edCMembrane.Units])) ;
         end
      else begin
-        WriteToLogFile( format( 'Pipette Resistance= %.5g %s',
+        EDRFile.WriteToLogFile( format( 'Pipette Resistance= %.5g %s',
                      [edResistance.Value*edResistance.Scale,edResistance.Units])) ;
         end ;
      end;
@@ -1762,7 +1762,7 @@ procedure TSealTestFrm.rbGaFromPeakClick(Sender: TObject);
 // Select Ga calculated from capacity current peak mode
 // ----------------------------------------------------
 begin
-     Settings.SealTest.GaFromPeak := True ;
+     EDRFile.Settings.SealTest.GaFromPeak := True ;
      NewTestPulse := True ;
      end;
 
@@ -1771,7 +1771,7 @@ procedure TSealTestFrm.rbGaFromExpClick(Sender: TObject);
 // Select Ga calculated from exponential amplitude mode
 // ----------------------------------------------------
 begin
-     Settings.SealTest.GaFromPeak := False ;
+     EDRFile.Settings.SealTest.GaFromPeak := False ;
      NewTestPulse := True ;
      end;
 
@@ -1787,18 +1787,18 @@ begin
     case i of
         1 : begin
             edPulseHeight1.Value := Value ;
-            Settings.SealTest.PulseHeight1 := Value ;
+            EDRFile.Settings.SealTest.PulseHeight1 := Value ;
            if rbUseHoldingVoltage1.checked then begin
-              Settings.SealTest.PulseHeight := edPulseHeight1.Value ;
+              EDRFile.Settings.SealTest.PulseHeight := edPulseHeight1.Value ;
               NewTestPulse := True ;
               end ;
            end ;
 
         2 : begin
             edPulseHeight2.Value := Value ;
-            Settings.SealTest.PulseHeight2 := Value ;
+            EDRFile.Settings.SealTest.PulseHeight2 := Value ;
            if rbUseHoldingVoltage2.checked then begin
-              Settings.SealTest.PulseHeight := edPulseHeight2.Value ;
+              EDRFile.Settings.SealTest.PulseHeight := edPulseHeight2.Value ;
               NewTestPulse := True ;
               end ;
             end ;
@@ -1827,7 +1827,7 @@ begin
     case i of
         1 : begin
             edHoldingVoltage1.Value := Value ;
-            Settings.SealTest.HoldingVoltage1 := Value ;
+            EDRFile.Settings.SealTest.HoldingVoltage1 := Value ;
             if rbUseHoldingVoltage1.checked then begin
                Main.SESLabIO.DACHoldingVoltage[TestDAC] := edHoldingVoltage1.Value ;
                NewTestPulse := True ;
@@ -1836,7 +1836,7 @@ begin
 
         2 : begin
             edHoldingVoltage2.Value := Value ;
-            Settings.SealTest.HoldingVoltage2 := Value ;
+            EDRFile.Settings.SealTest.HoldingVoltage2 := Value ;
             if rbUseHoldingVoltage1.checked then begin
                Main.SESLabIO.DACHoldingVoltage[TestDAC] := edHoldingVoltage2.Value ;
                NewTestPulse := True ;
@@ -1844,7 +1844,7 @@ begin
             end ;
         3 : begin
             edHoldingVoltage3.Value := Value ;
-            Settings.SealTest.HoldingVoltage3 := Value ;
+            EDRFile.Settings.SealTest.HoldingVoltage3 := Value ;
             if rbUseHoldingVoltage1.checked then begin
                Main.SESLabIO.DACHoldingVoltage[TestDAC] := edHoldingVoltage3.Value ;
                NewTestPulse := True ;
@@ -1874,7 +1874,7 @@ procedure TSealTestFrm.SetTestPulseWidth( Value : Single ) ;
 // --------------------
 begin
      edPulseWidth.Value := Value ;
-     Settings.SealTest.PulseWidth :=  Value ;
+     EDRFile.Settings.SealTest.PulseWidth :=  Value ;
 
      end ;
 
@@ -1906,7 +1906,7 @@ function  TSealTestFrm.GetTestPulseNumber : Integer ;
 // Get test pulse number
 // --------------------
 begin
-     Result := Settings.SealTest.Use ;
+     Result := EDRFile.Settings.SealTest.Use ;
      end ;
 
 
@@ -1915,8 +1915,8 @@ procedure TSealTestFrm.SetSmoothingFactor( Value : Single ) ;
 // Set cell parameter smoothing factor
 // -----------------------------------
 begin
-     Settings.SealTest.NumAverages := Min(Max(Round(Value),1),MaxAverage) ;
-     edNumAverages.Value := Settings.SealTest.NumAverages ;
+     EDRFile.Settings.SealTest.NumAverages := Min(Max(Round(Value),1),MaxAverage) ;
+     edNumAverages.Value := EDRFile.Settings.SealTest.NumAverages ;
      end ;
 
 
@@ -1925,7 +1925,7 @@ function  TSealTestFrm.GetSmoothingFactor : Single ;
 // Get cell parameter smoothing factor
 // -----------------------------------
 begin
-     Result := Settings.SealTest.NumAverages ;
+     Result := EDRFile.Settings.SealTest.NumAverages ;
      end ;
 
 
@@ -1944,9 +1944,9 @@ procedure TSealTestFrm.edPulseheight3KeyPress(Sender: TObject;
     -----------------------------}
 begin
      if key = #13 then begin
-        Settings.SealTest.PulseHeight3 := edPulseHeight3.Value ;
+        EDRFile.Settings.SealTest.PulseHeight3 := edPulseHeight3.Value ;
         if rbUseHoldingVoltage3.checked then begin
-           Settings.SealTest.PulseHeight := edPulseHeight3.Value ;
+           EDRFile.Settings.SealTest.PulseHeight := edPulseHeight3.Value ;
            end ;
         NewTestPulse := True ;
         end ;
@@ -2005,7 +2005,7 @@ procedure TSealTestFrm.edNumAveragesKeyPress(Sender: TObject;
   var Key: Char);
 begin
     if Key = #13 then begin
-       Settings.SealTest.NumAverages := Round(edNumAverages.Value)
+       EDRFile.Settings.SealTest.NumAverages := Round(edNumAverages.Value)
        end ;
      end;
 
@@ -2029,7 +2029,7 @@ procedure TSealTestFrm.edZapAmplitudeKeyPress(Sender: TObject; var Key: Char);
 // ---------------------
 begin
      if key = #13 then begin
-        Settings.SealTest.ZapAmplitude := edZapAmplitude.Value ;
+        EDRFile.Settings.SealTest.ZapAmplitude := edZapAmplitude.Value ;
         end ;
      end;
 
@@ -2039,7 +2039,7 @@ procedure TSealTestFrm.edZapDurationKeyPress(Sender: TObject; var Key: Char);
 // ---------------------
 begin
      if key = #13 then begin
-        Settings.SealTest.ZapDuration := edZapDuration.Value ;
+        EDRFile.Settings.SealTest.ZapDuration := edZapDuration.Value ;
         end ;
      end;
 

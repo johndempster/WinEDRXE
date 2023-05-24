@@ -31,7 +31,7 @@ interface
 
 uses
   SysUtils, WinTypes, WinProcs, Messages, Classes, Graphics, Controls,
-  Forms, Dialogs, ExtCtrls, StdCtrls, Shared, FileIo, Global, maths, {plotlib,}
+  Forms, Dialogs, ExtCtrls, StdCtrls, EDRFileUnit, maths, {plotlib,}
   ScopeDisplay, ValEdit, math, ComCtrls, ValidatedEdit ;
 
 type
@@ -150,39 +150,39 @@ begin
      cbUnits.Items.Add('nA') ;
 
     // Get settings
-    edSimDuration.Value :=  Settings.SimEPC.Duration ;
-    edAmplitude.Value := Settings.SimEPC.Amplitude ;
-    edStDev.Value := Settings.SimEPC.AmplitudeSD ;
-    edTauRise.Value := Settings.SimEPC.TauRise ;
-    edTauDecay.Value := Settings.SimEPC.TauDecay ;
-    edNoiseRMS.Value := Settings.SimEPC.NoiseSD ;
-    edFrequency.Value := Settings.SimEPC.Frequency ;
-    edFrequencySD.Value := Settings.SimEPC.FrequencySD ;
-    edInitialDelay.Value := Settings.SimEPC.Delay ;
-    rbRandom.Checked := Settings.SimEPC.RandomEvents ;
+    edSimDuration.Value :=  EDRFile.Settings.SimEPC.Duration ;
+    edAmplitude.Value := EDRFile.Settings.SimEPC.Amplitude ;
+    edStDev.Value := EDRFile.Settings.SimEPC.AmplitudeSD ;
+    edTauRise.Value := EDRFile.Settings.SimEPC.TauRise ;
+    edTauDecay.Value := EDRFile.Settings.SimEPC.TauDecay ;
+    edNoiseRMS.Value := EDRFile.Settings.SimEPC.NoiseSD ;
+    edFrequency.Value := EDRFile.Settings.SimEPC.Frequency ;
+    edFrequencySD.Value := EDRFile.Settings.SimEPC.FrequencySD ;
+    edInitialDelay.Value := EDRFile.Settings.SimEPC.Delay ;
+    rbRandom.Checked := EDRFile.Settings.SimEPC.RandomEvents ;
     rbFixed.Checked := not rbRandom.Checked ;
     panFrequencySD.Visible := rbFixed.Checked ;
-    edSineAmplitude.Value := Settings.SimEPC.SineAmplitude ;
-    edSineFrequency.Value := Settings.SimEPC.SineFrequency ;
-    cbUnits.ItemIndex := Min(Max(Settings.SimEPC.UnitsIndex,0),cbUnits.Items.Count-1) ;
-    edReleaseProbability.Value := Settings.SimEPC.ReleaseProbability ;
-    edReleasablePool.Value := Settings.SimEPC.ReleasablePool ;
-    edDepression.Value := Settings.SimEPC.Depression ;
-    edTauDepression.Value := Settings.SimEPC.TauDepression ;
+    edSineAmplitude.Value := EDRFile.Settings.SimEPC.SineAmplitude ;
+    edSineFrequency.Value := EDRFile.Settings.SimEPC.SineFrequency ;
+    cbUnits.ItemIndex := Min(Max(EDRFile.Settings.SimEPC.UnitsIndex,0),cbUnits.Items.Count-1) ;
+    edReleaseProbability.Value := EDRFile.Settings.SimEPC.ReleaseProbability ;
+    edReleasablePool.Value := EDRFile.Settings.SimEPC.ReleasablePool ;
+    edDepression.Value := EDRFile.Settings.SimEPC.Depression ;
+    edTauDepression.Value := EDRFile.Settings.SimEPC.TauDepression ;
 
-     Channel[0].ADCUnits := cbUnits.Text ;
-     Channel[0].ADCName := 'Im' ;
+     EDRFile.Channel[0].ADCUnits := cbUnits.Text ;
+     EDRFile.Channel[0].ADCName := 'Im' ;
 
      { Set units for amplitude parameter boxes }
-     edAmplitude.Units := Channel[0].ADCUnits ;
-     edStDev.Units := Channel[0].ADCUnits ;
-     edNoiseRMS.Units := Channel[0].ADCUnits ;
-     edSineAmplitude.Units := Channel[0].ADCUnits ;
+     edAmplitude.Units := EDRFile.Channel[0].ADCUnits ;
+     edStDev.Units := EDRFile.Channel[0].ADCUnits ;
+     edNoiseRMS.Units := EDRFile.Channel[0].ADCUnits ;
+     edSineAmplitude.Units := EDRFile.Channel[0].ADCUnits ;
 
      { Set up scope display }
      scDisplay.MaxADCValue := Main.SESLabIO.ADCMaxValue ;
      scDisplay.MinADCValue := Main.SESLabIO.ADCMinValue ;
-     scDisplay.DisplayGrid := Settings.DisplayGrid ;
+     scDisplay.DisplayGrid := EDRFile.Settings.DisplayGrid ;
 
      scDisplay.MaxPoints := NumSamplesPerBuffer ;
      scDisplay.NumPoints := NumSamplesPerBuffer ;
@@ -199,9 +199,9 @@ begin
      scDisplay.xMax := NumSamplesPerBuffer-1  ;
      scDisplay.AddHorizontalCursor(0,clGray,True,'z') ;
      scDisplay.HorizontalCursors[0] := 0 ;
-     scDisplay.xOffset := Round( Channel[0].xMin /Settings.ADCSamplingInterval ) ;
-     scDisplay.TScale := Settings.ADCSamplingInterval*Settings.TScale ;
-     scDisplay.TUnits := Settings.TUnits ;
+     scDisplay.xOffset := Round( EDRFile.Channel[0].xMin /EDRFile.Settings.ADCSamplingInterval ) ;
+     scDisplay.TScale := EDRFile.Settings.ADCSamplingInterval*EDRFile.Settings.TScale ;
+     scDisplay.TUnits := EDRFile.Settings.TUnits ;
 
      { Clear all channels }
      for i := 0 to NumSamplesPerBuffer-1 do ADC[i] := 0 ;
@@ -222,18 +222,18 @@ begin
      { Update all edit boxes and transfer their parameters to
        simulation control record (SIM) }
      { Update log with parameters for this simulation run }
-     WriteToLogFile( 'Miniature endplate current simulation') ;
-     WriteToLogFile( 'Mean Amplitude = ' + edAmplitude.text ) ;
-     WriteToLogFile( 'St. dev. = ' + edStDev.text ) ;
-     WriteToLogFile( 'Tau(rise) = ' + edTauRise.text ) ;
-     WriteToLogFile( 'Noise RMS = ' + edNoiseRMS.text ) ;
-     WriteToLogFile( 'Tau(decay) = ' + edTauDecay.text ) ;
-     WriteToLogFile( 'Frequency = ' + edFrequency.text ) ;
-     WriteToLogFile( 'FrequencySD = ' + edFrequencySD.text ) ;
-     WriteToLogFile( 'Sine wave amplitude = ' + edSineAmplitude.text ) ;
-     WriteToLogFile( 'Sine wave frequency = ' + edSineFrequency.text ) ;
+     EDRFile.WriteToLogFile( 'Miniature endplate current simulation') ;
+     EDRFile.WriteToLogFile( 'Mean Amplitude = ' + edAmplitude.text ) ;
+     EDRFile.WriteToLogFile( 'St. dev. = ' + edStDev.text ) ;
+     EDRFile.WriteToLogFile( 'Tau(rise) = ' + edTauRise.text ) ;
+     EDRFile.WriteToLogFile( 'Noise RMS = ' + edNoiseRMS.text ) ;
+     EDRFile.WriteToLogFile( 'Tau(decay) = ' + edTauDecay.text ) ;
+     EDRFile.WriteToLogFile( 'Frequency = ' + edFrequency.text ) ;
+     EDRFile.WriteToLogFile( 'FrequencySD = ' + edFrequencySD.text ) ;
+     EDRFile.WriteToLogFile( 'Sine wave amplitude = ' + edSineAmplitude.text ) ;
+     EDRFile.WriteToLogFile( 'Sine wave frequency = ' + edSineFrequency.text ) ;
      //WriteToLogFile( 'Low pass filter cut-off = ' + edLPFilter.text ) ;
-     WriteToLogFile( 'Duration of simulation = ' + edSimDuration.text ) ;
+     EDRFile.WriteToLogFile( 'Duration of simulation = ' + edSimDuration.text ) ;
 
      bStart.Enabled := False ;
      bAbort.Enabled := True ;
@@ -256,30 +256,31 @@ begin
 
      Sim.t := 0.0 ;
 
-     if CdrFH.NumSamplesInFile = 0 then begin
+     if EDRFIle.Cdrfh.NumSamplesInFile = 0 then begin
         { Set scaling factor }
-        cdrFH.NumChannels := scDisplay.NumChannels ;
-        CDRFH.NumBytesInHeader := NumBytesInHeader ;
-        Channel[0].ADCCalibrationFactor := 1. ;
-        Channel[0].ADCAmplifierGain := 1.0 ;
-        Channel[0].InUse := True ;
+        EDRFIle.Cdrfh.NumChannels := scDisplay.NumChannels ;
+//        EDRFIle.Cdrfh.NumBytesInHeader := NumBytesInHeader ;
+        EDRFile.Channel[0].ADCCalibrationFactor := 1. ;
+        EDRFile.Channel[0].ADCAmplifierGain := 1.0 ;
+        EDRFile.Channel[0].InUse := True ;
+        EDRFile.SaveHeader( EDRFile.CDRFH ) ;
 
         MaxAmplitude := 5.0*Abs(edAmplitude.Value)*
                         Max( edTauDecay.Value*edFrequency.Value, 1.0 ) ;
         if rbFixed.Checked then begin
            MaxAmplitude := MaxAmplitude*Max(edReleasablePool.Value,1.0)*Max(1.-edDepression.Value,1.0) ;
            end ;
-        Channel[0].ADCMaxValue := Main.SESLabIO.ADCMaxValue ;
-        Channel[0].ADCScale := MaxAmplitude / Channel[0].ADCMaxValue ;
-        scDisplay.ChanScale[0] := Channel[0].ADCScale ;
-        CdrFH.ADCVoltageRange :=  Channel[0].ADCCalibrationFactor
-                                * ( Channel[0].ADCScale * (scDisplay.MaxADCValue+1) ) ;
-        Channel[0].ChannelOffset := 0 ;
+        EDRFile.Channel[0].ADCMaxValue := Main.SESLabIO.ADCMaxValue ;
+        EDRFile.Channel[0].ADCScale := MaxAmplitude / EDRFile.Channel[0].ADCMaxValue ;
+        scDisplay.ChanScale[0] := EDRFile.Channel[0].ADCScale ;
+        EDRFIle.Cdrfh.ADCVoltageRange :=  EDRFile.Channel[0].ADCCalibrationFactor
+                                * ( EDRFile.Channel[0].ADCScale * (scDisplay.MaxADCValue+1) ) ;
+        EDRFile.Channel[0].ChannelOffset := 0 ;
 
         // Sampling interval
-        cdrFH.dt := edTauRise.Value / 2.0 ;
-        if CdrFH.dt <= 0.0 then cdrFH.dt := 0.05 ;
-        scDisplay.TScale := CdrFH.dt*Settings.TScale ;
+        EDRFIle.Cdrfh.dt := edTauRise.Value / 2.0 ;
+        if EDRFIle.Cdrfh.dt <= 0.0 then EDRFIle.Cdrfh.dt := 0.05 ;
+        scDisplay.TScale := EDRFIle.Cdrfh.dt*EDRFile.Settings.TScale ;
 
         end ;
 
@@ -311,24 +312,24 @@ begin
      Sim.LPFilterFirstCall := True ;
 
      { Position data file pointer at end of data }
-     CdrFH.FilePointer := FileSeek(CdrFH.FileHandle,
-     (CdrFH.NumSamplesInFile*2) + CdrFH.NumBytesInHeader,0) ;
+     EDRFIle.Cdrfh.FilePointer := FileSeek(EDRFIle.Cdrfh.FileHandle,
+     (EDRFIle.Cdrfh.NumSamplesInFile*2) + EDRFIle.Cdrfh.NumBytesInHeader,0) ;
 
-     ChOffset := Channel[0].ChannelOffset ;
+     ChOffset := EDRFile.Channel[0].ChannelOffset ;
      xLimit := edTauDecay.Value*6.0 ;
 
      omega := 2.0*Pi*edSineFrequency.Value ;
-     Channel[0].ADCZero := 0 ;
+     EDRFile.Channel[0].ADCZero := 0 ;
 
      Done := False ;
      { Create simulated MEPCs }
      while not Done do begin
 
-         Channel[0].xMin := Sim.t ;
+         EDRFile.Channel[0].xMin := Sim.t ;
 
          { Clear all channels }
-         for ch := 0 to cdrFH.NumChannels-1 do
-             for i := 0 to cdrFH.NumSamples-1 do ADC[i] := 0 ;
+         for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do
+             for i := 0 to EDRFIle.Cdrfh.NumSamples-1 do ADC[i] := 0 ;
 
          { Create a buffer-ful of simulated samples }
          for i := 0 to NumSamplesPerBuffer-1 do begin
@@ -341,9 +342,9 @@ begin
              for j := 0 to High(Sim.tStart) do
                  if Sim.t > Sim.tStart[j] then begin
                  x := Sim.t - Sim.tStart[j] ;
-                 yMEPC := Sim.Amplitude[j]*exp(-x/Max(edTauDecay.Value,CDRFH.dt))  ;
+                 yMEPC := Sim.Amplitude[j]*exp(-x/Max(edTauDecay.Value,EDRFIle.Cdrfh.dt))  ;
                  if edTauRise.Value > 0. then
-                    yMEPC := yMEPC*(1.0-exp(-x/Max(edTauRise.Value,CDRFH.dt))) ;
+                    yMEPC := yMEPC*(1.0-exp(-x/Max(edTauRise.Value,EDRFIle.Cdrfh.dt))) ;
                     y := y + yMEPC ;
                     { If MEPC decayed to zero, put a new one into this slot }
 
@@ -370,19 +371,19 @@ begin
                        end ;
                     end ;
 
-                 Sim.t := Sim.t + cdrFH.dt ;
-                 j := cdrFH.NumChannels*i + ChOffset ;
-                 ADC[j] := Round(y/Channel[0].ADCScale) + Round(Channel[0].ADCZero) ;
+                 Sim.t := Sim.t + EDRFIle.Cdrfh.dt ;
+                 j := EDRFIle.Cdrfh.NumChannels*i + ChOffset ;
+                 ADC[j] := Round(y/EDRFile.Channel[0].ADCScale) + Round(EDRFile.Channel[0].ADCZero) ;
                  end ;
 
-         Channel[0].xMax := Sim.t ;
+         EDRFile.Channel[0].xMax := Sim.t ;
 
          { Save data to file }
-         NumBytesToWrite := NumSamplesPerBuffer*CdrFH.NumChannels*2 ;
-         cdrFH.NumSamplesInFile := cdrFH.NumSamplesInFile
-                                   + (NumSamplesPerBuffer*CdrFH.NumChannels) ;
-        if FileWrite(CdrFH.FileHandle,ADC,NumBytesToWrite) <> NumBytesToWrite then
-           WriteToLogFile(' Error writing to ' + CdrFH.FileName ) ;
+         NumBytesToWrite := NumSamplesPerBuffer*EDRFIle.Cdrfh.NumChannels*2 ;
+         EDRFIle.Cdrfh.NumSamplesInFile := EDRFIle.Cdrfh.NumSamplesInFile
+                                   + (NumSamplesPerBuffer*EDRFIle.Cdrfh.NumChannels) ;
+        if FileWrite(EDRFIle.Cdrfh.FileHandle,ADC,NumBytesToWrite) <> NumBytesToWrite then
+           EDRFile.WriteToLogFile(' Error writing to ' + EDRFIle.Cdrfh.FileName ) ;
 
         if (Sim.t >= Sim.tEndAt) or bStart.Enabled then begin
            Done := True ;
@@ -390,7 +391,7 @@ begin
            bAbort.Enabled := False ;
            end ;
 
-        scDisplay.xOffset := Round( Channel[0].xMin /CdrFH.dt ) ;
+        scDisplay.xOffset := Round( EDRFile.Channel[0].xMin /EDRFIle.Cdrfh.dt ) ;
         scDisplay.Invalidate ;
 
         // Update status bar
@@ -423,38 +424,38 @@ procedure TSimMEPCFrm.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
 
     // Save settings
-    Settings.SimEPC.Duration := edSimDuration.Value ;
-    Settings.SimEPC.Amplitude := edAmplitude.Value ;
-    Settings.SimEPC.AmplitudeSD := edStDev.Value ;
-    Settings.SimEPC.TauRise := edTauRise.Value ;
-    Settings.SimEPC.TauDecay := edTauDecay.Value ;
-    Settings.SimEPC.NoiseSD := edNoiseRMS.Value ;
-    Settings.SimEPC.Frequency := edFrequency.Value ;
-    Settings.SimEPC.FrequencySD := edFrequencySD.Value ;
-    Settings.SimEPC.Delay := edInitialDelay.Value ;
-    Settings.SimEPC.RandomEvents := rbRandom.Checked ;
-    Settings.SimEPC.SineAmplitude:= edSineAmplitude.Value ;
-    Settings.SimEPC.SineFrequency:= edSineFrequency.Value ;
-    Settings.SimEPC.ReleaseProbability := edReleaseProbability.Value ;
-    Settings.SimEPC.ReleasablePool := edReleasablePool.Value ;
-    Settings.SimEPC.Depression := edDepression.Value ;
-    Settings.SimEPC.TauDepression := edTauDepression.Value ;
-    Settings.SimEPC.UnitsIndex := cbUnits.ItemIndex ;
+    EDRFile.Settings.SimEPC.Duration := edSimDuration.Value ;
+    EDRFile.Settings.SimEPC.Amplitude := edAmplitude.Value ;
+    EDRFile.Settings.SimEPC.AmplitudeSD := edStDev.Value ;
+    EDRFile.Settings.SimEPC.TauRise := edTauRise.Value ;
+    EDRFile.Settings.SimEPC.TauDecay := edTauDecay.Value ;
+    EDRFile.Settings.SimEPC.NoiseSD := edNoiseRMS.Value ;
+    EDRFile.Settings.SimEPC.Frequency := edFrequency.Value ;
+    EDRFile.Settings.SimEPC.FrequencySD := edFrequencySD.Value ;
+    EDRFile.Settings.SimEPC.Delay := edInitialDelay.Value ;
+    EDRFile.Settings.SimEPC.RandomEvents := rbRandom.Checked ;
+    EDRFile.Settings.SimEPC.SineAmplitude:= edSineAmplitude.Value ;
+    EDRFile.Settings.SimEPC.SineFrequency:= edSineFrequency.Value ;
+    EDRFile.Settings.SimEPC.ReleaseProbability := edReleaseProbability.Value ;
+    EDRFile.Settings.SimEPC.ReleasablePool := edReleasablePool.Value ;
+    EDRFile.Settings.SimEPC.Depression := edDepression.Value ;
+    EDRFile.Settings.SimEPC.TauDepression := edTauDepression.Value ;
+    EDRFile.Settings.SimEPC.UnitsIndex := cbUnits.ItemIndex ;
 
-     if CdrFH.NumSamplesInFile > 0 then begin
+     if EDRFIle.Cdrfh.NumSamplesInFile > 0 then begin
         Main.mnViewSig.Enabled := True ;
         Main.mnViewSig.checked := True ;
         Main.Analysis.Enabled := True ;
         end ;
 
-     SaveCDRHeader( CdrFH ) ;
-     WriteToLogFile( format( '%d MEPCs created',[Sim.NumMEPCs])) ;
+     EDRFile.SaveHeader( EDRFile.CdrFH ) ;
+     EDRFile.WriteToLogFile( format( '%d MEPCs created',[Sim.NumMEPCs])) ;
 
      { Enable "Synaptic Current" item in "Simulation" menu }
      Main.mnMEPCSim.enabled := true ;
      { Display results }
 
-     if CdrFH.NumSamplesInFile > 0 then Main.UpdateMDIWIndows ;
+     if EDRFIle.Cdrfh.NumSamplesInFile > 0 then Main.UpdateMDIWIndows ;
      Action := caFree ;
      end;
 
@@ -525,7 +526,7 @@ begin
            buffer with the first samples in Buf }
          if FirstCall then begin
             for ch := 0 to NumChannels-1 do begin
-                ChOffset := Channel[ch].ChannelOffset ;
+                ChOffset := EDRFile.Channel[ch].ChannelOffset ;
                 for i := 0 to NumSamples-1 do begin
                     j := i*NumChannels + ChOffset ;
                     OldBuf[j] := Buf[ch] ;
@@ -538,14 +539,14 @@ begin
          for Ch := 0 to NumChannels-1 do begin
 
              { Get samples at end of old buffer still to needed by filter }
-             j := NumSamples - NumChannels + Channel[ch].ChannelOffset ;
+             j := NumSamples - NumChannels + EDRFile.Channel[ch].ChannelOffset ;
              for i := -1 downto Low(Work^) do begin
                  Work^[i] := OldBuf[j] ;
                  j := j - NumChannels ;
                  end ;
 
              { Copy a channel from the new data to work buffer }
-             j := Channel[ch].ChannelOffset ;
+             j := EDRFile.Channel[ch].ChannelOffset ;
              for i := 0 to NumSamples-1 do begin
                  Work^[i] := Buf[j] ;
                  j := j + NumChannels ;
@@ -553,7 +554,7 @@ begin
 
              { Apply gaussian filter to each point
                and store result back in buffer }
-             iOut := Channel[ch].ChannelOffset ;
+             iOut := EDRFile.Channel[ch].ChannelOffset ;
              EndOfData := NumSamples -1 ;
              for iIn := 0 to EndOfData do begin
 	         sum := 0.0 ;
@@ -597,8 +598,8 @@ begin
 
 procedure TSimMEPCFrm.scDisplayCursorChange(Sender: TObject);
 begin
-     Channel[0].yMin := scDisplay.YMin[0] ;
-     Channel[0].yMax := scDisplay.YMax[0] ;
+     EDRFile.Channel[0].yMin := scDisplay.YMin[0] ;
+     EDRFile.Channel[0].yMax := scDisplay.YMax[0] ;
      end;
 
 
@@ -607,12 +608,12 @@ procedure TSimMEPCFrm.ChangeDisplayGrid ;
   Update grid pattern on oscilloscope display
   -------------------------------------------- }
 begin
-     scDisplay.MaxADCValue := Channel[0].ADCMaxValue ;
-     scDisplay.MinADCValue := -Channel[0].ADCMaxValue -1 ;
-     scDisplay.DisplayGrid := Settings.DisplayGrid ;
+     scDisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+     scDisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue -1 ;
+     scDisplay.DisplayGrid := EDRFile.Settings.DisplayGrid ;
 
-     scDisplay.TScale := CdrFH.dt*Settings.TScale ;
-     scDisplay.TUnits := Settings.TUnits ;
+     scDisplay.TScale := EDRFIle.Cdrfh.dt*EDRFile.Settings.TScale ;
+     scDisplay.TUnits := EDRFile.Settings.TUnits ;
      scDisplay.Invalidate ;
      end ;
 
@@ -622,8 +623,8 @@ procedure  TSimMEPCFrm.ZoomOut ;
   Set minimum display magnification
   --------------------------------- }
 begin
-     scDisplay.MaxADCValue := Channel[0].ADCMaxValue ;
-     scDisplay.MinADCValue := -Channel[0].ADCMaxValue -1 ;
+     scDisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+     scDisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue -1 ;
      scDisplay.ZoomOut ;
      end ;
 
@@ -643,11 +644,11 @@ procedure TSimMEPCFrm.cbUnitsChange(Sender: TObject);
 // Units changed
 // -------------
 begin
-     Channel[0].ADCUnits := cbUnits.Text ;
-     edAmplitude.Units := Channel[0].ADCUnits ;
-     edStDev.Units := Channel[0].ADCUnits ;
-     edNoiseRMS.Units := Channel[0].ADCUnits ;
-     edSineAmplitude.Units := Channel[0].ADCUnits ;
+     EDRFile.Channel[0].ADCUnits := cbUnits.Text ;
+     edAmplitude.Units := EDRFile.Channel[0].ADCUnits ;
+     edStDev.Units := EDRFile.Channel[0].ADCUnits ;
+     edNoiseRMS.Units := EDRFile.Channel[0].ADCUnits ;
+     edSineAmplitude.Units := EDRFile.Channel[0].ADCUnits ;
      scDisplay.ChanUnits[0] := cbUnits.Text ;
      end;
 

@@ -11,7 +11,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ValidatedEdit, ADCDataFile, Grids, global ;
+  Dialogs, StdCtrls, ValidatedEdit, ADCDataFile, Grids, EDRFileUnit ;
 
 type
   TImportASCIIFrm = class(TForm)

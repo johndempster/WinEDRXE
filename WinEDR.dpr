@@ -44,10 +44,7 @@ uses
   ECG in 'ECG.pas' {ECGFrm},
   VP500Panel in 'VP500Panel.pas' {VP500PanelFrm},
   FilePropsUnit in 'FilePropsUnit.pas' {FilePropsDlg},
-  Global in 'Global.pas',
   RecPlotUnit in 'RecPlotUnit.pas' {RecPlotFrm},
-  Fileio in 'Fileio.pas',
-  SHARED in 'SHARED.PAS',
   DBSPanelUnit in 'DBSPanelUnit.pas' {DBSPanelFrm},
   TritonPanelUnit in 'TritonPanelUnit.pas' {TritonPanelFrm},
   LabInterfaceSetup in 'LabInterfaceSetup.pas' {LabInterfaceSetupFrm},
@@ -59,7 +56,8 @@ uses
   EPC9PanelUnit in 'EPC9PanelUnit.pas' {EPC9PanelFrm},
   MATFileWriterUnit in 'MATFileWriterUnit.pas',
   DCLAMPUnit in 'DCLAMPUnit.pas' {DCLAMPFrm},
-  exportUnit in 'exportUnit.pas' {ExportFrm};
+  exportUnit in 'exportUnit.pas' {ExportFrm},
+  EDRFileUnit in 'EDRFileUnit.pas' {EDRFile: TDataModule};
 
 {$R *.TLB}
 
@@ -92,5 +90,6 @@ begin
   Application.CreateForm(TAmplifier, Amplifier);
   Application.CreateForm(TDirectorySelectFrm, DirectorySelectFrm);
   Application.CreateForm(TExportFrm, ExportFrm);
+  Application.CreateForm(TEDRFile, EDRFile);
   Application.Run;
 end.

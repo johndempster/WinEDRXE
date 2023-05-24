@@ -10,7 +10,7 @@ interface
 
 uses
   SysUtils, WinTypes, WinProcs, Messages, Classes, Graphics, Controls,
-  Forms, Dialogs, StdCtrls, Global, Mask, Shared, fileio, ValidatedEdit, math ;
+  Forms, Dialogs, StdCtrls, Mask, ValidatedEdit, math ;
 
 type
   TZeroFrm = class(TForm)

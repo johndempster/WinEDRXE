@@ -31,13 +31,13 @@ implementation
 
 {$R *.DFM}
 
-uses global, Mdiform ;
+uses global, Mdiform , EDRFileUnit;
 
 procedure TAboutDlg.FormActivate(Sender: TObject);
 begin
      edSupplier.text := Main.SESLabIO.LabInterfaceName ;
      edModel.text := Main.SESLabIO.LabInterfaceModel ;
-     edVersion.caption := 'Version ' + Main.Version ;
+     edVersion.caption := 'Version ' + EDRFile.Version ;
 end;
 
 procedure TAboutDlg.FormClose(Sender: TObject; var Action: TCloseAction);

@@ -39,23 +39,25 @@ implementation
 
 {$R *.DFM}
 
+uses EDRFileUnit;
+
 
 procedure TMEPCFreqFrm.FormShow(Sender: TObject);
 { ---------------------------
   Initialise controls on form
   ---------------------------}
 begin
-     if Settings.Variance.TauRise <= 0.0 then Settings.Variance.TauRise := cdrFH.dt ;
-     edTauRise.Value := Settings.Variance.TauRise ;
-     if Settings.Variance.TauDecay <= 0.0 then Settings.Variance.TauDecay := cdrFH.dt*50.0 ;
-     edTauDecay.Value := Settings.Variance.TauDecay ;
+     if EDRFile.Settings.Variance.TauRise <= 0.0 then EDRFile.Settings.Variance.TauRise := EDRFile.cdrFH.dt ;
+     edTauRise.Value := EDRFile.Settings.Variance.TauRise ;
+     if EDRFile.Settings.Variance.TauDecay <= 0.0 then EDRFile.Settings.Variance.TauDecay := EDRFile.cdrFH.dt*50.0 ;
+     edTauDecay.Value := EDRFile.Settings.Variance.TauDecay ;
      end;
 
 
 procedure TMEPCFreqFrm.bOKClick(Sender: TObject);
 begin
-     Settings.Variance.TauRise := edTauRise.Value ;
-     Settings.Variance.TauDecay := edTauDecay.Value ;
+     EDRFile.Settings.Variance.TauRise := edTauRise.Value ;
+     EDRFile.Settings.Variance.TauDecay := edTauDecay.Value ;
      end;
 
 end.

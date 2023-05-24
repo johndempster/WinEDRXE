@@ -237,9 +237,9 @@ object PrintPageViewFrm: TPrintPageViewFrm
     ParentFont = False
     TabOrder = 1
     object Label9: TLabel
-      Left = 8
+      Left = 45
       Top = 45
-      Width = 58
+      Width = 21
       Height = 14
       Alignment = taRightJustify
       Caption = 'Size'
@@ -251,9 +251,9 @@ object PrintPageViewFrm: TPrintPageViewFrm
       ParentFont = False
     end
     object Label10: TLabel
-      Left = 8
+      Left = 16
       Top = 69
-      Width = 58
+      Width = 50
       Height = 14
       Alignment = taRightJustify
       Caption = 'Line Width'

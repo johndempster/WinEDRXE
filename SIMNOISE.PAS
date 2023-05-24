@@ -19,7 +19,7 @@ interface
 uses
   SysUtils, WinTypes, WinProcs, Messages, Classes, Graphics, Controls,
   Forms, Dialogs, StdCtrls, ExtCtrls,
-  global, shared, maths, fileio, ValEdit, ScopeDisplay, math, ComCtrls,
+  EDRFileUnit, maths, ValEdit, ScopeDisplay, math, ComCtrls,
   ValidatedEdit ;
 
 type
@@ -128,46 +128,46 @@ begin
      bStart.Enabled := True ;
      bAbort.Enabled := False ;
 
-     Channel[ChSim].ADCUnits := 'pA' ;
-     edUnitCurrent.Units := Channel[ChSim].ADCUnits ;
-     edNoiseRMS.Units := Channel[ChSim].ADCUnits ;
-     edSamplingInterval.Value := Settings.ADCSamplingInterval ;
-     Channel[ChSim].ADCName := 'Im' ;
-     Channel[ChSim].ADCZero := 0 ;
-     Channel[ChSim].InUse := True ;
+     EDRFile.Channel[ChSim].ADCUnits := 'pA' ;
+     edUnitCurrent.Units := EDRFile.Channel[ChSim].ADCUnits ;
+     edNoiseRMS.Units := EDRFile.Channel[ChSim].ADCUnits ;
+     edSamplingInterval.Value := EDRFile.Settings.ADCSamplingInterval ;
+     EDRFile.Channel[ChSim].ADCName := 'Im' ;
+     EDRFile.Channel[ChSim].ADCZero := 0 ;
+     EDRFile.Channel[ChSim].InUse := True ;
 
      { Set up Display }
      scDisplay.MaxADCValue := Main.SesLabIO.ADCMaxValue ;
      scDisplay.MinADCValue := Main.SesLabIO.ADCMinValue ;
-     scDisplay.DisplayGrid := Settings.DisplayGrid ;
+     scDisplay.DisplayGrid := EDRFile.Settings.DisplayGrid ;
 
      scDisplay.MaxPoints := NumSamplesPerBuffer ;
      scDisplay.NumPoints := NumSamplesPerBuffer ;
-     scDisplay.NumChannels := CdrFH.NumChannels ;
+     scDisplay.NumChannels := EDRFIle.Cdrfh.NumChannels ;
      { Set channel information }
-     for ch := 0 to CdrFH.NumChannels-1 do begin
+     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
 
-         Channel[Ch].yMin := Main.SesLabIO.ADCMinValue ;
-         Channel[Ch].yMax := Main.SesLabIO.ADCMaxValue ;
+         EDRFile.Channel[Ch].yMin := Main.SesLabIO.ADCMinValue ;
+         EDRFile.Channel[Ch].yMax := Main.SesLabIO.ADCMaxValue ;
 
-         scDisplay.ChanUnits[ch] := Channel[Ch].ADCUnits ;
-         scDisplay.ChanName[ch] := Channel[Ch].ADCName ;
-         scDisplay.ChanScale[ch] := Channel[Ch].ADCScale ;
-         scDisplay.yMin[ch] := Channel[Ch].yMin ;
-         scDisplay.yMax[ch] := Channel[Ch].yMax ;
+         scDisplay.ChanUnits[ch] := EDRFile.Channel[Ch].ADCUnits ;
+         scDisplay.ChanName[ch] := EDRFile.Channel[Ch].ADCName ;
+         scDisplay.ChanScale[ch] := EDRFile.Channel[Ch].ADCScale ;
+         scDisplay.yMin[ch] := EDRFile.Channel[Ch].yMin ;
+         scDisplay.yMax[ch] := EDRFile.Channel[Ch].yMax ;
          if ch = ChSim then scDisplay.ChanVisible[ch] := True
                        else scDisplay.ChanVisible[ch] := False ;
          end ;
 
      scDisplay.xMin := 0 ;
      scDisplay.xMax := NumSamplesPerBuffer-1  ;
-     scDisplay.HorizontalCursors[0] := Channel[ChSim].ADCZero ;
+     scDisplay.HorizontalCursors[0] := EDRFile.Channel[ChSim].ADCZero ;
 
-     scDisplay.TScale := CdrFH.dt*Settings.TScale ;
-     scDisplay.TUnits := Settings.TUnits ;
+     scDisplay.TScale := EDRFIle.Cdrfh.dt*EDRFile.Settings.TScale ;
+     scDisplay.TUnits := EDRFile.Settings.TUnits ;
 
      { Clear all channels }
-     for i := 0 to CdrFH.NumChannels*NumSamplesPerBuffer-1 do ADC^[i] := 0 ;
+     for i := 0 to EDRFIle.Cdrfh.NumChannels*NumSamplesPerBuffer-1 do ADC^[i] := 0 ;
 
      scDisplay.SetDataBuf( ADC ) ;
 
@@ -196,51 +196,51 @@ begin
      { Get parameters from edit boxes }
 
      { Set scaling factor if this is an empty file }
-     if CdrFH.NumSamplesInFile = 0 then begin
-        cdrFH.NumChannels := 1 ;
-        Settings.ADCSamplingInterval := edSamplingInterval.Value ;
-        CDRFH.dt := Settings.ADCSamplingInterval ;
-        scDisplay.NumChannels := CdrFH.NumChannels ;
-        Channel[ChSim].ADCMaxValue := Main.SesLabIO.ADCMaxValue ;
-        Channel[ChSim].ADCCalibrationFactor := 1. ;
-        Channel[ChSim].ADCAmplifierGain := 1.0 ;
-        Channel[ChSim].ADCScale := Abs(edUnitCurrent.Value*edNumChannels.Value*2.0)
+     if EDRFIle.Cdrfh.NumSamplesInFile = 0 then begin
+        EDRFIle.Cdrfh.NumChannels := 1 ;
+        EDRFile.Settings.ADCSamplingInterval := edSamplingInterval.Value ;
+        EDRFIle.Cdrfh.dt := EDRFile.Settings.ADCSamplingInterval ;
+        scDisplay.NumChannels := EDRFIle.Cdrfh.NumChannels ;
+        EDRFile.Channel[ChSim].ADCMaxValue := Main.SesLabIO.ADCMaxValue ;
+        EDRFile.Channel[ChSim].ADCCalibrationFactor := 1. ;
+        EDRFile.Channel[ChSim].ADCAmplifierGain := 1.0 ;
+        EDRFile.Channel[ChSim].ADCScale := Abs(edUnitCurrent.Value*edNumChannels.Value*2.0)
                                    / Main.SesLabIO.ADCMaxValue ;
-        scDisplay.ChanScale[ChSim] := Channel[ChSim].ADCScale ;
-        CdrFH.ADCVoltageRange :=  Channel[ChSim].ADCCalibrationFactor
-                                  * ( Channel[ChSim].ADCScale * (Main.SesLabIO.ADCMaxValue+1) ) ;
+        scDisplay.ChanScale[ChSim] := EDRFile.Channel[ChSim].ADCScale ;
+        EDRFIle.Cdrfh.ADCVoltageRange :=  EDRFile.Channel[ChSim].ADCCalibrationFactor
+                                  * ( EDRFile.Channel[ChSim].ADCScale * (Main.SesLabIO.ADCMaxValue+1) ) ;
 
         if edUnitCurrent.Value > 0.0 then
-           Channel[ChSim].ADCZero := Main.SesLabIO.ADCMinValue div 2
-        else Channel[ChSim].ADCZero := Main.SesLabIO.ADCMaxValue div 2 ;
-        scDisplay.HorizontalCursors[0] := Channel[ChSim].ADCZero ;
+           EDRFile.Channel[ChSim].ADCZero := Main.SesLabIO.ADCMinValue div 2
+        else EDRFile.Channel[ChSim].ADCZero := Main.SesLabIO.ADCMaxValue div 2 ;
+        scDisplay.HorizontalCursors[0] := EDRFile.Channel[ChSim].ADCZero ;
         end ;
 
-     Channel[ChSim].ChannelOffset := 0 ;
+     EDRFile.Channel[ChSim].ChannelOffset := 0 ;
 
      { Position data file pointer at end of data in file }
-     CdrFH.FilePointer := (CdrFH.NumSamplesInFile*2*CdrFH.NumChannels)
-                          + CdrFH.NumBytesInHeader ;
-     CdrFH.FilePointer := FileSeek(CdrFH.FileHandle,0,2) ;
+     EDRFIle.Cdrfh.FilePointer := (EDRFIle.Cdrfh.NumSamplesInFile*2*EDRFIle.Cdrfh.NumChannels)
+                          + EDRFIle.Cdrfh.NumBytesInHeader ;
+     EDRFIle.Cdrfh.FilePointer := FileSeek(EDRFIle.Cdrfh.FileHandle,0,2) ;
 
      { *** Ion channel simulation loop *** }
 
      Done := False ;
-     TBuffer := NumSamplesPerBuffer*CdrFH.dt ;
+     TBuffer := NumSamplesPerBuffer*EDRFIle.Cdrfh.dt ;
      EndAtTime := edBackgroundTime.Value
                   + edTransientTime.Value
                   + EdSteadyStateTime.Value ;
-     iZeroLevel := Round(Channel[ChSim].ADCZero) ;
+     iZeroLevel := Round(EDRFile.Channel[ChSim].ADCZero) ;
      t := 0.0 ;
      while (not Done) do begin
 
          { Background noise }
          NoiseRMS := edNoiseRMS.Value ;
-         j := Channel[ChSim].ChannelOffset ;
+         j := EDRFile.Channel[ChSim].ChannelOffset ;
          for i := 0 to NumSamplesPerBuffer do begin
              ADC^[j] := Round( RandG(0.0,NoiseRMS)
-                        /Channel[ChSim].ADCScale ) + iZeroLevel ;
-             j := j + CdrFH.NumChannels ;
+                        /EDRFile.Channel[ChSim].ADCScale ) + iZeroLevel ;
+             j := j + EDRFIle.Cdrfh.NumChannels ;
              end ;
 
          { Ion channel noise }
@@ -272,7 +272,7 @@ begin
                 end ;
 
             { Calculate ionic current for each sample point in buffer }
-            j := Channel[ChSim].ChannelOffset ;
+            j := EDRFile.Channel[ChSim].ChannelOffset ;
             for i := 0 to NumSamplesPerBuffer-1 do begin
                 NumOPenChannels := 0 ;
                 for iCh := 0 to Round(edNumChannels.Value)-1 do begin
@@ -292,27 +292,27 @@ begin
                        end
                     else begin
                          { Decrement time in this state }
-                         Sim.Channel[iCh].Time := Sim.Channel[iCh].Time - CdrFH.dt ;
+                         Sim.Channel[iCh].Time := Sim.Channel[iCh].Time - EDRFIle.Cdrfh.dt ;
                          end ;
                     { If channel is open add it to open count }
                     if Sim.Channel[iCh].State = Open then Inc(NumOpenChannels) ;
                     end ;
                 ADC^[j] := ADC^[j] + Round( (NumOpenChannels*edUnitCurrent.Value) /
-                                             Channel[ChSim].ADCScale ) ;
+                                             EDRFile.Channel[ChSim].ADCScale ) ;
 
-                j := j + CdrFH.NumChannels ;
+                j := j + EDRFIle.Cdrfh.NumChannels ;
                 end ;
             end ;
 
 
-         NumBytesToWrite := NumSamplesPerBuffer*CdrFH.NumChannels*2 ;
-         if FileWrite(CdrFH.FileHandle,ADC^,NumBytesToWrite) <> NumBytesToWrite then
+         NumBytesToWrite := NumSamplesPerBuffer*EDRFIle.Cdrfh.NumChannels*2 ;
+         if FileWrite(EDRFIle.Cdrfh.FileHandle,ADC^,NumBytesToWrite) <> NumBytesToWrite then
             MessageDlg( ' File write file failed',mtWarning, [mbOK], 0 ) ;
 
-         CdrFH.NumSamplesInFile := CdrFH.NumSamplesInFile
-                                   + NumSamplesPerBuffer*CdrFH.NumChannels ;
+         EDRFIle.Cdrfh.NumSamplesInFile := EDRFIle.Cdrfh.NumSamplesInFile
+                                   + NumSamplesPerBuffer*EDRFIle.Cdrfh.NumChannels ;
 
-         scDisplay.xOffset := Round( t /CdrFH.dt ) ;
+         scDisplay.xOffset := Round( t /EDRFIle.Cdrfh.dt ) ;
          scDisplay.Invalidate ;
 
          t := t + TBuffer ;
@@ -330,8 +330,8 @@ begin
      // Final report
      Main.StatusBar.SimpleText := format(
      ' Ion Channel Noise Simulation : i=%.3g %s, n=%.0f, p=%.3g, Tau(open)=%.3g ms in file %s ',
-     [edUnitCurrent.Value,Channel[ChSim].ADCUnits,edNumChannels.Value,
-     edPOpen.Value,edTauOpen.Value*1000.0,CdrFH.FileName]);
+     [edUnitCurrent.Value,EDRFile.Channel[ChSim].ADCUnits,edNumChannels.Value,
+     edPOpen.Value,edTauOpen.Value*1000.0,EDRFIle.Cdrfh.FileName]);
 
      { Close form if simulation has not been aborted }
      bStart.Enabled := True ;
@@ -349,7 +349,7 @@ begin
 
      HeapBuffers( Deallocate ) ;
 
-     SaveCDRHeader( CdrFH ) ;
+     EDRFile.SaveHeader( EDRFile.CdrFH ) ;
 
      Main.UpdateMDIWindows ;
      Action := caFree ;
@@ -391,8 +391,8 @@ begin
 
 procedure TSimNoiseFrm.scDisplayCursorChange(Sender: TObject);
 begin
-     Channel[ChSim].yMin := scDisplay.YMin[ChSim] ;
-     Channel[ChSim].yMax := scDisplay.YMax[ChSim] ;
+     EDRFile.Channel[ChSim].yMin := scDisplay.YMin[ChSim] ;
+     EDRFile.Channel[ChSim].yMax := scDisplay.YMax[ChSim] ;
      end;
 
 
@@ -403,10 +403,10 @@ procedure TSimNoiseFrm.ChangeDisplayGrid ;
 begin
     scDisplay.MaxADCValue := Main.SesLabIO.ADCMaxValue ;
      scDisplay.MinADCValue := Main.SesLabIO.ADCMinValue ;
-     scDisplay.DisplayGrid := Settings.DisplayGrid ;
+     scDisplay.DisplayGrid := EDRFile.Settings.DisplayGrid ;
 
-     scDisplay.TScale := CdrFH.dt*Settings.TScale ;
-     scDisplay.TUnits := Settings.TUnits ;
+     scDisplay.TScale := EDRFIle.Cdrfh.dt*EDRFile.Settings.TScale ;
+     scDisplay.TUnits := EDRFile.Settings.TUnits ;
      scDisplay.Invalidate ;
      end ;
 

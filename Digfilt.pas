@@ -25,7 +25,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, ValEdit, ComCtrls, global, fileio, ValidatedEdit, math,
+  StdCtrls, ValEdit, ComCtrls, EDRFileUnit, ValidatedEdit, math,
   ExtCtrls, strutils ;
 
 type
@@ -130,13 +130,13 @@ begin
      SetChannelCheckBox( ckInUse15, 15 ) ;
 
     { Set limits and initial value of LP cut-off frequency }
-    edLPCutOffFreq.Scale := 1.0 / CdrFH.dt ;
+    edLPCutOffFreq.Scale := 1.0 / EDRFile.CdrFH.dt ;
     edLPCutOffFreq.LoLimit := 0.132505/200.0 ;
     edLPCutOffFreq.HiLimit := 0.132505/0.5 ;
     edLPCutOffFreq.Value := 0.132505/2.5 ;
 
     // Set cut-off frequencies for HP filter
-    NyquistFreq := 1.0 / (CDRFH.dt*2.0) ;
+    NyquistFreq := 1.0 / (EDRFile.CDRFH.dt*2.0) ;
     cbHPFilter.Clear ;
     cbHPFilter.Items.AddObject( format(' %.3g Hz',[0.0005*NyquistFreq]),TObject(1)) ;
     cbHPFilter.Items.AddObject( format(' %.3g Hz',[0.001*NyquistFreq]),TObject(2)) ;
@@ -147,7 +147,7 @@ begin
     cbHPFilter.ItemIndex := 0 ;
 
     { Set limits and initial value of NF cut-off frequency }
-    edNFCutOffFreq.Scale := 1.0 / CdrFH.dt ;
+    edNFCutOffFreq.Scale := 1.0 / EDRFile.CdrFH.dt ;
     edNFCutOffFreq.LoLimit := 0.132505/200.0 ;
     edNFCutOffFreq.HiLimit := 0.132505/0.5 ;
     edNFCutOffFreq.Value := 0.132505/2.5 ;
@@ -252,7 +252,7 @@ begin
     // No. of blocks in I/P buffer (taking into account sample reduction factor
     SampleReductionFactor := Round(edSamplingRateReductionFactor.Value) ;
     NumBlocksPerBuffer := MinBlocksPerBuffer*SampleReductionFactor ;
-    BufSize := NumBlocksPerBuffer*CdrFH.NumChannels ;
+    BufSize := NumBlocksPerBuffer*EDRFile.CdrFH.NumChannels ;
 
     // Allocate buffers
     GetMem( InBuf, BufSize*2 ) ;
@@ -260,7 +260,7 @@ begin
     GetMem( Work, BufSize*4 ) ;
 
     // Create output file
-    OutFH := CDRFH ;
+    OutFH := EDRFile.CDRFH ;
     OutFH.dt := OutFH.dt*edSamplingRateReductionFactor.Value ;
     OutFH.FileName := ANSIReplaceText( OutFH.FileName,
                                        '.edr',
@@ -271,23 +271,23 @@ begin
      // Set output channel mapping for filtered channels
      if rbNewChannel.Checked then begin
         // Output to extra channels
-        for ch := 0 to CDRFH.NumChannels-1 do if UseChannel[ch] then begin
+        for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do if UseChannel[ch] then begin
             Inc(OutFH.NumChannels) ;
             ChannelMap[ch] := OutFH.NumChannels-1 ;
-            Channel[ChannelMap[ch]] := Channel[ch] ;
-            Channel[ChannelMap[ch]].ChannelOffset := ChannelMap[ch] ;
-            Channel[ChannelMap[ch]].ADCName := Channel[ch].ADCName + '(f)';
+            EDRFile.Channel[ChannelMap[ch]] := EDRFile.Channel[ch] ;
+            EDRFile.Channel[ChannelMap[ch]].ChannelOffset := ChannelMap[ch] ;
+            EDRFile.Channel[ChannelMap[ch]].ADCName := EDRFile.Channel[ch].ADCName + '(f)';
             end ;
         end
      else begin
         // Overwrite existing channels
-        for ch := 0 to CDRFH.NumChannels-1 do ChannelMap[ch] := ch ;
+        for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do ChannelMap[ch] := ch ;
         end ;
 
-    NumBuffersToDo := CdrFH.NumSamplesInFile div BufSize ;
+    NumBuffersToDo := EDRFIle.Cdrfh.NumSamplesInFile div BufSize ;
     NumBuffersRead := 0 ;
     NumBuffersWritten := 0 ;
-    NumSamples := NumCoeffs*CdrFH.NumChannels ;
+    NumSamples := NumCoeffs*EDRFIle.Cdrfh.NumChannels ;
     Src := BufSize ;
     Dest := 0 ;
 
@@ -296,12 +296,12 @@ begin
     // Fill output buffer with original unfiltered data
     // (in case some channels are not selected for filtering)
     OutBlockStart := 0 ;
-    ReadCDRBuffer(CdrFH,OutBlockStart,OutBuf^,NumBlocksPerBuffer) ;
+    EDRFile.ReadBuffer(EDRFile.CdrFH,OutBlockStart,OutBuf^,NumBlocksPerBuffer) ;
     // Expand to fill O/P buffer
     for i := NumBlocksPerBuffer-1 downto 0 do begin
-        jFrom := i*CDRFH.NumChannels ;
+        jFrom := i*EDRFIle.Cdrfh.NumChannels ;
         jTo := i*OutFH.NumChannels ;
-        for ch := 0 to CDRFH.NumChannels-1 do begin
+        for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
             OutBuf^[JTo+ch] := OutBuf^[JFrom+ch] ;
             end ;
         end ;
@@ -312,16 +312,16 @@ begin
        { Get data from input data file }
        if Src >= BufSize then begin
           if NumBuffersRead < NumBuffersToDo then begin
-             ReadCDRBuffer(CdrFH,InBlockStart,InBuf^,NumBlocksPerBuffer) ;
+             EDRFile.ReadBuffer(EDRFile.CdrFH,InBlockStart,InBuf^,NumBlocksPerBuffer) ;
              InBlockStart := InBlockStart + NumBlocksPerBuffer ;
              end
           else begin
              { No more buffers, fill buffer with last sample block }
-             ch := BufSize - CdrFH.NumChannels ;
+             ch := BufSize - EDRFIle.Cdrfh.NumChannels ;
              for i := 0 to BufSize-1 do begin
                  InBuf[i] := InBuf[ch] ;
                  Inc(ch) ;
-                 if ch >= BufSize then ch := BufSize - CdrFH.NumChannels ;
+                 if ch >= BufSize then ch := BufSize - EDRFIle.Cdrfh.NumChannels ;
                  end ;
              end ;
           Inc(NumBuffersRead) ;
@@ -335,25 +335,25 @@ begin
        { If first buffer, fill working array }
        if FirstBuffer then begin
           for Coeff := -NumCoeffs to NumCoeffs do begin
-              for ch := 0 to CdrFH.NumChannels-1 do begin
-                  i := Coeff*CdrFH.NumChannels + ch ;
+              for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
+                  i := Coeff*EDRFIle.Cdrfh.NumChannels + ch ;
                   if i >= 0 then Work[i+BufSize] := InBuf[i]
                             else Work[i+BufSize] := InBuf[ch] ;
                   end ;
               end ;
           iStart := -NumSamples ;
           FirstBuffer := False ;
-          Src := NumCoeffs*CdrFH.NumChannels ;
+          Src := NumCoeffs*EDRFIle.Cdrfh.NumChannels ;
           end ;
 
        { Apply gaussian filter to each channel }
-       for ch := 0 to CdrFH.NumChannels-1 do begin
+       for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
            if UseChannel[ch] then begin
               Sum := 0.0 ;
               j := iStart + ch ;
               for Coeff := -NumCoeffs to NumCoeffs do begin
                   Sum := Sum + Work[j+BufSize]*a[Coeff] ;
-                  j := j + CdrFH.NumChannels ;
+                  j := j + EDRFIle.Cdrfh.NumChannels ;
                   if j > NumSamples then j := -NumSamples + ch ;
                   end ;
               OutBuf[Dest+ChannelMap[ch]] := Round(Sum) ;
@@ -363,13 +363,13 @@ begin
        Dest := Dest + OutFH.NumChannels ;
 
        { Get next block of samples from input buffer }
-       for ch := 0 to CdrFH.NumChannels-1 do begin
+       for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
            Work[iStart+ch+BufSize] := InBuf[Src] ;
            Inc(Src) ;
            end ;
 
        { Increment start pointer }
-       iStart := iStart + CdrFH.NumChannels ;
+       iStart := iStart + EDRFIle.Cdrfh.NumChannels ;
        if iStart > NumSamples then iStart := -NumSamples ;
 
        if Dest >= (NumBlocksPerBuffer*OutFH.NumChannels) then begin
@@ -382,16 +382,16 @@ begin
              end ;
 
           // Write to file
-          WriteCDRBuffer(OutFH,OutBlockStart,OutBuf^,MinBlocksPerBuffer) ;
+          EDRFile.WriteBuffer(OutFH,OutBlockStart,OutBuf^,MinBlocksPerBuffer) ;
           OutBlockStart := OutBlockStart + MinBlocksPerBuffer ;
           OutFH.NumSamplesInFile := OutFH.NumSamplesInFile + MinBlocksPerBuffer*OutFH.NumChannels ;
 
           // Fill O/P buffer with old values
-          ReadCDRBuffer(CdrFH,OutBlockStart*SampleReductionFactor,OutBuf^,NumBlocksPerBuffer) ;
+          EDRFile.ReadBuffer(EDRFile.CdrFH,OutBlockStart*SampleReductionFactor,OutBuf^,NumBlocksPerBuffer) ;
           for i := NumBlocksPerBuffer-1 downto 0 do begin
-              jFrom := i*CDRFH.NumChannels ;
+              jFrom := i*EDRFIle.Cdrfh.NumChannels ;
               jTo := i*OutFH.NumChannels ;
-              for ch := 0 to CDRFH.NumChannels-1 do begin
+              for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
                   OutBuf^[JTo+ch] := OutBuf^[JFrom+ch] ;
                   end ;
               end ;
@@ -403,14 +403,14 @@ begin
        end ;
 
     // Update output file and open for display
-    SaveCDRHeader( OutFH ) ;
+    EDRFile.SaveHeader( OutFH ) ;
     FileClose( OutFH.FileHandle ) ;
-    FileClose( CDRFH.FileHandle ) ;
-    Main.LoadDataFiles( OutFH.FileName ) ;
+    FileClose( EDRFIle.Cdrfh.FileHandle ) ;
+    EDRFile.LoadDataFiles( OutFH.FileName ) ;
 
     Main.StatusBar.SimpleText := 'Digital Filter: File created ' +
                                  OutFH.FileName ;
-    WriteToLogFile( Main.StatusBar.SimpleText ) ;
+    EDRFile.WriteToLogFile( Main.StatusBar.SimpleText ) ;
 
     FreeMem(InBuf) ;
     FreeMem(OutBuf) ;
@@ -550,19 +550,19 @@ begin
 
      // Copy samples to floating point temp file #1
      // -------------------------------------------
-     NumScansPerBlock := CDRFH.NumSamplesPerBlock div CDRFH.NumChannels ;
-     NumScansInFile := CDRFH.NumSamplesInFile div CDRFH.NumChannels ;
+     NumScansPerBlock := EDRFIle.Cdrfh.NumSamplesPerBlock div EDRFIle.Cdrfh.NumChannels ;
+     NumScansInFile := EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels ;
 
      FileSeek( TempHandle1, 0,0) ;
-     for iBlock := 0 to CDRFH.NumBlocksInFile-1 do begin
+     for iBlock := 0 to EDRFIle.Cdrfh.NumBlocksInFile-1 do begin
 
          // Read A/D data from source file
          iScan := iBlock*NumScansPerBlock ;
-         NumScansRead := ReadCDRBuffer(CdrFH,iScan,BufIn,NumScansPerBuf) ;
+         NumScansRead := EDRFile.ReadBuffer(EDRFile.CdrFH,iScan,BufIn,NumScansPerBuf) ;
          if NumScansRead <= 0 then Break ;
 
          // Copy to temp file #1
-         for j := 0 to NumScansRead*CDRFH.NumChannels-1 do begin
+         for j := 0 to NumScansRead*EDRFIle.Cdrfh.NumChannels-1 do begin
              x := BufIn[j] ;
              FileWrite( TempHandle1, x, FPSize ) ;
              end ;
@@ -579,7 +579,7 @@ begin
 
      // Initialise filter
      FileSeek( TempHandle1, 0, 0 ) ;
-     for ch := 0 to CDRFH.NumChannels-1 do begin
+     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
         FileRead( TempHandle1, x, FPSize ) ;
         y[ch] := 0.0 ;
         z[ch,NumCoeffs-1] := 0.0 ;
@@ -591,7 +591,7 @@ begin
      FileSeek( TempHandle2, 0, 0 ) ;
      for iScan := 0 to NumScansInFile-1 do begin
 
-          for ch := 0 to CDRFH.NumChannels-1 do begin
+          for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
 
               // Read value
               FileRead( TempHandle1, x, FPSize ) ;
@@ -617,9 +617,9 @@ begin
      // ----------------------------------------------
 
      // Initialise filter
-     iScan := NumScansInFile - CDRFH.NumChannels ;
-     for ch := 0 to CDRFH.NumChannels-1 do begin
-         FilePointer := ((iScan*CDRFH.NumChannels) + ch)*FPSize ;
+     iScan := NumScansInFile - EDRFIle.Cdrfh.NumChannels ;
+     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
+         FilePointer := ((iScan*EDRFIle.Cdrfh.NumChannels) + ch)*FPSize ;
          FileSeek( TempHandle2, FilePointer, 0 ) ;
          FileRead( TempHandle2, x, FPSize ) ;
          y[ch] := 0.0 ;
@@ -629,10 +629,10 @@ begin
          end ;
 
      // Apply filter
-     for iScan := NumScansInFile - CDRFH.NumChannels downto 0 do begin
-         for ch := 0 to CDRFH.NumChannels-1do begin
+     for iScan := NumScansInFile - EDRFIle.Cdrfh.NumChannels downto 0 do begin
+         for ch := 0 to EDRFIle.Cdrfh.NumChannels-1do begin
              // Read value
-             FilePointer := ((iScan*CDRFH.NumChannels) + ch)*FPSize ;
+             FilePointer := ((iScan*EDRFIle.Cdrfh.NumChannels) + ch)*FPSize ;
              FileSeek( TempHandle2, FilePointer, 0 ) ;
              FileRead( TempHandle2, x, FPSize ) ;
              // Apply filter
@@ -657,7 +657,7 @@ begin
      // ----------------------------------
 
      // Create output file
-     OutFH := CDRFH ;
+     OutFH := EDRFile.CDRFH ;
      OutFH.FileName := ANSIReplaceText( OutFH.FileName,
                                         '.edr',
                                         FilterOperation + '.edr') ;
@@ -668,41 +668,41 @@ begin
      // Set output channel mapping for filtered channels
      if rbNewChannel.Checked then begin
         // Output to extra channels
-        for ch := 0 to CDRFH.NumChannels-1 do if UseChannel[ch] then begin
+        for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do if UseChannel[ch] then begin
             Inc(OutFH.NumChannels) ;
             ChannelMap[ch] := OutFH.NumChannels-1 ;
-            Channel[ChannelMap[ch]] := Channel[ch] ;
-            Channel[ChannelMap[ch]].ChannelOffset := ChannelMap[ch] ;
-            Channel[ChannelMap[ch]].ADCName := Channel[ch].ADCName + '(f)';
+            EDRFile.Channel[ChannelMap[ch]] := EDRFile.Channel[ch] ;
+            EDRFile.Channel[ChannelMap[ch]].ChannelOffset := ChannelMap[ch] ;
+            EDRFile.Channel[ChannelMap[ch]].ADCName := EDRFile.Channel[ch].ADCName + '(f)';
             end ;
         end
      else begin
         // Overwrite existing channels
-        for ch := 0 to CDRFH.NumChannels-1 do ChannelMap[ch] := ch ;
+        for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do ChannelMap[ch] := ch ;
         end ;
 
-     for iBlock := 0 to CDRFH.NumBlocksInFile-1 do begin
+     for iBlock := 0 to EDRFIle.Cdrfh.NumBlocksInFile-1 do begin
 
          // Read A/D data from source file
          iScan := iBlock*NumScansPerBlock ;
-         NumScansRead := ReadCDRBuffer(CdrFH,iScan,BufIn,NumScansPerBuf) ;
+         NumScansRead := EDRFile.ReadBuffer(EDRFile.CdrFH,iScan,BufIn,NumScansPerBuf) ;
          if NumScansRead <= 0 then Break ;
 
          // Copy to new file
          jIn := 0 ;
          jOut := 0 ;
          for i := 0 to NumScansRead-1 do begin
-             for ch := 0 to CDRFH.NumChannels-1 do begin
+             for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
                  FileRead( TempHandle1, x, FPSize ) ;
                  BufOut[jOut+ch] := BufIn[jIn+ch] ;
                  if UseChannel[ch] then BufOut[jOut+ChannelMap[ch]] := Round(x) ;
                  end ;
              jOut := jOut + OutFH.NumChannels ;
-             jIn := jIn + CDRFH.NumChannels ;
+             jIn := jIn + EDRFIle.Cdrfh.NumChannels ;
              end ;
 
          // Write updated buffer back to file
-         WriteCDRBuffer(OutFH,iScan,BufOut,NumScansPerBuf) ;
+         EDRFile.WriteBuffer(OutFH,iScan,BufOut,NumScansPerBuf) ;
 
          // Report progress
          Main.StatusBar.SimpleText := format(
@@ -718,18 +718,18 @@ begin
      DeleteFile( PChar(TempFileName2)) ;
 
      // Update O/P file header and close
-     SaveCDRHeader( OutFH ) ;
+     EDRFile.SaveHeader( OutFH ) ;
      FileClose( OutFH.FileHandle ) ;
 
      // Close source file
-     FileClose( CDRFH.FileHandle ) ;
+     FileClose( EDRFIle.Cdrfh.FileHandle ) ;
 
      Main.StatusBar.SimpleText := 'Digital Filter: File created ' +
                                   OutFH.FileName ;
-     WriteToLogFile( Main.StatusBar.SimpleText ) ;
+     EDRFile.WriteToLogFile( Main.StatusBar.SimpleText ) ;
 
      // Open filtered file
-     Main.LoadDataFiles( OutFH.FileName ) ;
+     EDRFile.LoadDataFiles( OutFH.FileName ) ;
 
      end ;
 
@@ -780,7 +780,7 @@ begin
     FilterOperation := format('[NF=%.4gHz]',[edNFCutOffFreq.Value*edNFCutOffFreq.Scale]) ;
 
     // Get selected cut off frequency
-    NyquistFreq := 1.0 / (CDRFH.dt*2.0) ;
+    NyquistFreq := 1.0 / (EDRFIle.Cdrfh.dt*2.0) ;
     CentreFreq := edNFCutOffFreq.Value*2.0 ;
     Bandwidth := CentreFreq / 100.0 ;
     HalfPi := Pi/2.0 ;
@@ -808,24 +808,24 @@ begin
 
      // Copy samples to floating point temp file #1
      // -------------------------------------------
-     NumScansPerBlock := CDRFH.NumSamplesPerBlock div CDRFH.NumChannels ;
-     NumScansInFile := CDRFH.NumSamplesInFile div CDRFH.NumChannels ;
+     NumScansPerBlock := EDRFIle.Cdrfh.NumSamplesPerBlock div EDRFIle.Cdrfh.NumChannels ;
+     NumScansInFile := EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels ;
 
      FileSeek( TempHandle1, 0,0) ;
-     for iBlock := 0 to CDRFH.NumBlocksInFile-1 do begin
+     for iBlock := 0 to EDRFIle.Cdrfh.NumBlocksInFile-1 do begin
 
          // Read A/D data from source file
          iScan := iBlock*NumScansPerBlock ;
-         NumScansRead := ReadCDRBuffer(CdrFH,iScan,BufIn,NumScansPerBuf) ;
+         NumScansRead := EDRFile.ReadBuffer(EDRFile.CdrFH,iScan,BufIn,NumScansPerBuf) ;
          if NumScansRead <= 0 then Break ;
 
          // Copy to floating point buffer
-         for j := 0 to NumScansRead*CDRFH.NumChannels-1 do begin
+         for j := 0 to NumScansRead*EDRFIle.Cdrfh.NumChannels-1 do begin
              FBuf[j] := BufIn[j] ;
              end ;
 
          // Write to temp file #1
-         FileWrite( TempHandle1, FBuf, NumScansRead*CDRFH.NumChannels*FPSize ) ;
+         FileWrite( TempHandle1, FBuf, NumScansRead*EDRFIle.Cdrfh.NumChannels*FPSize ) ;
 
          // Report progress
          Main.StatusBar.SimpleText := format(
@@ -846,7 +846,7 @@ begin
 
      // Initialise filter
      FileSeek( TempHandle1, 0, 0 ) ;
-     for ch := 0 to CDRFH.NumChannels-1 do begin
+     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
         FileRead( TempHandle1, x, FPSize ) ;
         y[ch] := x ;
         //z[ch,NumCoeffs-1] := 0.0 ;
@@ -860,7 +860,7 @@ begin
      FileSeek( TempHandle2, 0, 0 ) ;
      for iScan := 0 to NumScansInFile-1 do begin
 
-          for ch := 0 to CDRFH.NumChannels-1 do begin
+          for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
 
               // Read value
               FileRead( TempHandle1, x, FPSize ) ;
@@ -894,9 +894,9 @@ begin
      // ----------------------------------------------
 
      // Initialise filter
-     iScan := NumScansInFile - CDRFH.NumChannels ;
-     for ch := 0 to CDRFH.NumChannels-1 do begin
-         FilePointer := ((iScan*CDRFH.NumChannels) + ch)*FPSize ;
+     iScan := NumScansInFile - EDRFIle.Cdrfh.NumChannels ;
+     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
+         FilePointer := ((iScan*EDRFIle.Cdrfh.NumChannels) + ch)*FPSize ;
          FileSeek( TempHandle2, FilePointer, 0 ) ;
          FileRead( TempHandle2, x, FPSize ) ;
          y[ch] := x ;
@@ -906,10 +906,10 @@ begin
          end ;
 
      // Apply filter
-     for iScan := NumScansInFile - CDRFH.NumChannels downto 0 do begin
-         for ch := 0 to CDRFH.NumChannels-1do begin
+     for iScan := NumScansInFile - EDRFIle.Cdrfh.NumChannels downto 0 do begin
+         for ch := 0 to EDRFIle.Cdrfh.NumChannels-1do begin
              // Read value
-             FilePointer := ((iScan*CDRFH.NumChannels) + ch)*FPSize ;
+             FilePointer := ((iScan*EDRFIle.Cdrfh.NumChannels) + ch)*FPSize ;
              FileSeek( TempHandle2, FilePointer, 0 ) ;
              FileRead( TempHandle2, x, FPSize ) ;
              // Apply filter
@@ -942,7 +942,7 @@ begin
      // ----------------------------------
 
      // Create output file
-     OutFH := CDRFH ;
+     OutFH := EDRFile.CDRFH ;
      OutFH.FileName := ANSIReplaceText( OutFH.FileName,
                                         '.edr',
                                         FilterOperation + '.edr') ;
@@ -951,42 +951,42 @@ begin
      // Set output channel mapping for filtered channels
      if rbNewChannel.Checked then begin
         // Output to extra channels
-        for ch := 0 to CDRFH.NumChannels-1 do if UseChannel[ch] then begin
+        for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do if UseChannel[ch] then begin
             Inc(OutFH.NumChannels) ;
             ChannelMap[ch] := OutFH.NumChannels-1 ;
-            Channel[ChannelMap[ch]] := Channel[ch] ;
-            Channel[ChannelMap[ch]].ChannelOffset := ChannelMap[ch] ;
-            Channel[ChannelMap[ch]].ADCName := Channel[ch].ADCName + '(f)';
+            EDRFile.Channel[ChannelMap[ch]] := EDRFile.Channel[ch] ;
+            EDRFile.Channel[ChannelMap[ch]].ChannelOffset := ChannelMap[ch] ;
+            EDRFile.Channel[ChannelMap[ch]].ADCName := EDRFile.Channel[ch].ADCName + '(f)';
             end ;
         end
      else begin
         // Overwrite existing channels
-        for ch := 0 to CDRFH.NumChannels-1 do ChannelMap[ch] := ch ;
+        for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do ChannelMap[ch] := ch ;
         end ;
 
      FileSeek( TempHandle1, 0,0) ;
-     for iBlock := 0 to CDRFH.NumBlocksInFile-1 do begin
+     for iBlock := 0 to EDRFIle.Cdrfh.NumBlocksInFile-1 do begin
 
          // Read A/D data from source file
          iScan := iBlock*NumScansPerBlock ;
-         NumScansRead := ReadCDRBuffer(CdrFH,iScan,BufIn,NumScansPerBuf) ;
+         NumScansRead :=EDRFile.ReadBuffer(EDRFile.CdrFH,iScan,BufIn,NumScansPerBuf) ;
          if NumScansRead <= 0 then Break ;
 
          // Copy to new file
          jIn := 0 ;
          jOut := 0 ;
          for i := 0 to NumScansRead-1 do begin
-             for ch := 0 to CDRFH.NumChannels-1 do begin
+             for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
                  FileRead( TempHandle1, x, FPSize ) ;
                  BufOut[jOut+ch] := BufIn[jIn+ch] ;
                  if UseChannel[ch] then BufOut[jOut+ChannelMap[ch]] := Round(x) ;
                  end ;
              jOut := jOut + OutFH.NumChannels ;
-             jIn := jIn + CDRFH.NumChannels ;
+             jIn := jIn + EDRFIle.Cdrfh.NumChannels ;
              end ;
 
          // Write updated buffer to O/P file
-         WriteCDRBuffer(OutFH,iScan,BufOut,NumScansPerBuf) ;
+         EDRFile.WriteBuffer(OutFH,iScan,BufOut,NumScansPerBuf) ;
 
          // Report progress
          Main.StatusBar.SimpleText := format(
@@ -1009,18 +1009,18 @@ begin
      DeleteFile( PChar(TempFileName2)) ;
 
      // Update O/P file header and close
-     SaveCDRHeader( OutFH ) ;
+     EDRFile.SaveHeader( OutFH ) ;
      FileClose( OutFH.FileHandle ) ;
 
      // Close source file
-     FileClose( CDRFH.FileHandle ) ;
+     FileClose( EDRFIle.Cdrfh.FileHandle ) ;
 
      Main.StatusBar.SimpleText := 'Digital Filter: File created ' +
                                   OutFH.FileName ;
-     WriteToLogFile( Main.StatusBar.SimpleText ) ;
+     EDRFile.WriteToLogFile( Main.StatusBar.SimpleText ) ;
 
      // Open filtered file
-     Main.LoadDataFiles( OutFH.FileName ) ;
+     EDRFile.LoadDataFiles( OutFH.FileName ) ;
 
      end ;
 
@@ -1045,8 +1045,8 @@ procedure TDigFilterDlg.SetChannelCheckBox(
   Set channel in use check box
   ----------------------------}
 begin
-     if CdrFH.NumChannels > ChanNum then begin
-          ckInUse.caption := format('Ch.%d %s',[ChanNum,Channel[ChanNum].ADCName])  ;
+     if EDRFIle.Cdrfh.NumChannels > ChanNum then begin
+          ckInUse.caption := format('Ch.%d %s',[ChanNum,EDRFile.Channel[ChanNum].ADCName])  ;
           ckInUse.enabled := True ;
           ckInUse.visible := True ;
           ckInUse.checked := True ;
@@ -1059,7 +1059,7 @@ begin
           end ;
 
      // UseChannel is in channel scan sequence order
-     UseChannel[Channel[ChanNum].ChannelOffset] := ckInUse.checked ;
+     UseChannel[EDRFile.Channel[ChanNum].ChannelOffset] := ckInUse.checked ;
 
      end ;
 
@@ -1071,26 +1071,26 @@ procedure TDigFilterDlg.ckInUse0Click(Sender: TObject);
 var
    ch,NumChannels : Integer ;
 begin
-     UseChannel[Channel[0].ChannelOffset] := ckInUse0.checked ;
-     UseChannel[Channel[1].ChannelOffset] := ckInUse1.checked ;
-     UseChannel[Channel[2].ChannelOffset] := ckInUse2.checked ;
-     UseChannel[Channel[3].ChannelOffset] := ckInUse3.checked ;
-     UseChannel[Channel[4].ChannelOffset] := ckInUse4.checked ;
-     UseChannel[Channel[5].ChannelOffset] := ckInUse5.checked ;
-     UseChannel[Channel[6].ChannelOffset] := ckInUse6.checked ;
-     UseChannel[Channel[7].ChannelOffset] := ckInUse7.checked ;
-     UseChannel[Channel[8].ChannelOffset] := ckInUse8.checked ;
-     UseChannel[Channel[9].ChannelOffset] := ckInUse9.checked ;
-     UseChannel[Channel[10].ChannelOffset] := ckInUse10.checked ;
-     UseChannel[Channel[11].ChannelOffset] := ckInUse11.checked ;
-     UseChannel[Channel[12].ChannelOffset] := ckInUse12.checked ;
-     UseChannel[Channel[13].ChannelOffset] := ckInUse13.checked ;
-     UseChannel[Channel[14].ChannelOffset] := ckInUse14.checked ;
-     UseChannel[Channel[15].ChannelOffset] := ckInUse15.checked ;
+     UseChannel[EDRFile.Channel[0].ChannelOffset] := ckInUse0.checked ;
+     UseChannel[EDRFile.Channel[1].ChannelOffset] := ckInUse1.checked ;
+     UseChannel[EDRFile.Channel[2].ChannelOffset] := ckInUse2.checked ;
+     UseChannel[EDRFile.Channel[3].ChannelOffset] := ckInUse3.checked ;
+     UseChannel[EDRFile.Channel[4].ChannelOffset] := ckInUse4.checked ;
+     UseChannel[EDRFile.Channel[5].ChannelOffset] := ckInUse5.checked ;
+     UseChannel[EDRFile.Channel[6].ChannelOffset] := ckInUse6.checked ;
+     UseChannel[EDRFile.Channel[7].ChannelOffset] := ckInUse7.checked ;
+     UseChannel[EDRFile.Channel[8].ChannelOffset] := ckInUse8.checked ;
+     UseChannel[EDRFile.Channel[9].ChannelOffset] := ckInUse9.checked ;
+     UseChannel[EDRFile.Channel[10].ChannelOffset] := ckInUse10.checked ;
+     UseChannel[EDRFile.Channel[11].ChannelOffset] := ckInUse11.checked ;
+     UseChannel[EDRFile.Channel[12].ChannelOffset] := ckInUse12.checked ;
+     UseChannel[EDRFile.Channel[13].ChannelOffset] := ckInUse13.checked ;
+     UseChannel[EDRFile.Channel[14].ChannelOffset] := ckInUse14.checked ;
+     UseChannel[EDRFile.Channel[15].ChannelOffset] := ckInUse15.checked ;
 
      { Ensure at least one channel is always displayed }
      NumChannels := 0 ;
-     for ch := 0 to CdrFH.NumChannels-1 do if UseChannel[ch] then Inc(NumChannels) ;
+     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do if UseChannel[ch] then Inc(NumChannels) ;
      if NumChannels <= 0 then begin
         ckInUse0.checked := True ;
         UseChannel[0] := ckInUse0.checked ;

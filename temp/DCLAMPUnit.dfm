@@ -2,7 +2,7 @@ object DCLAMPFrm: TDCLAMPFrm
   Left = 0
   Top = 0
   Caption = 'DCLAMP - Dynamic Clamp Control Panel'
-  ClientHeight = 597
+  ClientHeight = 537
   ClientWidth = 780
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
@@ -23,25 +23,28 @@ object DCLAMPFrm: TDCLAMPFrm
     Left = 8
     Top = 0
     Width = 769
-    Height = 594
+    Height = 530
     ActivePage = ControlsTab
     TabOrder = 0
     OnChange = PageChange
     object ControlsTab: TTabSheet
       Caption = 'Controls '
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object GroupBox1: TGroupBox
-        Left = 3
+        Left = 4
         Top = 0
         Width = 749
-        Height = 534
+        Height = 499
         TabOrder = 0
-        object Label4: TLabel
-          Left = 195
-          Top = 434
-          Width = 102
+        object Label2: TLabel
+          Left = 247
+          Top = 406
+          Width = 52
           Height = 14
-          Alignment = taRightJustify
-          Caption = 'DCLAMP COM Port'
+          Caption = 'COM Port'
           Font.Charset = ANSI_CHARSET
           Font.Color = clWindowText
           Font.Height = -11
@@ -49,119 +52,65 @@ object DCLAMPFrm: TDCLAMPFrm
           Font.Style = [fsBold]
           ParentFont = False
         end
-        object GroupBox4: TGroupBox
-          Left = 392
-          Top = 12
-          Width = 345
-          Height = 174
-          Caption = ' Parameter Incrementing '
+        object cbComPort: TComboBox
+          Left = 303
+          Top = 406
+          Width = 65
+          Height = 21
+          Style = csDropDownList
+          ItemIndex = 0
           TabOrder = 0
-          object edNumRecords: TValidatedEdit
-            Left = 104
-            Top = 66
-            Width = 33
-            Height = 21
-            Hint = 'No. of records to acquire before incrementing parameters'
-            ShowHint = True
-            Text = ' 1 '
-            Value = 1.000000000000000000
-            Scale = 1.000000000000000000
-            NumberFormat = '%.0f'
-            LoLimit = 1.000000000000000000
-            HiLimit = 1000000.000000000000000000
-          end
-          object sgSteps: TStringGrid
-            Left = 162
-            Top = 16
-            Width = 175
-            Height = 150
-            Hint = 'Parameter step size table'
-            ColCount = 2
-            DefaultRowHeight = 20
-            RowCount = 4
-            FixedRows = 0
-            Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goEditing]
-            ParentShowHint = False
-            ShowHint = True
-            TabOrder = 1
-            OnKeyPress = sgStepsKeyPress
-            ColWidths = (
-              64
-              64)
-            RowHeights = (
-              20
-              20
-              20
-              20)
-          end
-          object rbNoIncrements: TRadioButton
-            Left = 8
-            Top = 18
-            Width = 129
-            Height = 17
-            Hint = 'Parameter incrementing off'
-            Caption = 'Off'
-            Checked = True
-            Font.Charset = ANSI_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -11
-            Font.Name = 'Arial'
-            Font.Style = [fsBold]
-            ParentFont = False
-            ParentShowHint = False
-            ShowHint = True
-            TabOrder = 2
-            TabStop = True
-          end
-          object rbIncrementAfterProtocol: TRadioButton
-            Left = 8
-            Top = 33
-            Width = 129
-            Height = 17
-            Hint = 'Increment parameters at end of stimulus protocol'
-            Caption = 'At End of Protocol'
-            Font.Charset = ANSI_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -11
-            Font.Name = 'Arial'
-            Font.Style = [fsBold]
-            ParentFont = False
-            ParentShowHint = False
-            ShowHint = True
-            TabOrder = 3
-          end
-          object rbIncrementAfterRecord: TRadioButton
-            Left = 8
-            Top = 49
-            Width = 129
-            Height = 17
-            Hint = 'Increment parameters after specified number of records acquired'
-            Caption = 'After No. of Records'
-            Font.Charset = ANSI_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -11
-            Font.Name = 'Arial'
-            Font.Style = [fsBold]
-            ParentFont = False
-            ParentShowHint = False
-            ShowHint = True
-            TabOrder = 4
-          end
+          Text = 'COM 1'
+          Items.Strings = (
+            'COM 1'
+            'COM 2'
+            'COM 3'
+            'COM 4')
         end
-        object GroupBox5: TGroupBox
-          Left = 8
+        object GroupBox4: TGroupBox
+          Left = 472
           Top = 12
-          Width = 97
-          Height = 174
-          Caption = ' Conductance '
+          Width = 265
+          Height = 124
+          Caption = ' Max. Conductance (Gmax) '
           TabOrder = 1
-          object rbOff: TRadioButton
+          object Label1: TLabel
+            Left = 75
+            Top = 16
+            Width = 104
+            Height = 14
+            Alignment = taRightJustify
+            Caption = 'Initial Conductance'
+            Font.Charset = ANSI_CHARSET
+            Font.Color = clWindowText
+            Font.Height = -11
+            Font.Name = 'Arial'
+            Font.Style = [fsBold]
+            ParentFont = False
+          end
+          object edGMax: TValidatedEdit
+            Left = 185
+            Top = 16
+            Width = 70
+            Height = 21
+            Hint = 'Initial Maximum conductance'
+            OnKeyPress = edGMaxKeyPress
+            ShowHint = True
+            Text = ' 10 nS'
+            Value = 10.000000000000000000
+            Scale = 1.000000000000000000
+            Units = 'nS'
+            NumberFormat = '%.4g'
+            LoLimit = -1.000000015047466E30
+            HiLimit = 1.000000015047466E30
+          end
+          object rbGmaxFixed: TRadioButton
             Left = 8
             Top = 16
-            Width = 81
+            Width = 60
             Height = 17
-            Hint = 'Simulaed conductance off'
-            Caption = 'Off'
+            Hint = 'Fixed maximum conductance.'
+            Caption = 'Fixed'
             Checked = True
             Font.Charset = ANSI_CHARSET
             Font.Color = clWindowText
@@ -171,6 +120,145 @@ object DCLAMPFrm: TDCLAMPFrm
             ParentFont = False
             ParentShowHint = False
             ShowHint = True
+            TabOrder = 1
+            TabStop = True
+            OnClick = rbGmaxFixedClick
+          end
+          object rbGMaxSteps: TRadioButton
+            Left = 8
+            Top = 32
+            Width = 60
+            Height = 17
+            Hint = 'Increment maximum conductance after a group of recording sweeps'
+            Caption = 'Steps'
+            Font.Charset = ANSI_CHARSET
+            Font.Color = clWindowText
+            Font.Height = -12
+            Font.Name = 'Arial'
+            Font.Style = [fsBold]
+            ParentFont = False
+            ParentShowHint = False
+            ShowHint = True
+            TabOrder = 2
+            OnClick = rbGMaxStepsClick
+          end
+          object PanGmaxSteps: TPanel
+            Left = 104
+            Top = 42
+            Width = 154
+            Height = 74
+            BevelOuter = bvNone
+            TabOrder = 3
+            object Label4: TLabel
+              Left = 27
+              Top = 0
+              Width = 51
+              Height = 14
+              Alignment = taRightJustify
+              Caption = 'Step Size'
+              Font.Charset = ANSI_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -11
+              Font.Name = 'Arial'
+              Font.Style = [fsBold]
+              ParentFont = False
+            end
+            object Label5: TLabel
+              Left = 26
+              Top = 27
+              Width = 52
+              Height = 14
+              Alignment = taRightJustify
+              Caption = 'No. Steps'
+              Font.Charset = ANSI_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -11
+              Font.Name = 'Arial'
+              Font.Style = [fsBold]
+              ParentFont = False
+            end
+            object Label6: TLabel
+              Left = 12
+              Top = 53
+              Width = 65
+              Height = 14
+              Alignment = taRightJustify
+              Caption = 'No. Repeats'
+              Font.Charset = ANSI_CHARSET
+              Font.Color = clWindowText
+              Font.Height = -11
+              Font.Name = 'Arial'
+              Font.Style = [fsBold]
+              ParentFont = False
+            end
+            object edGMaxStepSize: TValidatedEdit
+              Left = 81
+              Top = 0
+              Width = 70
+              Height = 21
+              Hint = 'Increment in conductance between steps'
+              OnKeyPress = edGMaxKeyPress
+              ShowHint = True
+              Text = ' 10 nS'
+              Value = 10.000000000000000000
+              Scale = 1.000000000000000000
+              Units = 'nS'
+              NumberFormat = '%.4g'
+              LoLimit = -1.000000015047466E30
+              HiLimit = 1.000000015047466E30
+            end
+            object edGMaxNumSteps: TValidatedEdit
+              Left = 83
+              Top = 27
+              Width = 70
+              Height = 21
+              Hint = 'No. of steps in conductance step cycle'
+              OnKeyPress = edGMaxKeyPress
+              ShowHint = True
+              Text = ' 10 '
+              Value = 10.000000000000000000
+              Scale = 1.000000000000000000
+              NumberFormat = '%.4g'
+              LoLimit = -1.000000015047466E30
+              HiLimit = 1.000000015047466E30
+            end
+            object edGMaxNumRepeats: TValidatedEdit
+              Left = 81
+              Top = 53
+              Width = 70
+              Height = 21
+              Hint = 'No. of recording sweeps to acquire at each conductance level.'
+              OnKeyPress = edGMaxKeyPress
+              ShowHint = True
+              Text = ' 1 '
+              Value = 1.000000000000000000
+              Scale = 1.000000000000000000
+              NumberFormat = '%.4g'
+              LoLimit = -1.000000015047466E30
+              HiLimit = 1.000000015047466E30
+            end
+          end
+        end
+        object GroupBox5: TGroupBox
+          Left = 8
+          Top = 12
+          Width = 97
+          Height = 124
+          Caption = ' Conductance '
+          TabOrder = 2
+          object rbOff: TRadioButton
+            Left = 8
+            Top = 16
+            Width = 81
+            Height = 17
+            Caption = 'Off'
+            Checked = True
+            Font.Charset = ANSI_CHARSET
+            Font.Color = clWindowText
+            Font.Height = -12
+            Font.Name = 'Arial'
+            Font.Style = [fsBold]
+            ParentFont = False
             TabOrder = 0
             TabStop = True
             OnClick = rbOffClick
@@ -180,7 +268,6 @@ object DCLAMPFrm: TDCLAMPFrm
             Top = 32
             Width = 73
             Height = 17
-            Hint = 'Add simulated conductance'
             Caption = 'Add'
             Font.Charset = ANSI_CHARSET
             Font.Color = clWindowText
@@ -188,17 +275,13 @@ object DCLAMPFrm: TDCLAMPFrm
             Font.Name = 'Arial'
             Font.Style = [fsBold]
             ParentFont = False
-            ParentShowHint = False
-            ShowHint = True
             TabOrder = 1
-            OnClick = rbAddClick
           end
           object rbSubtract: TRadioButton
             Left = 8
             Top = 48
             Width = 81
             Height = 17
-            Hint = 'Subtract simulated conductance'
             Caption = 'Subtract'
             Font.Charset = ANSI_CHARSET
             Font.Color = clWindowText
@@ -207,19 +290,18 @@ object DCLAMPFrm: TDCLAMPFrm
             Font.Style = [fsBold]
             ParentFont = False
             TabOrder = 2
-            OnClick = rbSubtractClick
           end
         end
         object GroupBox2: TGroupBox
           Left = 8
-          Top = 192
+          Top = 140
           Width = 360
           Height = 233
           Caption = ' Activation Parameter (m) '
-          TabOrder = 2
+          TabOrder = 3
           object Label16: TLabel
-            Left = 225
-            Top = 199
+            Left = 187
+            Top = 203
             Width = 71
             Height = 14
             Caption = 'Power factor'
@@ -231,9 +313,9 @@ object DCLAMPFrm: TDCLAMPFrm
             ParentFont = False
           end
           object edmPower: TValidatedEdit
-            Left = 302
-            Top = 199
-            Width = 46
+            Left = 264
+            Top = 203
+            Width = 73
             Height = 21
             OnKeyPress = edmPowerKeyPress
             Text = ' 1 '
@@ -256,8 +338,8 @@ object DCLAMPFrm: TDCLAMPFrm
               Width = 257
               Height = 25
               Caption = 
-                'm<sub>inf</sub>(V) = 1/(1 + exp(-(V-V<sub>'#189'</sub>)/V<sub>slp</su' +
-                'b>))'
+                'm<sub>inf</sub>(V) = 1/(1 + exp(-(V-V<sub>1/2</sub>)/V<sub>slp</' +
+                'sub>))'
               Alignment = taLeftJustify
               LineSpacing = 1.000000000000000000
               Font.Charset = ANSI_CHARSET
@@ -285,7 +367,7 @@ object DCLAMPFrm: TDCLAMPFrm
               Top = 40
               Width = 50
               Height = 25
-              Caption = 'V<sub>'#189'</sub>'
+              Caption = 'V<sub>1/2</sub>'
               Alignment = taLeftJustify
               LineSpacing = 1.000000000000000000
               Font.Charset = ANSI_CHARSET
@@ -299,9 +381,7 @@ object DCLAMPFrm: TDCLAMPFrm
               Top = 40
               Width = 73
               Height = 21
-              Hint = 'Activation parameter half-maximal voltage'
               OnKeyPress = edMSSVhalfKeyPress
-              ShowHint = True
               Text = ' -20 mV'
               Value = -20.000000000000000000
               Scale = 1.000000000000000000
@@ -315,9 +395,7 @@ object DCLAMPFrm: TDCLAMPFrm
               Top = 40
               Width = 73
               Height = 21
-              Hint = 'Activation parameter slope factor'
               OnKeyPress = edMSSVslopeKeyPress
-              ShowHint = True
               Text = ' -10 mV'
               Value = -10.000000000000000000
               Scale = 1.000000000000000000
@@ -329,7 +407,7 @@ object DCLAMPFrm: TDCLAMPFrm
           end
           object GroupBox8: TGroupBox
             Left = 8
-            Top = 88
+            Top = 92
             Width = 340
             Height = 105
             Caption = 'Time constant '
@@ -341,7 +419,7 @@ object DCLAMPFrm: TDCLAMPFrm
               Height = 25
               Caption = 
                 'tau(V) = tau<sub>mn</sub>+(tau<sub>mx</sub>-tau<sub>mn</sub>)exp' +
-                '(-((V-V<sub>pk</sub>)/V<sub>slp</sub>)<sup>2</sup>)'
+                '(-((V-V<sub>1/2</sub>)/V<sub>slp</sub>)<sup>2</sup>)'
               Alignment = taLeftJustify
               LineSpacing = 1.000000000000000000
               Font.Charset = ANSI_CHARSET
@@ -383,7 +461,7 @@ object DCLAMPFrm: TDCLAMPFrm
               Top = 68
               Width = 45
               Height = 25
-              Caption = 'V<sub>pk</sub>'
+              Caption = 'V<sub>1/2</sub>'
               Alignment = taLeftJustify
               LineSpacing = 1.000000000000000000
               Font.Charset = ANSI_CHARSET
@@ -411,9 +489,7 @@ object DCLAMPFrm: TDCLAMPFrm
               Top = 40
               Width = 73
               Height = 21
-              Hint = 'Activation time constant (mininum)'
               OnKeyPress = edMTauMinKeyPress
-              ShowHint = True
               Text = ' 0.1 ms'
               Value = 0.100000001490116100
               Scale = 1.000000000000000000
@@ -427,9 +503,7 @@ object DCLAMPFrm: TDCLAMPFrm
               Top = 40
               Width = 73
               Height = 21
-              Hint = 'Activation time constant (maxinum)'
               OnKeyPress = edMTauMaxKeyPress
-              ShowHint = True
               Text = ' 3500 ms'
               Value = 3500.000000000000000000
               Scale = 1.000000000000000000
@@ -443,9 +517,7 @@ object DCLAMPFrm: TDCLAMPFrm
               Top = 68
               Width = 73
               Height = 21
-              Hint = 'Activation time constant peak voltage'
               OnKeyPress = edMTauVhalfKeyPress
-              ShowHint = True
               Text = ' 0.1 mV'
               Value = 0.100000001490116100
               Scale = 1.000000000000000000
@@ -459,9 +531,7 @@ object DCLAMPFrm: TDCLAMPFrm
               Top = 68
               Width = 73
               Height = 21
-              Hint = 'Activation time constant slope factor'
               OnKeyPress = edMTauVSlopeKeyPress
-              ShowHint = True
               Text = ' 0.0295 mV'
               Value = 0.029500000178813930
               Scale = 1.000000000000000000
@@ -474,14 +544,14 @@ object DCLAMPFrm: TDCLAMPFrm
         end
         object GroupBox9: TGroupBox
           Left = 374
-          Top = 192
+          Top = 140
           Width = 363
-          Height = 333
+          Height = 345
           Caption = ' Inactivation Parameter (h) '
-          TabOrder = 3
+          TabOrder = 4
           object Label8: TLabel
-            Left = 196
-            Top = 305
+            Left = 188
+            Top = 310
             Width = 70
             Height = 14
             Alignment = taRightJustify
@@ -506,8 +576,8 @@ object DCLAMPFrm: TDCLAMPFrm
               Width = 257
               Height = 25
               Caption = 
-                'h<sub>inf</sub>(V) = 1/(1 + exp(-(V-V<sub>'#189'</sub>)/V<sub>slp</su' +
-                'b>))'
+                'h<sub>inf</sub>(V) = 1/(1 + exp(-(V-V<sub>1/2</sub>)/V<sub>slp</' +
+                'sub>))'
               Alignment = taLeftJustify
               LineSpacing = 1.000000000000000000
               Font.Charset = ANSI_CHARSET
@@ -535,7 +605,7 @@ object DCLAMPFrm: TDCLAMPFrm
               Top = 40
               Width = 50
               Height = 25
-              Caption = 'V<sub>'#189'</sub>'
+              Caption = 'V<sub>1/2</sub>'
               Alignment = taLeftJustify
               LineSpacing = 1.000000000000000000
               Font.Charset = ANSI_CHARSET
@@ -549,9 +619,7 @@ object DCLAMPFrm: TDCLAMPFrm
               Top = 40
               Width = 73
               Height = 21
-              Hint = 'Inactivation parameter half-maximal voltage'
               OnKeyPress = edHSSVhalfKeyPress
-              ShowHint = True
               Text = ' 4000 mV'
               Value = 4000.000000000000000000
               Scale = 1.000000000000000000
@@ -565,9 +633,7 @@ object DCLAMPFrm: TDCLAMPFrm
               Top = 40
               Width = 73
               Height = 21
-              Hint = 'Inactivation parameter slope factor'
               OnKeyPress = edHSSVslopeKeyPress
-              ShowHint = True
               Text = ' -0.035 mV'
               Value = -0.035000000149011610
               Scale = 1.000000000000000000
@@ -591,7 +657,7 @@ object DCLAMPFrm: TDCLAMPFrm
               Height = 25
               Caption = 
                 'tau(V) = tau<sub>mn</sub>+(tau<sub>mx</sub> - tau<sub>mn</sub>)e' +
-                'xp(((V-V<sub>pk</sub>)/V<sub>slp</sub>)<sup>2</sup>)'
+                'xp(((V-V<sub>1/2</sub>)/V<sub>slp</sub>)<sup>2</sup>)'
               Alignment = taLeftJustify
               LineSpacing = 1.000000000000000000
               Font.Charset = ANSI_CHARSET
@@ -633,7 +699,7 @@ object DCLAMPFrm: TDCLAMPFrm
               Top = 68
               Width = 45
               Height = 25
-              Caption = 'V<sub>pk</sub>'
+              Caption = 'V<sub>1/2</sub>'
               Alignment = taLeftJustify
               LineSpacing = 1.000000000000000000
               Font.Charset = ANSI_CHARSET
@@ -661,9 +727,7 @@ object DCLAMPFrm: TDCLAMPFrm
               Top = 40
               Width = 73
               Height = 21
-              Hint = 'Fast inactivation time constant (mininum)'
               OnKeyPress = edHTauFMinKeyPress
-              ShowHint = True
               Text = ' 0.1 ms'
               Value = 0.100000001490116100
               Scale = 1.000000000000000000
@@ -677,9 +741,7 @@ object DCLAMPFrm: TDCLAMPFrm
               Top = 40
               Width = 73
               Height = 21
-              Hint = 'Fast inactivation time constant (maxinum)'
               OnKeyPress = edHTauFMaxKeyPress
-              ShowHint = True
               Text = ' 3500 ms'
               Value = 3500.000000000000000000
               Scale = 1.000000000000000000
@@ -689,15 +751,11 @@ object DCLAMPFrm: TDCLAMPFrm
               HiLimit = 1000000000.000000000000000000
             end
             object edHTauFVhalf: TValidatedEdit
-              Left = 116
-              Top = 67
+              Left = 110
+              Top = 68
               Width = 73
               Height = 21
-              Hint = 
-                'Fast inactivation time constant slope factorInactivation time co' +
-                'nstant peak voltage'
               OnKeyPress = edHTauFVhalfKeyPress
-              ShowHint = True
               Text = ' 0.1 mV'
               Value = 0.100000001490116100
               Scale = 1.000000000000000000
@@ -711,9 +769,7 @@ object DCLAMPFrm: TDCLAMPFrm
               Top = 68
               Width = 73
               Height = 21
-              Hint = 'Fast inactivation time constant slope factor'
               OnKeyPress = edHTauFVslopeKeyPress
-              ShowHint = True
               Text = ' 0.0295 mV'
               Value = 0.029500000178813930
               Scale = 1.000000000000000000
@@ -725,7 +781,7 @@ object DCLAMPFrm: TDCLAMPFrm
           end
           object GroupBox3: TGroupBox
             Left = 8
-            Top = 196
+            Top = 199
             Width = 340
             Height = 105
             Caption = 'Time constant (slow) '
@@ -737,7 +793,7 @@ object DCLAMPFrm: TDCLAMPFrm
               Height = 25
               Caption = 
                 'tau(V) = tau<sub>mn</sub>+(tau<sub>mx</sub> - tau<sub>mn</sub>)e' +
-                'xp(((V-V<sub>pk</sub>)/V<sub>slp</sub>)<sup>2</sup>)'
+                'xp(((V-V<sub>1/2</sub>)/V<sub>slp</sub>)<sup>2</sup>)'
               Alignment = taLeftJustify
               LineSpacing = 1.000000000000000000
               Font.Charset = ANSI_CHARSET
@@ -779,7 +835,7 @@ object DCLAMPFrm: TDCLAMPFrm
               Top = 67
               Width = 45
               Height = 25
-              Caption = 'V<sub>pk</sub>'
+              Caption = 'V<sub>1/2</sub>'
               Alignment = taLeftJustify
               LineSpacing = 1.000000000000000000
               Font.Charset = ANSI_CHARSET
@@ -807,11 +863,7 @@ object DCLAMPFrm: TDCLAMPFrm
               Top = 40
               Width = 73
               Height = 21
-              Hint = 
-                'Slow inactivation time constant slope factorInactivation time co' +
-                'nstant peak voltage'
               OnKeyPress = edHTauSMinKeyPress
-              ShowHint = True
               Text = ' 0.1 ms'
               Value = 0.100000001490116100
               Scale = 1.000000000000000000
@@ -825,9 +877,7 @@ object DCLAMPFrm: TDCLAMPFrm
               Top = 41
               Width = 73
               Height = 21
-              Hint = 'Slow inactivation time constant (maxinum)'
               OnKeyPress = edHTauSMaxKeyPress
-              ShowHint = True
               Text = ' 3500 ms'
               Value = 3500.000000000000000000
               Scale = 1.000000000000000000
@@ -855,9 +905,7 @@ object DCLAMPFrm: TDCLAMPFrm
               Top = 68
               Width = 73
               Height = 21
-              Hint = 'Slow inactivation time constant slope factor'
               OnKeyPress = edHTauSVSlopeKeyPress
-              ShowHint = True
               Text = ' 0.0295 mV'
               Value = 0.029500000178813930
               Scale = 1.000000000000000000
@@ -868,13 +916,11 @@ object DCLAMPFrm: TDCLAMPFrm
             end
           end
           object edHFastFraction: TValidatedEdit
-            Left = 272
-            Top = 305
+            Left = 264
+            Top = 310
             Width = 73
             Height = 21
-            Hint = 'Fraction of inactivation which is fast'
             OnKeyPress = edHFastFractionKeyPress
-            ShowHint = True
             Text = ' 0.5 '
             Value = 0.500000000000000000
             Scale = 1.000000000000000000
@@ -886,11 +932,11 @@ object DCLAMPFrm: TDCLAMPFrm
         object GroupBox6: TGroupBox
           Left = 112
           Top = 12
-          Width = 275
-          Height = 174
-          TabOrder = 4
+          Width = 354
+          Height = 124
+          TabOrder = 5
           object Label3: TLabel
-            Left = 55
+            Left = 133
             Top = 16
             Width = 135
             Height = 14
@@ -904,8 +950,8 @@ object DCLAMPFrm: TDCLAMPFrm
             ParentFont = False
           end
           object Label7: TLabel
-            Left = 17
-            Top = 64
+            Left = 16
+            Top = 42
             Width = 172
             Height = 14
             Alignment = taRightJustify
@@ -917,23 +963,9 @@ object DCLAMPFrm: TDCLAMPFrm
             Font.Style = [fsBold]
             ParentFont = False
           end
-          object Label1: TLabel
-            Left = 118
-            Top = 40
-            Width = 72
-            Height = 14
-            Alignment = taRightJustify
-            Caption = 'Conductance'
-            Font.Charset = ANSI_CHARSET
-            Font.Color = clWindowText
-            Font.Height = -11
-            Font.Name = 'Arial'
-            Font.Style = [fsBold]
-            ParentFont = False
-          end
           object ckEnableInhibitInput: TCheckBox
-            Left = 113
-            Top = 91
+            Left = 192
+            Top = 67
             Width = 153
             Height = 17
             Alignment = taLeftJustify
@@ -947,13 +979,11 @@ object DCLAMPFrm: TDCLAMPFrm
             TabOrder = 0
           end
           object edVrev: TValidatedEdit
-            Left = 196
+            Left = 274
             Top = 16
             Width = 70
             Height = 21
-            Hint = 'Ionic current reversal potential'
             OnKeyPress = edVrevKeyPress
-            ShowHint = True
             Text = ' 0 mV'
             Scale = 1.000000000000000000
             Units = 'mV'
@@ -962,13 +992,11 @@ object DCLAMPFrm: TDCLAMPFrm
             HiLimit = 200.000000000000000000
           end
           object edCurrentCommandScaleFactor: TValidatedEdit
-            Left = 195
-            Top = 64
+            Left = 274
+            Top = 42
             Width = 70
             Height = 21
-            Hint = 'Current command voltage scaling factor'
             OnKeyPress = edCurrentCommandScaleFactorKeyPress
-            ShowHint = True
             Text = ' 1E-008 A/V'
             Value = 0.000000009999999939
             Scale = 1.000000000000000000
@@ -977,29 +1005,19 @@ object DCLAMPFrm: TDCLAMPFrm
             LoLimit = -1.000000015047466E30
             HiLimit = 1.000000015047466E30
           end
-          object edGMax: TValidatedEdit
-            Left = 196
-            Top = 40
-            Width = 70
-            Height = 21
-            Hint = 'Maximum conductance'
-            OnKeyPress = edGMaxKeyPress
-            ShowHint = True
-            Text = ' 10 nS'
-            Value = 10.000000000000000000
-            Scale = 1.000000000000000000
-            Units = 'nS'
-            NumberFormat = '%.4g'
-            LoLimit = -1.000000015047466E30
-            HiLimit = 1.000000015047466E30
-          end
+        end
+        object edStatus: TEdit
+          Left = 167
+          Top = 379
+          Width = 201
+          Height = 21
+          TabOrder = 6
         end
         object bReset: TButton
-          Left = 16
-          Top = 451
+          Left = 8
+          Top = 380
           Width = 153
           Height = 17
-          Hint = 'Update settings in dynamic clamp controller unit'
           Caption = 'Update Dynamic Clamp'
           Font.Charset = DEFAULT_CHARSET
           Font.Color = clWindowText
@@ -1007,14 +1025,12 @@ object DCLAMPFrm: TDCLAMPFrm
           Font.Name = 'MS Sans Serif'
           Font.Style = [fsBold]
           ParentFont = False
-          ParentShowHint = False
-          ShowHint = True
-          TabOrder = 5
+          TabOrder = 7
           OnClick = bResetClick
         end
         object bLoadSettings: TButton
-          Left = 16
-          Top = 474
+          Left = 8
+          Top = 403
           Width = 153
           Height = 17
           Hint = 'Load dynamic clamp conductance settings'
@@ -1027,12 +1043,12 @@ object DCLAMPFrm: TDCLAMPFrm
           ParentFont = False
           ParentShowHint = False
           ShowHint = True
-          TabOrder = 6
+          TabOrder = 8
           OnClick = bLoadSettingsClick
         end
         object bSaveSettings: TButton
-          Left = 16
-          Top = 497
+          Left = 8
+          Top = 426
           Width = 153
           Height = 17
           Hint = 'Save dynamic clamp conductance settings'
@@ -1045,36 +1061,18 @@ object DCLAMPFrm: TDCLAMPFrm
           ParentFont = False
           ParentShowHint = False
           ShowHint = True
-          TabOrder = 7
+          TabOrder = 9
           OnClick = bSaveSettingsClick
         end
-        object cbComPort: TComboBox
-          Left = 303
-          Top = 431
-          Width = 65
-          Height = 21
-          Style = csDropDownList
-          ItemIndex = 0
-          TabOrder = 8
-          Text = 'COM 1'
-          Items.Strings = (
-            'COM 1'
-            'COM 2'
-            'COM 3'
-            'COM 4')
-        end
-      end
-      object edStatus: TEdit
-        Left = 3
-        Top = 540
-        Width = 750
-        Height = 21
-        TabOrder = 1
       end
     end
     object GraphsTab: TTabSheet
       Caption = 'Graphs'
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object plPlot: TXYPlotDisplay
         Left = 8
         Top = 40
@@ -1124,25 +1122,10 @@ object DCLAMPFrm: TDCLAMPFrm
         TabOrder = 0
         OnChange = cbPlotChange
       end
-      object bCopyToClipboard: TButton
-        Left = 288
-        Top = 8
-        Width = 121
-        Height = 17
-        Caption = 'Copy to Clipboard'
-        Font.Charset = ANSI_CHARSET
-        Font.Color = clWindowText
-        Font.Height = -11
-        Font.Name = 'Arial'
-        Font.Style = [fsBold]
-        ParentFont = False
-        TabOrder = 1
-        OnClick = bCopyToClipboardClick
-      end
     end
   end
   object Timer1: TTimer
-    Interval = 500
+    Interval = 100
     OnTimer = Timer1Timer
     Left = 32
     Top = 512

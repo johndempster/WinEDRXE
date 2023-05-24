@@ -11,8 +11,8 @@ interface
 
 uses
   SysUtils, WinTypes, WinProcs, Messages, Classes, Graphics, Controls,
-  Forms, Dialogs, StdCtrls, TabNotBk, maths, shared, global, fileio,
-  ValEdit, ComCtrls, ValidatedEdit;
+  Forms, Dialogs, StdCtrls, TabNotBk, maths, math,
+  ValEdit, ComCtrls, ValidatedEdit, EDRFileUnit ;
 
 type
   TImportFrm = class(TForm)
@@ -249,17 +249,17 @@ begin
         else edTimeColumn.Visible := True ;
 
         { Close existing data file }
-        if CdrFH.FileHandle >= 0 then begin
-           FileClose( CdrFH.FileHandle ) ;
-           CdrFH.FileHandle := -1 ;
+        if EDRFile.cdrfh.FileHandle >= 0 then begin
+           FileClose( EDRFile.cdrfh.FileHandle ) ;
+           EDRFile.cdrfh.FileHandle := -1 ;
            end ;
 
         { Create name of EDR file to hold imported data }
-        CdrFH.FileName := ChangeFileExt( FileName, DataFileExtension ) ;
+        EDRFile.cdrfh.FileName := ChangeFileExt( FileName, DataFileExtension ) ;
         { Make sure an existing data file is not overwritten, unintentionally }
-        OK := FileOverwriteCheck( CdrFH.FileName ) ;
+        OK := EDRFile.FileOverwriteCheck( EDRFile.cdrfh.FileName ) ;
         { Create data file }
-        if OK then OK := Main.CreateNewDataFile( CdrFH ) ;
+        if OK then OK := EDRFile.CreateNewDataFile( EDRFile.CdrFH ) ;
 
         if OK then begin
            { Open file for reading as text }
@@ -267,11 +267,11 @@ begin
            Reset(F) ;
 
            { Number of signal channels }
-           CdrFH.NumChannels := Round(edNumColumns.Value) ;
+           EDRFile.cdrfh.NumChannels := Round(edNumColumns.Value) ;
 
            { If one of the data columns is time data, reduce channel count }
            if ckTimeDataAvailable.Checked
-              and (Round(edTimeColumn.Value) > 0) then Dec(CdrFH.NumChannels)
+              and (Round(edTimeColumn.Value) > 0) then Dec(EDRFile.cdrfh.NumChannels)
                                                   else edTimeColumn.Value := -1.0 ;
 
            { Set sampling interval }
@@ -279,7 +279,7 @@ begin
               MessageDlg( ' Sampling interval not defined!',mtWarning, [mbOK], 0 ) ;
               edASCII_DT.value := 1.0 ;
               end ;
-           CdrFH.dt := edASCII_DT.value ;
+           EDRFile.cdrfh.dt := edASCII_DT.value ;
 
            { Determine range of values within data }
            for Col := 0 to High(MaxValues) do MaxValues[Col] := 0.0 ;
@@ -287,33 +287,33 @@ begin
                { Read a line of text from file }
                ReadLn( F,s ) ;
                { Extract samples from  row }
-               nCols := ExtractListOfFloats( s, Values, False ) ;
+               nCols := EDRFile.ExtractListOfFloats( s, Values, False ) ;
 
                { Determine maximum absolute values within data columns }
                for Col := 0 to Round(edNumColumns.Value)-1 do
-                   MaxValues[Col] := MaxFlt( [Abs(Values[Col]),MaxValues[Col]] ) ;
+                   MaxValues[Col] := Max( Abs(Values[Col]),MaxValues[Col] ) ;
                end ;
 
            { Create suitable integer/real scaling factors }
-           CdrFH.ADCVoltageRange := 1.0 ;
+           EDRFile.cdrfh.ADCVoltageRange := 1.0 ;
            Ch := 0 ;
            for Col := 0 to Round(edNumColumns.Value)-1 do
                if (not ckTimeDataAvailable.Checked)
                or (Col <> (Round(edTimeColumn.Value)-1)) then begin
 
-               Channel[ch].ChannelOffset := ch ;
-               Channel[ch].ADCZero := 0 ;
-               Channel[ch].ADCUnits := '' ;
-               Channel[ch].ADCName := Format( 'Ch.%d', [ch] ) ;
-               Channel[ch].ADCMaxValue := Main.SESLabIO.ADCMaxValue ;
+               EDRFile.Channel[ch].ChannelOffset := ch ;
+               EDRFile.Channel[ch].ADCZero := 0 ;
+               EDRFile.Channel[ch].ADCUnits := '' ;
+               EDRFile.Channel[ch].ADCName := Format( 'Ch.%d', [ch] ) ;
+               EDRFile.Channel[ch].ADCMaxValue := Main.SESLabIO.ADCMaxValue ;
                { ASCII --> Integer scaling factor }
-               Scale[Col] := Channel[ch].ADCMaxValue / (1.1*MaxValues[Col]) ;
+               Scale[Col] := EDRFile.Channel[ch].ADCMaxValue / (1.1*MaxValues[Col]) ;
                { Integer --> real scaling factor }
-               Channel[Ch].ADCScale := 1.0 / Scale[Col] ;
-               Channel[ch].ADCAmplifierGain := 1. ;
-               Channel[ch].ADCCalibrationFactor := ADCScaleToCalibFactor(
-                                                   CdrFH.ADCVoltageRange,
-                                                   Channel[ch]) ;
+               EDRFile.Channel[Ch].ADCScale := 1.0 / Scale[Col] ;
+               EDRFile.Channel[ch].ADCAmplifierGain := 1. ;
+               EDRFile.Channel[ch].ADCCalibrationFactor := EDRFile.ADCScaleToCalibFactor(
+                                                   EDRFile.cdrfh.ADCVoltageRange,
+                                                   EDRFile.Channel[ch]) ;
                Inc(Ch) ;
                end ;
 
@@ -321,8 +321,8 @@ begin
            Reset(F) ;
            nSamples := 0 ;
            NumBlocks := 0 ;
-           CdrFH.NumSamplesInFile := 0 ;
-           NumSamplesPerBuffer := NumBlocksPerBuffer*CdrFH.NumChannels ;
+           EDRFile.cdrfh.NumSamplesInFile := 0 ;
+           NumSamplesPerBuffer := NumBlocksPerBuffer*EDRFile.cdrfh.NumChannels ;
 
            { Read and discard rows to be ignored }
            for i := 1 to Round(edNumRowsIgnored.Value) do ReadLn( F,s ) ;
@@ -332,8 +332,8 @@ begin
                { Read in a row of text }
                ReadLn( F,s ) ;
                { Extract samples from  row }
-               nCols := ExtractListOfFloats( s, Values, False ) ;
-               nCols := MinInt( [nCols,Round(edNumColumns.Value)] ) ;
+               nCols := EDRFile.ExtractListOfFloats( s, Values, False ) ;
+               nCols := Min( nCols,Round(edNumColumns.Value) ) ;
 
                { If at end of file, put last samples into buffer and request save }
                if EOF(F) then begin
@@ -354,25 +354,25 @@ begin
 
                { Copy to file when buffer is full }
                if nSamples >= NumSamplesPerBuffer then begin
-                  WriteCDRBuffer( CdrFH, NumBlocks, Buf^, NumBlocksPerBuffer ) ;
+                  EDRFile.WriteBuffer( EDRFile.CdrFH, NumBlocks, Buf^, NumBlocksPerBuffer ) ;
                   NumBlocks := NumBlocks + NumBlocksPerBuffer ;
                   nSamples := 0 ;
                   end ;
 
                end ;
 
-           CdrFH.NumSamplesInFile := NumBlocks*CdrFH.NumChannels ;
-           SaveCDRHeader(CdrFH) ;
+           EDRFile.cdrfh.NumSamplesInFile := NumBlocks*EDRFile.cdrfh.NumChannels ;
+           EDRFile.SaveHeader(EDRFile.CdrFH) ;
 
-           WriteToLogFile( 'ASCII Data File : ' + ImportFrm.FileName ) ;
-           WriteToLogFile( 'converted to WCD file : ' + CdrFH.FileName ) ;
+           EDRFile.WriteToLogFile( 'ASCII Data File : ' + ImportFrm.FileName ) ;
+           EDRFile.WriteToLogFile( 'converted to WCD file : ' + EDRFile.cdrfh.FileName ) ;
            end ;
 
      finally
         { Close data file }
-        if CdrFH.FileHandle >= 0 then begin
-           FileClose( CdrFH.FileHandle ) ;
-           CdrFH.FileHandle := -1 ;
+        if EDRFile.cdrfh.FileHandle >= 0 then begin
+           FileClose( EDRFile.cdrfh.FileHandle ) ;
+           EDRFile.cdrfh.FileHandle := -1 ;
            end ;
         { Close text file }
         CloseFile(F) ;
@@ -408,37 +408,37 @@ begin
      try
 
         { Number of signal channels }
-        CdrFH.NumChannels := Round(edNumChannelsBinary.Value) ;
-        if CdrFH.NumChannels > (ChannelLimit+1) then begin
+        EDRFile.cdrfh.NumChannels := Round(edNumChannelsBinary.Value) ;
+        if EDRFile.cdrfh.NumChannels > (ChannelLimit+1) then begin
            MessageDlg( format(' Only %d channels allowed',[ChannelLimit+1]),
                            mtWarning, [mbOK], 0 ) ;
            end ;
-        CdrFH.NumChannels := MaxInt( [0,MinInt([ChannelLimit+1,CdrFH.NumChannels])] ) ;
+        EDRFile.cdrfh.NumChannels := MaxInt( [0,MinInt([ChannelLimit+1,EDRFile.cdrfh.NumChannels])] ) ;
 
         { Create name of EDR file to hold imported data }
-        CdrFH.FileName := ChangeFileExt( FileName, DataFileExtension ) ;
+        EDRFile.cdrfh.FileName := ChangeFileExt( FileName, DataFileExtension ) ;
         { Make sure an existing data file is not overwritten, unintentionally }
-        OK := FileOverwriteCheck( CdrFH.FileName ) ;
+        OK := EDRFile.FileOverwriteCheck( EDRFile.cdrfh.FileName ) ;
         { Create data file }
-        if OK then OK := Main.CreateNewDataFile( CdrFH ) ;
+        if OK then OK := EDRFile.CreateNewDataFile( EDRFile.CdrFH ) ;
 
         if OK then begin
            { Channel calibration and scale factor settings }
-           CdrFH.ADCVoltageRange := 1.0 ;
-           for ch := 0 to CdrFH.NumChannels-1 do begin
-               Channel[ch].ChannelOffset := ch ;
-               Channel[Ch].ADCScale := 1.0 ;
-               Channel[ch].ADCAmplifierGain := 1. ;
-               Channel[ch].ADCCalibrationFactor := ADCScaleToCalibFactor(
-                                                   CdrFH.ADCVoltageRange,
-                                                   Channel[ch]) ;
-               Channel[ch].ADCZero := 0 ;
-               Channel[ch].ADCUnits := '' ;
-               Channel[ch].ADCName := Format( 'Ch.%d', [ch] ) ;
+           EDRFile.cdrfh.ADCVoltageRange := 1.0 ;
+           for ch := 0 to EDRFile.cdrfh.NumChannels-1 do begin
+               EDRFile.Channel[ch].ChannelOffset := ch ;
+               EDRFile.Channel[Ch].ADCScale := 1.0 ;
+               EDRFile.Channel[ch].ADCAmplifierGain := 1. ;
+               EDRFile.Channel[ch].ADCCalibrationFactor := EDRFile.ADCScaleToCalibFactor(
+                                                   EDRFile.cdrfh.ADCVoltageRange,
+                                                   EDRFile.Channel[ch]) ;
+               EDRFile.Channel[ch].ADCZero := 0 ;
+               EDRFile.Channel[ch].ADCUnits := '' ;
+               EDRFile.Channel[ch].ADCName := Format( 'Ch.%d', [ch] ) ;
                end ;
 
            { Set sampling interval }
-           CdrFH.dt := edDTBinary.Value ;
+           EDRFile.cdrfh.dt := edDTBinary.Value ;
            end ;
 
         { Open import file }
@@ -452,10 +452,10 @@ begin
            { Move file pointer to start of data in source file }
            FileSeek( FileHandle, Round(edNumFileHeaderBytes.Value), 0 ) ;
            { Move file pointer to start of data in destination file }
-           FileSeek( CdrFH.FileHandle, CdrFH.NumBytesInHeader, 0 ) ;
+           FileSeek( EDRFile.cdrfh.FileHandle, EDRFile.cdrfh.NumBytesInHeader, 0 ) ;
 
            { Copy samples from binary file into EDR file }
-           NumSamplesPerBuf := NumBlocksPerBuf*CdrFH.NumChannels ;
+           NumSamplesPerBuf := NumBlocksPerBuf*EDRFile.cdrfh.NumChannels ;
            NumBytesPerBuf := NumSamplesPerBuf*2 ;
            NumBuffersToCopy := (Round(edNumBytesToImport.Value)
                                 - Round(edNumFileHeaderBytes.Value)) div NumBytesPerBuf ;
@@ -474,7 +474,7 @@ begin
                       Buf^[i] := Round(Buf^[i]*edScaleBy.Value + edOffsetBy.Value) ;
 
                   { Write data to file }
-                  WriteCDRBuffer( CdrFH, NumBlocks, Buf^, NumBlocksPerBuf ) ;
+                  EDRFile.WriteBuffer( EDRFile.CdrFH, NumBlocks, Buf^, NumBlocksPerBuf ) ;
                   NumBlocks := NumBlocks + NumBlocksPerBuf ;
 
                   prProgress.Position := prProgress.Position + 1 ;
@@ -486,13 +486,13 @@ begin
 
                end ;
 
-           CdrFH.NumSamplesInFile := NumBlocks*CdrFH.NumCHannels ;
+           EDRFile.cdrfh.NumSamplesInFile := NumBlocks*EDRFile.cdrfh.NumCHannels ;
 
            { Update header information }
-           SaveCDRHeader(CdrFH) ;
+           EDRFile.SaveHeader(EDRFile.CdrFH) ;
 
-           WriteToLogFile( 'Binary Data File : ' + ImportFrm.FileName ) ;
-           WriteToLogFile( 'converted to WCD file : ' + CdrFH.FileName ) ;
+           EDRFile.WriteToLogFile( 'Binary Data File : ' + ImportFrm.FileName ) ;
+           EDRFile.WriteToLogFile( 'converted to WCD file : ' + EDRFile.cdrfh.FileName ) ;
 
            end ;
 
@@ -500,7 +500,7 @@ begin
         { Close import file }
         if FileHandle >=0 then FileClose( FileHandle ) ;
         { Close data file }
-        if CdrFH.FileHandle >= 0 then FileClose( CdrFH.FileHandle ) ;
+        if EDRFile.cdrfh.FileHandle >= 0 then FileClose( EDRFile.cdrfh.FileHandle ) ;
 
         Dispose(Buf) ;
         screen.cursor := crdefault ;

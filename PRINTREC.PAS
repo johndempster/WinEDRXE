@@ -10,7 +10,7 @@ unit PrintRec;
 interface
 
 uses WinTypes, WinProcs, Classes, Graphics, Forms, Controls, Buttons,
-  StdCtrls, ExtCtrls,Printers,Global,Shared, Grids, SysUtils, Spin, fileio,
+  StdCtrls, ExtCtrls,Printers,Global,Shared, Grids, SysUtils, Spin,
   {PlotLib,} ValEdit,  ScopeDisplay, ChartDisplay, ValidatedEdit ;
 
 type
@@ -65,7 +65,7 @@ var
 implementation
 
 {$R *.DFM}
-uses MDIform, maths ;
+uses MDIform, maths , EDRFileUnit;
 
 procedure TPrintRecFrm.FormShow(Sender: TObject);
 { --------------------------------
@@ -107,19 +107,19 @@ begin
       CalibrationBarTable.RowCount := n ;
 
       { Update text box settings }
-      edLeftMargin.Value := Settings.Plot.LeftMargin ;
-      edRightMargin.Value := Settings.Plot.RightMargin ;
-      edTopMargin.Value := Settings.Plot.TopMargin ;
-      edBottomMargin.Value := Settings.Plot.BottomMargin ;
-      edWidth.Value := Settings.Plot.MetafileWidth ;
-      edHeight.Value := Settings.Plot.MetafileHeight ;
-      edFontSize.Value := Settings.Plot.FontSize ;
-      edLineThickness.Value := Settings.Plot.LineThickness ;
-      cbFontName.itemindex := cbFontName.items.indexof(Settings.Plot.FontName) ;
+      edLeftMargin.Value := EDRFile.Settings.Plot.LeftMargin ;
+      edRightMargin.Value := EDRFile.Settings.Plot.RightMargin ;
+      edTopMargin.Value := EDRFile.Settings.Plot.TopMargin ;
+      edBottomMargin.Value := EDRFile.Settings.Plot.BottomMargin ;
+      edWidth.Value := EDRFile.Settings.Plot.MetafileWidth ;
+      edHeight.Value := EDRFile.Settings.Plot.MetafileHeight ;
+      edFontSize.Value := EDRFile.Settings.Plot.FontSize ;
+      edLineThickness.Value := EDRFile.Settings.Plot.LineThickness ;
+      cbFontName.itemindex := cbFontName.items.indexof(EDRFile.Settings.Plot.FontName) ;
       if cbFontName.itemindex < 0 then  cbFontName.itemindex := 0 ;
-      ckShowLabels.checked := Settings.ShowLabels ;
-      ckShowZeroLevels.checked := Settings.ShowZeroLevels ;
-      ckUseColor.checked := Settings.Plot.UseColor ;
+      ckShowLabels.checked := EDRFile.Settings.ShowLabels ;
+      ckShowZeroLevels.checked := EDRFile.Settings.ShowZeroLevels ;
+      ckUseColor.checked := EDRFile.Settings.Plot.UseColor ;
 
       { Time calibration }
       if Display.TCalBar <= 0.0 then begin
@@ -156,19 +156,19 @@ var
 begin
 
       { Update settings from text boxes }
-      Settings.Plot.LeftMargin := edLeftMargin.Value ;
-      Settings.Plot.RightMargin := edRightMargin.Value ;
-      Settings.Plot.TopMargin := edTopMargin.Value ;
-      Settings.Plot.BottomMargin := edBottomMargin.Value ;
-      Settings.Plot.MetafileWidth := Round(edWidth.Value) ;
-      Settings.Plot.MetafileHeight := Round(edHeight.Value) ;
-      Settings.Plot.FontSize := Round(edFontSize.Value) ;
-      Settings.Plot.LineThickness := Round(edLineThickness.Value) ;
-      Settings.Plot.FontName :=  cbFontName.text ;
+      EDRFile.Settings.Plot.LeftMargin := edLeftMargin.Value ;
+      EDRFile.Settings.Plot.RightMargin := edRightMargin.Value ;
+      EDRFile.Settings.Plot.TopMargin := edTopMargin.Value ;
+      EDRFile.Settings.Plot.BottomMargin := edBottomMargin.Value ;
+      EDRFile.Settings.Plot.MetafileWidth := Round(edWidth.Value) ;
+      EDRFile.Settings.Plot.MetafileHeight := Round(edHeight.Value) ;
+      EDRFile.Settings.Plot.FontSize := Round(edFontSize.Value) ;
+      EDRFile.Settings.Plot.LineThickness := Round(edLineThickness.Value) ;
+      EDRFile.Settings.Plot.FontName :=  cbFontName.text ;
 
-      Settings.ShowLabels := ckShowLabels.checked ;
-      Settings.ShowZeroLevels := ckShowZeroLevels.checked ;
-      Settings.Plot.UseColor := ckUseColor.checked ;
+      EDRFile.Settings.ShowLabels := ckShowLabels.checked ;
+      EDRFile.Settings.ShowZeroLevels := ckShowZeroLevels.checked ;
+      EDRFile.Settings.Plot.UseColor := ckUseColor.checked ;
 
       { Time calibration }
       Display.TCalBar := ExtractFloat(CalibrationBarTable.cells[1,0], 1. ) /
@@ -182,18 +182,18 @@ begin
          end ;
 
       { Copy data into display object }
-      Display.PrinterLeftMargin := Round(Settings.Plot.LeftMargin) ;
-      Display.PrinterRightMargin := Round(Settings.Plot.RightMargin) ;
-      Display.PrinterTopMargin := Round(Settings.Plot.TopMargin) ;
-      Display.PrinterBottomMargin := Round(Settings.Plot.BottomMargin) ;
-      Display.PrinterFontName := Settings.Plot.FontName ;
-      Display.PrinterFontSize := Settings.Plot.FontSize ;
-      Display.PrinterPenWidth := Settings.Plot.LineThickness ;
-      Display.MetafileWidth := Settings.Plot.MetaFileWidth ;
-      Display.MetafileHeight := Settings.Plot.MetaFileHeight ;
-      Display.PrinterShowZeroLevels := Settings.ShowZeroLevels ;
-      Display.PrinterShowLabels := Settings.ShowLabels ;
-      Display.PrinterDisableColor := not Settings.Plot.UseColor ;
+      Display.PrinterLeftMargin := Round(EDRFile.Settings.Plot.LeftMargin) ;
+      Display.PrinterRightMargin := Round(EDRFile.Settings.Plot.RightMargin) ;
+      Display.PrinterTopMargin := Round(EDRFile.Settings.Plot.TopMargin) ;
+      Display.PrinterBottomMargin := Round(EDRFile.Settings.Plot.BottomMargin) ;
+      Display.PrinterFontName := EDRFile.Settings.Plot.FontName ;
+      Display.PrinterFontSize := EDRFile.Settings.Plot.FontSize ;
+      Display.PrinterPenWidth := EDRFile.Settings.Plot.LineThickness ;
+      Display.MetafileWidth := EDRFile.Settings.Plot.MetaFileWidth ;
+      Display.MetafileHeight := EDRFile.Settings.Plot.MetaFileHeight ;
+      Display.PrinterShowZeroLevels := EDRFile.Settings.ShowZeroLevels ;
+      Display.PrinterShowLabels := EDRFile.Settings.ShowLabels ;
+      Display.PrinterDisableColor := not EDRFile.Settings.Plot.UseColor ;
 
      end ;
 
@@ -215,9 +215,9 @@ begin
          Row := 1 ;
          for ch := 0 to Display.NumChannels-1 do if Display.ChanVisible[ch] then begin
              Value := ExtractFloat(CalibrationBarTable.Cells[1,Row],10. ) ;
-             CalibrationBarTable.cells[0,Row] := Channel[ch].ADCName ;
+             CalibrationBarTable.cells[0,Row] := EDRFile.Channel[ch].ADCName ;
              CalibrationBarTable.cells[1,Row] := Format( '%.4g %s',
-                                                 [Value,Channel[ch].ADCUnits]) ;
+                                                 [Value,EDRFile.Channel[ch].ADCUnits]) ;
              Inc(Row) ;
              end ;
          end ;

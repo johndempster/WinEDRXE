@@ -416,13 +416,16 @@ unit Mdiform;
   V4.0.3  22.06.22 Event Detector: Set SD x button multiple of S.D. can now be set by user
                    mid-point alignment algorithm improved to make it more robust with noisy waveforms.
   V4.0.4  06.02.23 Rec.pas Continuous recording option added which overrides RecordingDuration
+  V4.0.5  12.05.23 EDR File header size now increased to avoid overflow when more than 16 channels in file
+                   EDRFileUnit.pas replaces fileio,global,shared.pas
+          23.05.23 rec.pas Failure of writing to file to keep up when sampling slowly now fixed.
   =======================================================================}
 
 interface
 
 uses
   SysUtils, WinTypes, WinProcs, Messages, Classes, Graphics, Controls,
-  Forms, Dialogs, Menus, Global, FileIo, Shared,
+  Forms, Dialogs, Menus,
   PrintRec, Rec, SealTest, ViewSig,
   About, Log, defset, ced1902u, simmepc, SingleChanAnal,
   simnoise, simchan, NoiseAnal, digfilt, SESLabIO, ComCtrls,
@@ -528,7 +531,6 @@ type
     procedure mnOpenClick(Sender: TObject);
     procedure mnZoomInClick(Sender: TObject);
     procedure Exit1Click(Sender: TObject);
-    procedure FormDestroy(Sender: TObject);
     procedure mnZoomOutAllClick(Sender: TObject);
     procedure mnCloseClick(Sender: TObject);
     procedure mnPrintClick(Sender: TObject);
@@ -597,20 +599,6 @@ type
   public
     { Public declarations }
     //SetupChanged : Boolean ;
-    Version : string ;
-    ProgDirectory : string ;      // Program folder
-    SettingsDirectory : String ;  // Settings folder
-    SettingsFileName : String ;   // Settings file name
-    DataDirectory : string ;
-    VProtDirectory : string ;
-
-   // Cell parameters
-   RSeal : Single ; // Seal Resistance (Ohms)
-   Gm : Single ;    // Cell membrane conductance (S)
-   Ga : Single ;    // Pipette access conductance (S)
-   Cm : Single ;    // Cell capacity (F)
-   Vm : Single ;    // Cell membrane voltage (V)
-   Im : Single ;    // Cell membrane current (A)
 
     procedure SetCopyMenu( EnableCopyData, EnableCopyImage : boolean ) ;
     procedure UpdateWindows ;
@@ -618,13 +606,9 @@ type
     procedure ClearTicksInViewMenu ;
     procedure CopyAndPrintMenus( CopyEnabled,PrintEnabled : Boolean ) ;
     procedure CloseFormsAndDataFile( CloseAllForms : Boolean ) ;
-    procedure LoadDataFiles( FileName : string ) ;
-    procedure CloseDataFile ;
-    function CreateNewDataFile( var FHeader : TCDRFileHeader ) : Boolean ;
     procedure SetRecentFileItem( MenuItem : TMenuItem ; FileName : string ) ;
     procedure UpdateViewSig ;
     procedure UpdateMDIWindows ;
-    procedure UpdateChannelScalingFactors ;
     procedure UpdateAllDisplays ;
     function FormExists( FormName : String ) : Boolean ;
     function GetSpecialFolder(const ASpecialFolderID: Integer): string;
@@ -643,7 +627,7 @@ implementation
 uses AmpModule, Invert, EventDetector, PageView, EditMarkers,
   Import, ImportASCIIUnit, maths , ECG, ImportRawUnit, VP500Panel,
   FilePropsUnit, DBSPanelUnit, LabInterfaceSetup,
-  InputChannelSetup, EditProtocolUnit , DCLAMPUnit, exportUnit;
+  InputChannelSetup, EditProtocolUnit , DCLAMPUnit, exportUnit, EDRFileUnit;
 
 {$R *.DFM}
 
@@ -655,306 +639,10 @@ var
    i,ch : Integer ;
    FileName : String ;
 begin
-     Version := 'V4.0.4' ;
-     Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
 
-      { Get directory which contains EDR program }
-      Main.ProgDirectory := ExtractFilePath(ParamStr(0)) ;
-      Application.HelpFile := Main.ProgDirectory + 'WinEDR.chm';
+     EDRFile.Version := 'V4.0.5' ;
+     Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + EDRFile.Version ;
 
-      { Create channel names list }
-      ChannelNames := TStringList.Create ;
-
-      { Create default set of record types }
-      RecordTypes := TStringList.Create ;
-      RecordTypes.Add( 'ALL' ) ;
-      RecordTypes.Add( 'EVOK' ) ;
-      RecordTypes.Add( 'MINI' ) ;
-      RecordTypes.Add( 'FAIL' ) ;
-      RecordTypes.Add( 'TEST' ) ;
-      RecordTypes.Add( 'LEAK' ) ;
-
-     { Default values for channels }
-
-     CdrFH.NumChannels := 1 ;
-     CdrFH.NumSamplesInFile := 0 ;
-     CdrFH.NumBytesInHeader := NumBytesInHeader ;
-     CdrFH.ADCVoltageRange := 5.0 ;
-     CdrFH.dt := 0.001 ;
-     CdrFH.Version := 6.1 ;
-     for ch := 0 to EDRChannelLimit do begin
-         Channel[ch].TimeZero := 1. ;
-         Channel[ch].ADCScale := 1. ;
-         Channel[ch].CursorIndex := 128 ;
-         Channel[ch].ZeroIndex := 0 ;
-         Channel[ch].Cursor0 := 0 ;
-         Channel[ch].Cursor1 := 256 ;
-         { Zero levels fixed at hardware zero }
-         Channel[ch].ADCZero := 0 ;
-         Channel[ch].ADCZeroAt := -1 ;
-         Channel[ch].ADCCalibrationFactor := 0.001 ;
-         Channel[ch].ADCAmplifierGain := 1. ;
-         Channel[ch].ADCCalibrationBar := 0.0 ;
-         Channel[ch].ADCUnits := 'mV' ;
-         Channel[ch].ADCName := format('Ch.%d',[ch]);
-         Channel[ch].ChannelOffset := ch ;
-         Channel[ch].color := clBlue ;
-         Channel[ch].xMin := 0. ;
-         Channel[ch].xMax := CdrFH.NumSamples-1 ;
-         Channel[ch].yMin := -32768 ;
-         Channel[ch].yMax := 32767 ;
-         Channel[ch].InUse := True ;
-         //Channel[ch] := Channel[ch] ;
-         end ;
-
-     CdrFH.WCPFileName := '' ;
-
-     { Initialise to no laboratory interface }
-     Settings.LaboratoryInterface := NoInterface12 ;
-     Settings.DeviceNumber := 1 ;
-     Settings.ADCSamplingInterval := 0.001 ;
-     //Settings.ADCVoltageRangeIndex := 0 ;
-     Settings.NumChannels := 1 ;
-     Settings.StartStimulusOnRecord := False ;
-
-     Settings.TriggerMode := 'F' ;
-     Settings.ExternalTriggerActiveHigh := False ;
-     Settings.EventDetector.Channel := 0 ;
-     Settings.EventDetector.DetectionMode := 0 ;
-     Settings.EventDetector.yThreshold := 0. ;
-     Settings.EventDetector.tThreshold := CdrFH.dt*10.0 ;
-     Settings.EventDetector.BaselineAveragingInterval := 1.0 ;
-     Settings.EventDetector.PreTriggerFraction := 0.1 ;
-     Settings.EventDetector.AnalysisWindow := 512 ;
-     Settings.EventDetector.RecordSize := 512 ;
-     Settings.EventDetector.DeadTime := CdrFH.dt*Settings.EventDetector.RecordSize ;
-     Settings.EventDetector.TauRise := CdrFH.dt*2 ;
-     Settings.EventDetector.TauDecay := CdrFH.dt*100.0 ;
-     Settings.EventDetector.PositivePeaks := True ;
-     Settings.EventDetector.Baseline := 0 ;
-     Settings.EventDetector.SubtractBaseline := False ;
-     Settings.EventDetector.NumBaselinePoints := 20 ;
-     Settings.EventDetector.NumBaselineGap := 0 ;
-     Settings.EventDetector.TDecayPercent := 90.0 ;
-     Settings.EventDetector.TDecayFrom := 0 ;
-     Settings.EventDetector.RisingEdgeWindow := 20 ;
-     Settings.EventDetector.AvgFrequencyInterval := 1.0 ;
-     Settings.EventDetector.EnableBaselineTracking := True ;
-     Settings.EventDetector.Alignment := 0 ;
-     Settings.EventDetector.AmpSDScale := 4.0 ;
-
-     Settings.DwellTimes.ChanNum := 0 ;
-     Settings.DwellTimes.RecordSize := 512 ;
-     Settings.DwellTimes.Threshold := 0.5 ;
-
-     Settings.ContinuousRecording := True ;
-     Settings.NumTriggerSweeps := 1 ;
-     Settings.RecordDuration := 10. ;
-     Settings.DisplayDuration := 10.0 ;
-     Settings.DisplayGrid := True ;
-     mnDisplayGrid.Checked := Settings.DisplayGrid ;
-     
-     Settings.FixedZeroLevels := False ;
-
-     Settings.CutOffFrequency := 0. ;
-     Settings.NewCalculation := False ;
-
-     { Minimum interval for updating D/A converters when
-       generating command voltage waveforms }
-     Settings.MinDACInterval := 0.001 ;
-
-     Settings.TUnits := 's' ;
-     Settings.TScale := 1.0 ;
-     Settings.TUnScale := 1.0 ;
-     Settings.TBarValue := 0.0 ;
-
-     { Name of command voltage protocol file in current use }
-     Settings.VProgramFileName := '' ;
-
-     { Divide factor that the patch/voltage clamp applies to its
-       command voltage input. The D/A output voltage is thus scaled up
-       by this factor }
-//     Main.VProtDirectory := Settings.ProgDirectory + 'Stim\' ;
-
-     // Create settings directory
-     SettingsDirectory := GetSpecialFolder(CSIDL_COMMON_DOCUMENTS) + '\WinEDR\';
-     if not SysUtils.DirectoryExists(SettingsDirectory) then begin
-        if SysUtils.ForceDirectories(SettingsDirectory) then
-           WriteToLogFile( 'Settings folder ' + SettingsDirectory + ' created.')
-        else WriteToLogFile( 'Unable to create settings folder' + SettingsDirectory) ;
-        end ;
-     SettingsFileName := SettingsDirectory + 'winedr.ini' ;
-
-     // Stimulus protocols folder
-     Main.VProtDirectory := GetSpecialFolder(CSIDL_COMMON_DOCUMENTS) + '\WinEDR\stim\';
-      if not SysUtils.DirectoryExists(Main.VProtDirectory) then begin
-         if SysUtils.ForceDirectories(Main.VProtDirectory) then
-            WriteToLogFile( 'Protocols folder ' + Main.VProtDirectory + ' created.')
-         else WriteToLogFile( 'Unable to create protocols folder' + Main.VProtDirectory) ;
-         end ;
-
-      // Create default data directory (in My Documents)
-      Main.DataDirectory := GetSpecialFolder(CSIDL_PERSONAL) + '\WinEDR Data\';
-      if not SysUtils.DirectoryExists(Main.DataDirectory) then begin
-         if SysUtils.ForceDirectories(Main.DataDirectory) then
-            WriteToLogFile( 'Data folder ' + Main.DataDirectory + ' created.')
-         else WriteToLogFile( 'Unable to create data folder' + Main.DataDirectory) ;
-         end ;
-
-    { for i := 0 to High(Settings.VCommand) do begin
-         Settings.VCommand[i].DivideFactor := 1. ;
-         Settings.VCommand[i].HoldingVoltage := 0. ;
-         Settings.VCommand[i].HoldingVoltageIncrement := 0. ;
-         Settings.VCommand[i].HoldingVoltageAlt := 0. ;
-         end ; }
-
-  //   Settings.DigitalOutputs := 0 ;
-     Settings.UpdateOutputs := True ;
-     Settings.DACSelected := 0 ;
-
-     { Default settings for seal test pulse }
-     Settings.SealTest.Use := 1 ;
-     Settings.SealTest.PulseHeight1 := 0.01 ;
-     Settings.SealTest.HoldingVoltage1 := 0. ;
-     Settings.SealTest.PulseHeight2 := 0.01 ;
-     Settings.SealTest.HoldingVoltage2 := 0. ;
-     Settings.SealTest.PulseHeight3 := 0.0 ;
-     Settings.SealTest.HoldingVoltage3 := 0. ;
-
-     Settings.SealTest.PulseWidth:= 0.03 ;
-     Settings.SealTest.CurrentChannel := 0 ;
-     Settings.SealTest.VoltageChannel := 1 ;
-     Settings.SealTest.AutoScale := True ;
- //    Settings.SealTest.DACNum := 0 ;
-     Settings.SealTest.NumAverages := 10 ;
-
-     { Set flag indicating this is the first sweep, to force an autoscale }
-     Settings.SealTest.FirstSweep := True ;
-
-     Settings.Colors.Cursors := clWhite ;
-     Settings.Colors.Grid := clAqua ;
-
-     Settings.Plot.TopMargin := 50.0 ;
-     Settings.Plot.LeftMargin := 50.0 ;
-     Settings.Plot.BottomMargin := 50.0 ;
-     Settings.Plot.RightMargin := 25.0 ;
-     Settings.Plot.FontName := 'Arial' ;
-     Settings.Plot.FontSize := 12 ;
-     Settings.Plot.LineThickness := 2 ;
-     Settings.Plot.MarkerSize := 5 ;
-     Settings.Plot.ShowLines := True ;
-     Settings.Plot.ShowMarkers := True ;
-     Settings.Plot.MetafileWidth := 600 ;
-     Settings.Plot.MetafileHeight := 500 ;
-
-     { Bitmap size for images copied to clipboard }
-     Settings.BitmapWidth := 600 ;
-     Settings.BitmapHeight := 500 ;
-
-     Main.DataDirectory := '' ;
-
-     { Settings for record hard copy plots }
-     Settings.ShowLabels := True ;
-     Settings.ShowZeroLevels := True ;
-
-     { Default settings for fluorescence ratio analysis }
-     Settings.Fluorescence.InUse := False ;
-     Settings.Fluorescence.MinChannels := 3 ;
-     Settings.Fluorescence.RMax := 1.0 ;
-     Settings.Fluorescence.RMin := 0.0 ;
-     Settings.Fluorescence.KEff := 1.0 ;
-     Settings.Fluorescence.FThreshold := 0.0 ;
-     Settings.Fluorescence.NumerChan := 0 ;
-     Settings.Fluorescence.DenomChan := 1 ;
-     Settings.Fluorescence.RatioChan := 2 ;
-     Settings.Fluorescence.ConcChan := 3 ;
-     Settings.Fluorescence.RatioDisplayMax := 10.0 ;
-     Settings.Fluorescence.ConcDisplayMax := 1.0 ;
-     Settings.Fluorescence.IonName := 'Ca' ;
-     Settings.Fluorescence.IonUnits := 'uM' ;
-
-     { Default settings for cell capacity analysis }
-     Settings.Capacity.InUse := False ;
-     Settings.Capacity.MinChannels := 7 ;
-     Settings.Capacity.ImChan := 0 ;
-     Settings.Capacity.VmChan := 1 ;
-     Settings.Capacity.GrealChan := 2 ;
-     Settings.Capacity.GimagChan := 3 ;
-     Settings.Capacity.GmChan := 4 ;
-     Settings.Capacity.GsChan := 5 ;
-     Settings.Capacity.CmChan := 6 ;
-     Settings.Capacity.CmDisplayMax := 200.0 ;
-     Settings.Capacity.GmDisplayMax := 10.0 ;
-     Settings.Capacity.GsDisplayMax := 500.0 ;
-     Settings.Capacity.Frequency := 1000.0 ;
-     Settings.Capacity.VRev := 0.0 ;
-     Settings.Capacity.InvertGReal := False ;
-     Settings.Capacity.InvertGImag := False ;
-     Settings.Capacity.GChannelsUseGainTelegraph := False ;
-     Settings.Capacity.SineWaveRMS := 0.01 ;
-     Settings.Capacity.CapacityCompensationInUse := False ;
-     Settings.Capacity.RSeriesComp := 0.0 ;
-     Settings.Capacity.CellCapacityComp := 0.0 ;
-
-     // Default settings for realtime event analysis
-     Settings.RTEventAnalysis.InUse := False ;
-     Settings.RTEventAnalysis.Channel := 0 ;
-     Settings.RTEventAnalysis.DetectionThreshold := 10.0 ;
-     Settings.RTEventAnalysis.RunningMeanTime := 1.0 ;
-     Settings.RTEventAnalysis.DeadTime := 0.1 ;
-     Settings.RTEventAnalysis.CountingInterval := 1.0 ;
-
-     // Default settings for real-time resistance analysis
-     Settings.RTResistance.InUse := False ;
-     Settings.RTResistance.ImChannel := 0 ;
-     Settings.RTResistance.VmChannel := 1 ;
-     Settings.RTResistance.Amplitude := 0.01 ;
-     Settings.RTResistance.Duration := 0.02 ;
-     Settings.RTResistance.Interval := 1.0 ;
-     Settings.RTResistance.Plot := 2 ;
-
-     Settings.PageViewLinesPerPage := 8 ;
-     Settings.PageViewLineDuration := 1.0 ;
-
-    // Simulated post-synaptic current settings
-    Settings.SimEPC.Duration := 10.0 ;
-    Settings.SimEPC.Amplitude := 1.0 ;
-    Settings.SimEPC.AmplitudeSD := 0.1 ;
-    Settings.SimEPC.TauRise := 1E-4 ;
-    Settings.SimEPC.TauDecay := 2E-3 ;
-    Settings.SimEPC.NoiseSD := 0.05 ;
-    Settings.SimEPC.Frequency := 10.0 ;
-    Settings.SimEPC.FrequencySD := 0.0 ;
-    Settings.SimEPC.Delay := 0.0 ;
-    Settings.SimEPC.RandomEvents := True ;
-    Settings.SimEPC.SineAmplitude := 0.0 ;
-    Settings.SimEPC.SineFrequency := 50.0 ;
-    Settings.SimEPC.UnitsIndex := 0 ;
-    Settings.SimEPC.ReleaseProbability := 1.0 ;
-    Settings.SimEPC.ReleasablePool := 100 ;
-    Settings.SimEPC.Depression := 0.0 ;
-    Settings.SimEPC.TauDepression := 1.0  ;
-
-
-    Cm := 0.0 ;
-    Gm := 0.0 ;
-    Ga := 0.0 ;
-    RSeal := 0.0 ;
-
-     MarkerList := TStringList.Create ;
-
-     { Set the file names and handles for all header blocks to null }
-     CdrFH.FileHandle := -1 ;
-     CdrFH.FileName := '' ;
-
-     SetMenus ;
-
-     // Load initialization file to get name of last data file used }
-     LoadInitializationFile( SettingsFileName ) ;
-     if Main.DataDirectory = '' then
-        Main.DataDirectory := Main.GetSpecialFolder(CSIDL_PERSONAL) + '\WinEDR Data\';
-     if Main.VProtDirectory = '' then
-        Main.VProtDirectory := GetSpecialFolder(CSIDL_COMMON_DOCUMENTS) + '\WinEDR\stim\';
 
      { Name of last used data file returned in fH.FileName }
 
@@ -972,34 +660,37 @@ begin
 
      { Add names of recently accessed data files to Files menu }
      mnRecentFileSeparator.Visible := False ;
-     SetRecentFileItem( mnRecentFile0, Settings.RecentFiles[0] ) ;
-     SetRecentFileItem( mnRecentFile1, Settings.RecentFiles[1] ) ;
-     SetRecentFileItem( mnRecentFile2, Settings.RecentFiles[2] ) ;
-     SetRecentFileItem( mnRecentFile3, Settings.RecentFiles[3] ) ;
+     SetRecentFileItem( mnRecentFile0, EDRFile.Settings.RecentFiles[0] ) ;
+     SetRecentFileItem( mnRecentFile1, EDRFile.Settings.RecentFiles[1] ) ;
+     SetRecentFileItem( mnRecentFile2, EDRFile.Settings.RecentFiles[2] ) ;
+     SetRecentFileItem( mnRecentFile3, EDRFile.Settings.RecentFiles[3] ) ;
 
      { Open log file (contains log of program activity) }
-     OpenLogFile ;
-     WriteToLogFile( 'EDR Started' ) ;
+     EDRFile.OpenLogFile ;
+     EDRFile.WriteToLogFile( 'WinEDR Started' ) ;
 
      // Set channel display limits to whole ADC data range
-     for ch := 0 to EDRChannelLimit do begin
-         Channel[ch].xMin := 0. ;
-         Channel[ch].xMax := CdrFH.NumSamples-1 ;
-         Channel[ch].Cursor1 := CdrFH.NumSamples div 2 ;
-         Channel[ch].yMin := SESLabIO.ADCMinValue ;
-         Channel[ch].yMax := SESLabIO.ADCMaxValue ;
+     for ch := 0 to EDRChannelLimit do
+         begin
+         EDRFile.Channel[ch].xMin := 0. ;
+         EDRFile.Channel[ch].xMax := EDRFile.CdrFH.NumSamples-1 ;
+         EDRFile.Channel[ch].Cursor1 := EDRFile.CdrFH.NumSamples div 2 ;
+         EDRFile.Channel[ch].yMin := SESLabIO.ADCMinValue ;
+         EDRFile.Channel[ch].yMax := SESLabIO.ADCMaxValue ;
          end ;
 
      { Open a data file if one has been supplied in parameter string }
      FileName :=  '' ;
-     for i := 1 to ParamCount do begin
+     for i := 1 to ParamCount do
+         begin
          if i > 1 then FileName := FileName + ' ' ;
          FileName := FileName + ParamStr(i) ;
          end ;
 
-     if ANSIContainsText( ExtractFileExt(FileName),'.edr') then begin
+     if ANSIContainsText( ExtractFileExt(FileName),'.edr') then
+        begin
         if FileExists(FileName) then begin
-           if (FileGetAttr(FileName) AND faReadOnly) = 0 then LoadDataFiles(FileName)
+           if (FileGetAttr(FileName) AND faReadOnly) = 0 then EDRFile.LoadDataFiles(FileName)
            else ShowMessage( FileName + ' is READ-ONLY. Unable to open!') ;
 
            end ;
@@ -1037,20 +728,22 @@ begin
      { Get the name of a data file from user }
      OpenDialog.options := [ofPathMustExist] ;
      OpenDialog.DefaultExt := DataFileExtension ;
-     if Main.DataDirectory <> '' then begin
-        OpenDialog.InitialDir := Main.DataDirectory ;
+     if EDRFile.DataDirectory <> '' then
+        begin
+        OpenDialog.InitialDir := EDRFile.DataDirectory ;
         OpenDialog.FileName := '' ;
         end ;
      OpenDialog.Filter := format( ' EDR Files (*%s)|*%s',
                                   [DataFileExtension,DataFileExtension]) ;
      OpenDialog.Title := 'Open File ' ;
 
-     if OpenDialog.execute then begin
-        CdrFH.FileName := OpenDialog.FileName ;
-        LoadDataFiles( CdrFH.FileName ) ;
+     if OpenDialog.execute then
+        begin
+        EDRFile.CdrFH.FileName := OpenDialog.FileName ;
+        EDRFile.LoadDataFiles( EDRFile.CdrFH.FileName ) ;
 
         { Save data directory }
-        Main.DataDirectory := ExtractFilePath( CdrFH.FileName ) ;
+        EDRFile.DataDirectory := ExtractFilePath( EDRFile.CdrFH.FileName ) ;
 
         // Update list of recently used files
         UpdateRecentFilesList ;
@@ -1060,104 +753,6 @@ begin
      SetMenus ;
      end;
 
-
-procedure TMain.LoadDataFiles( FileName : string ) ;
-{ -------------------------------------------
-  Load EDR data file and any associated files
-  -------------------------------------------}
-var
-   ch : Integer ;
-   OK : Boolean ;
-begin
-
-     OK := False ;
-     if FileExists( FileName ) then OK := True ;
-     if OK then begin
-        if (FileGetAttr(FileName) AND faReadOnly) <> 0 then begin
-           OK := False ;
-           ShowMessage( FileName + ' is READ-ONLY. Unable to open!' ) ;
-           end ;
-        end ;
-
-     if OK then begin
-        { Open data file }
-        CdrFH.Filename := ChangeFileExt(FileName,DataFileExtension) ;
-        CdrFH.FileHandle := FileOpen( CdrFH.FileName, fmOpenReadWrite ) ;
-        Main.Caption := 'WinEDR ' + Version + ' ' + FileName ;
-        if CdrFH.Filehandle >= 0 then begin
-            { Load the raw file details }
-            GetCDRHeader( CdrFH ) ;
-            { Make sure all channels are visible }
-            for ch := 0 to CdrFH.NumChannels-1 do Channel[ch].InUse := True ;
-            WriteToLogFile( CdrFH.FileName + ' opened' ) ;
-            // Update open windows with new file info.
-            UpdateMDIWindows ;
-            end
-        else begin
-             ShowMessage( format(' File Error =%d',[CdrFH.Filehandle]) ) ;
-             OK := False ;
-             end ;
-        end ;
-
-     // Close windows if file could not be opened
-     if not OK then CloseFormsAndDataFile( AllForms ) ;
-
-     SetMenus ;
-     end ;
-
-
-function TMain.CreateNewDataFile(
-         var FHeader : TCDRFileHeader
-         ) : Boolean ;
-{ --------------------------
-  Create a new EDR data file
-  --------------------------
-  10/7/01 ... Associated .REC and .WCE files now deleted when new file created }
-var
-   ch : Integer ;
-begin
-     { Close any existing file }
-     if FHeader.FileHandle >= 0 then begin
-        FileClose( FHeader.FileHandle ) ;
-        FHeader.FileHandle := -1 ;
-        end ;
-
-     { Create a new file }
-     FHeader.FileHandle := FileCreate( FHeader.FileName ) ;
-     if FHeader.FileHandle >= 0 then begin
-
-        { No data points }
-        FHeader.NumSamplesInFile := 0 ;
-        { No saved file }
-        FHeader.WCPFileName := '' ;
-        { No back up file }
-        FHeader.BackedUp := False ;
-
-        FHeader.CreationTime := DateTimeToStr(Now) ;
-        
-        { Turn all channels on }
-        for ch := 0 to FHeader.NumChannels-1 do Channel[ch].InUse := True ;
-        // Clear markers
-        MarkerList.Clear ;
-
-        { Save initial values to header block }
-        SaveCDRHeader( FHeader ) ;
-        // Delete event file associated with a previous data file of same name
-        if FileExists(ChangeFileExt(FHeader.FileName,EventFileExtension)) then
-           DeleteFile(PChar(ChangeFileExt(FHeader.FileName,EventFileExtension))) ;
-        // Delete variance record file associated with a previous data file of same name
-        if FileExists(ChangeFileExt(FHeader.FileName,'.rec')) then
-           DeleteFile(PChar(ChangeFileExt(FHeader.FileName,'.rec'))) ;
-
-        Result := True ;
-        end
-     else begin
-        ShowMessage( 'Error: Could not create ' + FHeader.FileName ) ;
-        Result := False ;
-        end ;
-
-     Caption := 'File: ' + CDRFH.FileName ;
-     end ;
 
 
 procedure TMain.mnZoomInClick(Sender: TObject);
@@ -1173,7 +768,7 @@ begin
 
      if ActiveMDIChild.Name = 'RecordFrm' then begin
         // Use Recording channels if recording form is active
-        for ch := 0 to Settings.NumChannels-1 do begin
+        for ch := 0 to EDRFile.Settings.NumChannels-1 do begin
             mnZoomIn.Items[ch].Caption := format( 'Ch.%d (%s)',
                                          [ch,Main.SESLabIO.ADCChannelName[ch]]) ;
             mnZoomIn.Items[ch].Tag := ch ;
@@ -1182,9 +777,8 @@ begin
          end
      else begin
         // Otherwise use file channels
-        for ch := 0 to CDRFH.NumChannels-1 do begin
-            mnZoomIn.Items[ch].Caption := format( 'Ch.%d (%s)',
-                                         [ch,Channel[ch].ADCName]) ;
+        for ch := 0 to EDRFile.CDRFH.NumChannels-1 do begin
+            mnZoomIn.Items[ch].Caption := format( 'Ch.%d (%s)',[ch,EDRFile.Channel[ch].ADCName]) ;
             mnZoomIn.Items[ch].Tag := ch ;
             mnZoomIn.Items[ch].Visible := True ;
             end ;
@@ -1202,13 +796,6 @@ begin
      end;
 
 
-procedure TMain.FormDestroy(Sender: TObject);
-begin
-     RecordTypes.Free ;
-     ChannelNames.Free ;
-     end;
-
-
 procedure TMain.mnZoomOutAllClick(Sender: TObject);
 { - Menu Item ---------------------------------
   Set display channels to minimum magnification
@@ -1219,9 +806,10 @@ begin
 
      if MDIChildCount <= 0 then Exit ;
 
-     for ch := 0 to EDRChannelLimit do begin
-         Channel[ch].yMin := -Channel[ch].ADCMaxValue -1 ;
-         Channel[ch].yMax := Channel[ch].ADCMaxValue ;
+     for ch := 0 to EDRChannelLimit do
+         begin
+         EDRFile.Channel[ch].yMin := -EDRFile.Channel[ch].ADCMaxValue -1 ;
+         EDRFile.Channel[ch].yMax := EDRFile.Channel[ch].ADCMaxValue ;
          Main.SESLabIO.ADCChannelYMin[ch] := -Main.SESLabIO.ADCMaxValue -1 ;
          Main.SESLabIO.ADCChannelYMax[ch] := Main.SESLabIO.ADCMaxValue ;
          end ;
@@ -1256,8 +844,6 @@ procedure TMain.mnCloseClick(Sender: TObject);
 begin
      { Close all child windows and data files }
      CloseFormsAndDataFile( AllForms ) ;
-     CdrFH.FileName := '' ;
-     CdrFH.FileHandle := -1 ;
 
      end ;
 
@@ -1271,7 +857,8 @@ var
 begin
 
      { Close all child windows }
-     for i := 0 to MDIChildCount-1 do begin
+     for i := 0 to MDIChildCount-1 do
+         begin
          if CloseAllForms or
             ((MDICHildren[i].Name <> 'RecordFrm') and
              (MDICHildren[i].Name <> 'RecPlotFrm') and
@@ -1279,28 +866,16 @@ begin
          end ;
 
      { Close files }
-     CloseDataFile ;
+     EDRFile.CloseDataFile ;
 
      { Allow form close messages to be processed before continuing }
      Application.ProcessMessages ;
 
      SetMenus ;
 
-     Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + Version ;
+     Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + EDRFile.Version ;
 
      end ;
-
-
-procedure TMain.CloseDataFile ;
-// --------------------------------
-// Close data file (if one is open)
-// --------------------------------
-begin
-     if  CdrFH.FileHandle >= 0 then begin
-         FileClose(CdrFH.FileHandle) ;
-         CdrFH.FileHandle := -1 ;
-         end ;
-     end;
 
 
 procedure TMain.UpdateRecentFilesList ;
@@ -1312,19 +887,19 @@ var
 begin
 
      // If same file has been opened again, don't update
-     if Settings.RecentFiles[0] = CDRFH.FileName then Exit ;
+     if EDRFile.Settings.RecentFiles[0] = EDRFile.CDRFH.FileName then Exit ;
 
      // Shift list along
-     for i := High(Settings.RecentFiles) downto 1 do
-         Settings.RecentFiles[i] := Settings.RecentFiles[i-1] ;
-     Settings.RecentFiles[0] := CDRFH.FileName ;
+     for i := High(EDRFile.Settings.RecentFiles) downto 1 do
+         EDRFile.Settings.RecentFiles[i] := EDRFile.Settings.RecentFiles[i-1] ;
+     EDRFile.Settings.RecentFiles[0] := EDRFile.CDRFH.FileName ;
 
      { Update list in Files menu }
      mnRecentFileSeparator.Visible := False ;
-     SetRecentFileItem( mnRecentFile0, Settings.RecentFiles[0] ) ;
-     SetRecentFileItem( mnRecentFile1, Settings.RecentFiles[1] ) ;
-     SetRecentFileItem( mnRecentFile2, Settings.RecentFiles[2] ) ;
-     SetRecentFileItem( mnRecentFile3, Settings.RecentFiles[3] ) ;
+     SetRecentFileItem( mnRecentFile0, EDRFile.Settings.RecentFiles[0] ) ;
+     SetRecentFileItem( mnRecentFile1, EDRFile.Settings.RecentFiles[1] ) ;
+     SetRecentFileItem( mnRecentFile2, EDRFile.Settings.RecentFiles[2] ) ;
+     SetRecentFileItem( mnRecentFile3, EDRFile.Settings.RecentFiles[3] ) ;
 
      end ;
 
@@ -1395,31 +970,33 @@ begin
      { Present user with standard Save File dialog box }
      SaveDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofPathMustExist] ;
      SaveDialog.DefaultExt := DataFileExtension ;
-     SaveDialog.FileName := CreateIndexedFileName( Settings.RecentFiles[0] ) ;
-     SaveDialog.Filter := format( ' EDR Files (*%s)|*%s',
-                                  [DataFileExtension,DataFileExtension]) ;
+     SaveDialog.FileName := CreateIndexedFileName( EDRFile.Settings.RecentFiles[0] ) ;
+     SaveDialog.Filter := format( ' EDR Files (*%s)|*%s',[DataFileExtension,DataFileExtension]) ;
      SaveDialog.Title := 'New Data File' ;
 
-     if Main.DataDirectory <> '' then begin
-        SaveDialog.InitialDir := Main.DataDirectory ;
-        SetCurrentDir(Main.DataDirectory) ;
+     if EDRFile.DataDirectory <> '' then
+        begin
+        SaveDialog.InitialDir := EDRFile.DataDirectory ;
+        SetCurrentDir(EDRFile.DataDirectory) ;
         end ;
 
      { Create new data file }
-     if SaveDialog.execute then begin
+     if SaveDialog.execute then
+        begin
 
         { Save data directory }
-        Main.DataDirectory := ExtractFilePath( SaveDialog.FileName ) ;
-        CdrFH.FileName := SaveDialog.FileName ;
-        CdrFH.FileName := ChangeFileExt( CdrFH.FileName, DataFileExtension ) ;
-        OK := CreateNewDataFile( CdrFH ) ;
-        if OK then begin
+        EDRFile.DataDirectory := ExtractFilePath( SaveDialog.FileName ) ;
+        EDRFile.CdrFH.FileName := SaveDialog.FileName ;
+        EDRFile.CdrFH.FileName := ChangeFileExt( EDRFile.CdrFH.FileName, DataFileExtension ) ;
+        OK := EDRFile.CreateNewDataFile( EDRFile.CdrFH ) ;
+        if OK then
+           begin
            { Close again to permit re-opening by LoadDataFiles }
            CloseFormsAndDataFile( AllExceptRecordFrm ) ; ;
-           WriteToLogFile( 'New file ' + CdrFH.FileName ) ;
+           EDRFile.WriteToLogFile( 'New file ' + EDRFile.CdrFH.FileName ) ;
 
            { Re-open data file }
-           LoadDataFiles( CdrFH.FileName ) ;
+           EDRFile.LoadDataFiles( EDRFile.CdrFH.FileName ) ;
 
            // Update recording window
            if FormExists('RecordFrm') then RecordFrm.NewFile ;
@@ -1467,7 +1044,7 @@ begin
      Simulations1.Enabled := False ;
 
      { Enable setup, recording and simulation ... if a data file is open }
-     if CdrFH.FileHandle >= 0 then begin
+     if EDRFile.CdrFH.FileHandle >= 0 then begin
            { Allow these functions when a data file is open }
            mnClose.Enabled := True ;
            mnFileProperties.Enabled := True ;
@@ -1476,7 +1053,7 @@ begin
            mnAppend.Enabled := True ;
 
            { Enable these functions when file contains data records }
-           if CdrFH.NumSamplesInFile > 0 then begin
+           if EDRFile.CdrFH.NumSamplesInFile > 0 then begin
               Analysis.Enabled := True ;
               mnPrint.Enabled := True ;
               mnExport.Enabled := True ;
@@ -1486,7 +1063,7 @@ begin
            end ;
 
      { If a back up is available, enabled restore menu option }
-     mnRestoreOriginal.Enabled := CdrFH.BackedUp ;
+     mnRestoreOriginal.Enabled := EDRFile.CdrFH.BackedUp ;
      end ;
 
 
@@ -1567,7 +1144,7 @@ begin
 
      if ImportFromDataFile then begin ;
         { Open new data file }
-        LoadDataFiles( CdrFH.FileName ) ;
+        EDRFile.LoadDataFiles( EDRFile.CdrFH.FileName ) ;
         // Update list of recently used files
         UpdateRecentFilesList ;
         // Update windows
@@ -1634,12 +1211,9 @@ begin
         CloseFormsAndDataFile( AllForms ) ;
 
         { Close log file }
-        CloseLogFile ;
+        EDRFile.CloseLogFile ;
         { Save initialization file }
-        SaveInitializationFile( SettingsFileName ) ;
-
-        // Dispose of marker list
-        MarkerList.Free ;
+        EDRFile.SaveInitializationFile( EDRFile.SettingsFileName ) ;
 
         end;
 
@@ -1721,9 +1295,9 @@ begin
      { Get the name of a data file from user }
      OpenDialog.options := [ofPathMustExist] ;
      OpenDialog.DefaultExt := DataFileExtension ;
-     if Main.DataDirectory <> '' then begin
-        OpenDialog.InitialDir := Main.DataDirectory ;
-        SetCurrentDir(Main.DataDirectory) ;
+     if EDRFile.DataDirectory <> '' then begin
+        OpenDialog.InitialDir := EDRFile.DataDirectory ;
+        SetCurrentDir(EDRFile.DataDirectory) ;
         end ;
      OpenDialog.Filter := format( ' EDR Files (*%s)|*%s',
                                   [DataFileExtension,DataFileExtension]) ;
@@ -1731,7 +1305,7 @@ begin
 
      if not OpenDialog.execute then Exit ;
 
-     if OpenDialog.FileName = CdrFH.FileName then begin
+     if OpenDialog.FileName = EDRFile.CdrFH.FileName then begin
         MessageDlg( 'APPEND: Can''t append file to itself',mtWarning, [mbOK], 0 ) ;
         Exit ;
         end ;
@@ -1898,7 +1472,7 @@ procedure TMain.mnRestoreOriginalClick(Sender: TObject);
   -------------------------------------- }
 begin
      Screen.Cursor := crHourGlass ;
-     RestoreFromBackupFile ;
+     EDRFile.RestoreFromBackupFile ;
      Screen.Cursor := crDefault ;
      UpdateViewSig ;
      end ;
@@ -1931,7 +1505,7 @@ begin
          end ;
 
      { If no replay form ... create one }
-     if (CdrfH.NumSamplesInFile > 0) and (not ViewSigExists) then
+     if (EDRFile.CdrfH.NumSamplesInFile > 0) and (not ViewSigExists) then
         ViewSigFrm := TViewSigFrm.Create(Self) ;
 
      end;
@@ -1947,15 +1521,15 @@ begin
 
      { Close existing data file }
      CloseFormsAndDataFile( AllForms ) ;
-     
+
      { Get file name. Note, the .Tag property of the menu item was set
        at design time to point to the appropriate RecentFiles array item }
-     FileName := Settings.RecentFiles[TMenuItem(Sender).Tag] ;
+     FileName := EDRFile.Settings.RecentFiles[TMenuItem(Sender).Tag] ;
      if (FileName <> '') and FileExists(FileName) then begin
 
        { OldNumSamples := RawFH.NumSamples ;}
 
-        LoadDataFiles(FileName) ;
+        EDRFile.LoadDataFiles(FileName) ;
 
         { Set display magnification to minimum }
 {        if CdrFH.NumRecords > 0 then begin
@@ -1976,8 +1550,8 @@ procedure TMain.mnDisplayGridClick(Sender: TObject);
 var
    i : Integer ;
 begin
-     Settings.DisplayGrid := not Settings.DisplayGrid ;
-     mnDisplayGrid.Checked := Settings.DisplayGrid ;
+     EDRFile.Settings.DisplayGrid := not EDRFile.Settings.DisplayGrid ;
+     mnDisplayGrid.Checked := EDRFile.Settings.DisplayGrid ;
      for i := 0 to MDIChildCount-1 do begin
           if MDIChildren[I].Name = 'ViewSigFrm' then
              TViewSigFrm(MDIChildren[I]).ChangeDisplayGrid
@@ -2034,30 +1608,6 @@ begin
           end ;
      end;
 
-procedure TMain.UpdateChannelScalingFactors ;
-// ------------------------------
-// Update channel scaling factors
-// ------------------------------
-var
-   ch : Integer ;
-begin
-     for ch := 0 to CDRFH.NumChannels-1 do begin
-
-         // Ensure that calibration factor is non-zero
-         if Channel[ch].ADCCalibrationFactor = 0.0 then
-            Channel[ch].ADCCalibrationFactor := 0.001 ;
-
-         // Ensure that amplifier gain is non-zero
-         if Channel[ch].ADCAmplifierGain = 0.0 then
-            Channel[ch].ADCAmplifierGain := 1.0 ;
-
-         // Calculate bits->units scaling factor
-         Channel[ch].ADCScale := Abs(CDRFH.ADCVoltageRange) /
-                                (Channel[ch].ADCCalibrationFactor*
-                                 Channel[ch].ADCAmplifierGain
-                                 *(Channel[ch].ADCMaxValue+1) ) ;
-         end ;
-     end ;
 
 
 procedure TMain.mnInvertClick(Sender: TObject);
@@ -2131,7 +1681,7 @@ begin
         CopyImage.Enabled := False ;
         end ;
 
-     if CDRFH.FileHandle >= 0 then mnEditMarkers.Enabled := True
+     if EDRFile.CDRFH.FileHandle >= 0 then mnEditMarkers.Enabled := True
                               else mnEditMarkers.Enabled := False ;
 
      end;
@@ -2212,7 +1762,7 @@ begin
      EditMarkersFrm.showmodal ;
 
      // Save settings
-     SaveCDRHeader( CDRFH ) ;
+     EDRFile.SaveHeader( EDRFile.CDRFH ) ;
 
      // Update display
      if FormExists('ViewSigFrm') then ViewSigFrm.DisplayFromFile ;
@@ -2288,27 +1838,27 @@ begin
      OpenDialog.FileName := '' ;
 
      OpenDialog.Title := 'Import File ' ;
-     if Main.DataDirectory <> '' then begin
-        OpenDialog.InitialDir := Main.DataDirectory ;
-        SetCurrentDir(Main.DataDirectory) ;
+     if EDRFile.DataDirectory <> '' then begin
+        OpenDialog.InitialDir := EDRFile.DataDirectory ;
+        SetCurrentDir(EDRFile.DataDirectory) ;
         end ;
 
      if not OpenDialog.execute then Exit ;
 
-     Main.DataDirectory := ExtractFilePath( OpenDialog.FileName ) ;
+     EDRFile.DataDirectory := ExtractFilePath( OpenDialog.FileName ) ;
      FileType := Filters[OpenDialog.FilterIndex].FType ;
      FileName := OpenDialog.FileName ;
 
      { Close existing data file }
-     if CdrFH.FileHandle >= 0 then begin
-        FileClose( CdrFH.FileHandle ) ;
-        CdrFH.FileHandle := -1 ;
+     if EDRFile.CdrFH.FileHandle >= 0 then begin
+        FileClose( EDRFile.CdrFH.FileHandle ) ;
+        EDRFile.CdrFH.FileHandle := -1 ;
         end ;
 
      { Create name of EDR file to hold imported file }
-     CdrFH.FileName := ChangeFileExt( FileName, DataFileExtension ) ;
+     EDRFile.CdrFH.FileName := ChangeFileExt( FileName, DataFileExtension ) ;
      { Make sure an existing data file is not overwritten, unintentionally }
-     if not FileOverwriteCheck( CdrFH.FileName ) then Exit ;
+     if not EDRFile.FileOverwriteCheck( EDRFile.CdrFH.FileName ) then Exit ;
 
      // Report progress
      Main.StatusBar.SimpleText := format(
@@ -2337,18 +1887,18 @@ begin
         end ;
 
      { Create EDR data file to hold import}
-     if not CreateNewDataFile( CdrFH ) then Exit ;
+     if not EDRFile.CreateNewDataFile( EDRFile.CdrFH ) then Exit ;
 
-     CdrFH.NumChannels := Main.ImportFile.NumChannelsPerScan ;
+     EDRFile.CdrFH.NumChannels := Main.ImportFile.NumChannelsPerScan ;
 
      // Reset display magnification
      for ch := 0 to EDRChannelLimit do begin
-         Channel[ch].ADCMaxValue := Main.ImportFile.MaxADCValue ;
-         Channel[ch].yMin := -Channel[ch].ADCMaxValue -1 ;
-         Channel[ch].yMax := Channel[ch].ADCMaxValue ;
+         EDRFile.Channel[ch].ADCMaxValue := Main.ImportFile.MaxADCValue ;
+         EDRFile.Channel[ch].yMin := -EDRFile.Channel[ch].ADCMaxValue -1 ;
+         EDRFile.Channel[ch].yMax := EDRFile.Channel[ch].ADCMaxValue ;
          end ;
 
-     CdrFH.IdentLine := Main.ImportFile.IdentLine ;
+     EDRFile.CdrFH.IdentLine := Main.ImportFile.IdentLine ;
 
      // Allocate buffer
      GetMem( Buf, Main.ImportFile.NumScansPerRecord*Main.ImportFile.NumChannelsPerScan*2 ) ;
@@ -2358,14 +1908,14 @@ begin
      for iRec := 1 to Main.ImportFile.NumRecords do begin
 
          Main.ImportFile.RecordNum := iRec ;
-         CdrFH.ADCVoltageRange := Main.ImportFile.ChannelADCVoltageRange[0] ;
+         EDRFile.CdrFH.ADCVoltageRange := Main.ImportFile.ChannelADCVoltageRange[0] ;
          for ch := 0 to Main.ImportFile.NumChannelsPerScan-1 do begin
-             Channel[ch].ChannelOffset := Main.ImportFile.ChannelOffset[ch] ;
-             Channel[ch].ADCName := Main.ImportFile.ChannelName[ch] ;
-             Channel[ch].ADCUnits := Main.ImportFile.ChannelUnits[ch] ;
-             Channel[ch].ADCSCale := Main.ImportFile.ChannelScale[ch] ;
-             Channel[ch].ADCCalibrationFactor := Main.ImportFile.ChannelCalibrationFactor[ch] ;
-             Channel[ch].ADCAmplifierGain := Main.ImportFile.ChannelGain[ch] ;
+             EDRFile.Channel[ch].ChannelOffset := Main.ImportFile.ChannelOffset[ch] ;
+             EDRFile.Channel[ch].ADCName := Main.ImportFile.ChannelName[ch] ;
+             EDRFile.Channel[ch].ADCUnits := Main.ImportFile.ChannelUnits[ch] ;
+             EDRFile.Channel[ch].ADCSCale := Main.ImportFile.ChannelScale[ch] ;
+             EDRFile.Channel[ch].ADCCalibrationFactor := Main.ImportFile.ChannelCalibrationFactor[ch] ;
+             EDRFile.Channel[ch].ADCAmplifierGain := Main.ImportFile.ChannelGain[ch] ;
              end ;
 
          NumRead := Main.ImportFile.LoadADCBuffer( 0, Main.ImportFile.NumScansPerRecord, Buf^ ) ;
@@ -2374,18 +1924,18 @@ begin
          { Copy sampling interval and A/D range
            NOTE. Must be after ImportFile.LoadADCBuffer() to ensure scan interval and ADCVoltageRange valid}
 
-         CdrFH.dt := Main.ImportFile.ScanInterval ;
-         CdrFH.ADCVoltageRange := Main.ImportFile.ChannelADCVoltageRange[0] ;
+         EDRFile.CdrFH.dt := Main.ImportFile.ScanInterval ;
+         EDRFile.CdrFH.ADCVoltageRange := Main.ImportFile.ChannelADCVoltageRange[0] ;
 
          // Correct calibration factor for any differences between
          for ch := 0 to Main.ImportFile.NumChannelsPerScan-1 do begin
-             Channel[ch].ADCCalibrationFactor := Main.ImportFile.ChannelCalibrationFactor[ch]*
+             EDRFile.Channel[ch].ADCCalibrationFactor := Main.ImportFile.ChannelCalibrationFactor[ch]*
                                                  (Main.ImportFile.ChannelADCVoltageRange[0]/
                                                   Main.ImportFile.ChannelADCVoltageRange[ch])  ;
              end ;
 
          { Write A/D samples to EDR file }
-         WriteCDRBuffer( CdrFH,NumScansTotal,Buf^,NumRead ) ;
+         EDRFile.WriteBuffer( EDRFile.CdrFH,NumScansTotal,Buf^,NumRead ) ;
 
          NumScansTotal := NumScansTotal + NumRead ;
 
@@ -2401,11 +1951,11 @@ begin
 
      FreeMem(Buf) ;
 
-     CDRfH.NumSamplesInFile := NumScansTotal*CdrFH.NumChannels ;
-     for ch := 0 to CdrFH.NumChannels-1 do
-         Channel[ch].ADCScale := CalibFactorToADCScale(
-                                 CdrFH.ADCVoltageRange,
-                                 Channel[ch] ) ;
+     EDRFile.CDRfH.NumSamplesInFile := NumScansTotal*EDRFile.CdrFH.NumChannels ;
+     for ch := 0 to EDRFile.CdrFH.NumChannels-1 do
+        EDRFile.Channel[ch].ADCScale := EDRFile.CalibFactorToADCScale(
+                                 EDRFile.CdrFH.ADCVoltageRange,
+                                 EDRFile.Channel[ch] ) ;
 
      // Final progress
      Main.StatusBar.SimpleText := format(
@@ -2414,19 +1964,19 @@ begin
       Main.ImportFile.NumScansPerRecord,
       Main.ImportFile.NumChannelsPerScan,
       FileName,
-      CDRFH.FileName]) ;
-     WriteToLogFile( Main.StatusBar.SimpleText ) ;
+      EDRFile.CDRFH.FileName]) ;
+     EDRFile.WriteToLogFile( Main.StatusBar.SimpleText ) ;
 
      { Save file header }
-     SaveCDRHeader( CdrFH ) ;
+     EDRFile.SaveHeader( EDRFile.CdrFH ) ;
 
      { Close source file }
      Main.ImportFile.CloseDataFile ;
 
      { Close dest. file }
-     if CdrFH.FileHandle >= 0 then begin
-        FileClose( CdrFH.FileHandle ) ;
-        CdrFH.FileHandle := -1 ;
+     if EDRFile.CdrFH.FileHandle >= 0 then begin
+        FileClose( EDRFile.CdrFH.FileHandle ) ;
+        EDRFile.CdrFH.FileHandle := -1 ;
         end ;
 
      Result := True ;
@@ -2454,23 +2004,23 @@ begin
      { Open data file to be imported }
      if not Main.ImportFile.OpenDataFile( FileName, ftEDR ) then Exit ;
 
-     if (CdrFH.NumChannels <> Main.ImportFile.NumChannelsPerScan) then begin
+     if (EDRFile.CdrFH.NumChannels <> Main.ImportFile.NumChannelsPerScan) then begin
         ShowMessage( 'APPEND: Unable to append files with different numbers of channels!');
         Exit ;
         end ;
 
-     if Channel[0].ADCMaxValue <> Main.ImportFile.MaxADCValue then begin
+     if EDRFile.Channel[0].ADCMaxValue <> Main.ImportFile.MaxADCValue then begin
         ShowMessage( 'APPEND: Unable to append files with different A/D resolutions!');
         Exit ;
         end ;
 
-     if CDRFH.dt <> Main.ImportFile.ScanInterval then begin
+     if EDRFile.CDRFH.dt <> Main.ImportFile.ScanInterval then begin
         ShowMessage( 'APPEND: Unable to append files with different sampling intervals!');
         Exit ;
         end ;
 
      { Copy records }
-     NumScansOriginal := CDRFH.NumSamplesInFile div CDRFH.NumChannels ;
+     NumScansOriginal := EDRFile.CDRFH.NumSamplesInFile div EDRFile.CDRFH.NumChannels ;
      NumScansTotal := NumScansOriginal ;
      for iRec := 1 to Main.ImportFile.NumRecords do begin
 
@@ -2485,7 +2035,7 @@ begin
 
              { Write A/D samples to EDR file }
              NumWrite := Min(NumRead,NumScansToRead) ;
-             WriteCDRBuffer( CdrFH,NumScansTotal,Buf,NumWrite ) ;
+             EDRFile.WriteBuffer( EDRFile.CdrFH,NumScansTotal,Buf,NumWrite ) ;
 
              NumScans := NumScans + NumRead ;
              NumScansToRead := NumScansToRead - NumRead ;
@@ -2510,16 +2060,16 @@ begin
      'APPEND: %d records (%dx%d channel scans) imported from %s',
      [Main.ImportFile.NumRecords,
       NumScansTotal - NumScansOriginal,
-      CdrFH.NumChannels,
+      EDRFile.CdrFH.NumChannels,
       FileName]) ;
-     WriteToLogFile( Main.StatusBar.SimpleText ) ;
+     EDRFile.WriteToLogFile( Main.StatusBar.SimpleText ) ;
 
-     CDRfH.NumSamplesInFile := NumScansTotal*CdrFH.NumChannels ;
+     EDRFile.CDRfH.NumSamplesInFile := NumScansTotal*EDRFile.CdrFH.NumChannels ;
 
      { Save file header }
-     SaveCDRHeader( CdrFH ) ;
+     EDRFile.SaveHeader( EDRFile.CdrFH ) ;
 
-     WriteToLogFile( FileName + ' appended to ' + CdrFH.FileName ) ;
+     EDRFile.WriteToLogFile( FileName + ' appended to ' + EDRFile.CdrFH.FileName ) ;
 
      { Close source file }
      Main.ImportFile.CloseDataFile ;
@@ -2633,7 +2183,7 @@ begin
 
      if ActiveMDIChild.Name = 'RecordFrm' then begin
         // Use Recording channels if recording form is active
-        for ch := 0 to Settings.NumChannels-1 do begin
+        for ch := 0 to EDRFile.Settings.NumChannels-1 do begin
             mnZoomOut.Items[ch].Caption := format( 'Ch.%d (%s)',
                                          [ch,Main.SESLabIO.ADCChannelName[ch]]) ;
             mnZoomOut.Items[ch].Tag := ch ;
@@ -2642,9 +2192,9 @@ begin
          end
      else begin
         // Otherwise use file channels
-        for ch := 0 to CDRFH.NumChannels-1 do begin
+        for ch := 0 to EDRFile.CDRFH.NumChannels-1 do begin
             mnZoomOut.Items[ch].Caption := format( 'Ch.%d (%s)',
-                                         [ch,Channel[ch].ADCName]) ;
+                                         [ch,EDRFile.Channel[ch].ADCName]) ;
             mnZoomOut.Items[ch].Tag := ch ;
             mnZoomOut.Items[ch].Visible := True ;
             end ;
@@ -2728,9 +2278,9 @@ procedure TMain.ViewClick(Sender: TObject);
 // ------------------------------
 begin
 
-     mnDisplayGrid.Checked := Settings.DisplayGrid ;
+     mnDisplayGrid.Checked := EDRFile.Settings.DisplayGrid ;
 
-     if (CDRFH.NumSamplesInFile > 0) and (CDRFH.FileHandle >=0) then begin
+     if (EDRFile.CDRFH.NumSamplesInFile > 0) and (EDRFile.CDRFH.FileHandle >=0) then begin
         mnViewSig.Enabled := True ;
         mnPageView.Enabled := True ;
         end

@@ -131,6 +131,10 @@ object EditProtocolFrm: TEditProtocolFrm
     object StimulusTab: TTabSheet
       Caption = 'Waveforms'
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object ProtocolGrp: TGroupBox
         Left = 100
         Top = 0
@@ -11098,6 +11102,10 @@ object EditProtocolFrm: TEditProtocolFrm
       object AO3Tab: TTabSheet
         Caption = 'AO3'
         ImageIndex = 3
+        ExplicitLeft = 0
+        ExplicitTop = 0
+        ExplicitWidth = 0
+        ExplicitHeight = 0
         object AO3StimGrp: TGroupBox
           Left = 2
           Top = 0

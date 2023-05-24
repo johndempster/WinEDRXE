@@ -144,7 +144,7 @@ var
 
 implementation
 
-uses Mdiform, Rec;
+uses Mdiform, Rec, EDRFileUnit;
 
 {$R *.DFM}
 
@@ -169,7 +169,7 @@ begin
      cbGsChan.Clear ;
      cbGmChan.Clear ;
      cbCmChan.Clear ;
-     for ch := 0 to Settings.NumChannels-1 do
+     for ch := 0 to EDRFile.Settings.NumChannels-1 do
          begin
          Item := format('Ch.%d %s',[ch,Main.SESLabIO.ADCChannelName[ch]]) ;
          cbNumerChan.items.add( Item ) ;
@@ -186,40 +186,40 @@ begin
          end ;
 
      { Set Fluorescence channel and parameters }
-     SetChannel( cbNumerChan, Settings.Fluorescence.NumerChan ) ;
-     SetChannel( cbDenomChan, Settings.Fluorescence.DenomChan ) ;
-     ckRatioInUse.Checked := SetChannel( cbRatioChan, Settings.Fluorescence.RatioChan ) ;
-     ckConcInUse.Checked := SetChannel( cbConcChan, Settings.Fluorescence.ConcChan ) ;
+     SetChannel( cbNumerChan, EDRFile.Settings.Fluorescence.NumerChan ) ;
+     SetChannel( cbDenomChan, EDRFile.Settings.Fluorescence.DenomChan ) ;
+     ckRatioInUse.Checked := SetChannel( cbRatioChan, EDRFile.Settings.Fluorescence.RatioChan ) ;
+     ckConcInUse.Checked := SetChannel( cbConcChan, EDRFile.Settings.Fluorescence.ConcChan ) ;
 
-     edRMax.Value := Settings.Fluorescence.RMax ;
-     edRMin.Value := Settings.Fluorescence.RMin ;
-     edKeff.Value := Settings.Fluorescence.Keff ;
-     edFThreshold.Value := Settings.Fluorescence.FThreshold ;
-     edRatioDisplayMax.Value := Settings.Fluorescence.RatioDisplayMax ;
-     edConcDisplayMax.Value := Settings.Fluorescence.ConcDisplayMax ;
-     edIonName.Text := Settings.Fluorescence.IonName ;
-     edIonUnits.Text := Settings.Fluorescence.IonUnits ;
+     edRMax.Value := EDRFile.Settings.Fluorescence.RMax ;
+     edRMin.Value := EDRFile.Settings.Fluorescence.RMin ;
+     edKeff.Value := EDRFile.Settings.Fluorescence.Keff ;
+     edFThreshold.Value := EDRFile.Settings.Fluorescence.FThreshold ;
+     edRatioDisplayMax.Value := EDRFile.Settings.Fluorescence.RatioDisplayMax ;
+     edConcDisplayMax.Value := EDRFile.Settings.Fluorescence.ConcDisplayMax ;
+     edIonName.Text := EDRFile.Settings.Fluorescence.IonName ;
+     edIonUnits.Text := EDRFile.Settings.Fluorescence.IonUnits ;
 
      { Set capacity channels and parameters }
-     SetChannel( cbGrealChan, Settings.Capacity.GrealChan ) ;
-     SetChannel( cbGimagChan, Settings.Capacity.GimagChan ) ;
-     SetChannel( cbImChan, Settings.Capacity.ImChan ) ;
-     SetChannel( cbVmChan, Settings.Capacity.VmChan ) ;
-     ckGsInUse.Checked := SetChannel( cbGsChan, Settings.Capacity.GsChan ) ;
-     ckGmInUse.Checked := SetChannel( cbGmChan, Settings.Capacity.GmChan ) ;
-     ckCmInUse.Checked := SetChannel( cbCmChan, Settings.Capacity.CmChan ) ;
+     SetChannel( cbGrealChan, EDRFile.Settings.Capacity.GrealChan ) ;
+     SetChannel( cbGimagChan, EDRFile.Settings.Capacity.GimagChan ) ;
+     SetChannel( cbImChan, EDRFile.Settings.Capacity.ImChan ) ;
+     SetChannel( cbVmChan, EDRFile.Settings.Capacity.VmChan ) ;
+     ckGsInUse.Checked := SetChannel( cbGsChan, EDRFile.Settings.Capacity.GsChan ) ;
+     ckGmInUse.Checked := SetChannel( cbGmChan, EDRFile.Settings.Capacity.GmChan ) ;
+     ckCmInUse.Checked := SetChannel( cbCmChan, EDRFile.Settings.Capacity.CmChan ) ;
 
-     edCmDisplayMax.Value := Settings.Capacity.CmDisplayMax ;
-     edGmDisplayMax.Value := Settings.Capacity.GmDisplayMax ;
-     edGsDisplayMax.Value := Settings.Capacity.GsDisplayMax ;
-     edFrequency.Value := Settings.Capacity.Frequency ;
-     edVRev.Value := Settings.Capacity.VRev ;
-     ckInvertGReal.Checked := Settings.Capacity.InvertGReal ;
-     ckInvertGImag.Checked := Settings.Capacity.InvertGImag ;
-     ckGChannelsUseGainTelegraph.Checked := Settings.Capacity.GChannelsUseGainTelegraph ;
-     ckCapacityCompensationInUse.Checked := Settings.Capacity.CapacityCompensationInUse ;
-     edRSeriesComp.Value := Settings.Capacity.RSeriesComp ;
-     edCellCapacityComp.Value := Settings.Capacity.CellCapacityComp ;
+     edCmDisplayMax.Value := EDRFile.Settings.Capacity.CmDisplayMax ;
+     edGmDisplayMax.Value := EDRFile.Settings.Capacity.GmDisplayMax ;
+     edGsDisplayMax.Value := EDRFile.Settings.Capacity.GsDisplayMax ;
+     edFrequency.Value := EDRFile.Settings.Capacity.Frequency ;
+     edVRev.Value := EDRFile.Settings.Capacity.VRev ;
+     ckInvertGReal.Checked := EDRFile.Settings.Capacity.InvertGReal ;
+     ckInvertGImag.Checked := EDRFile.Settings.Capacity.InvertGImag ;
+     ckGChannelsUseGainTelegraph.Checked := EDRFile.Settings.Capacity.GChannelsUseGainTelegraph ;
+     ckCapacityCompensationInUse.Checked := EDRFile.Settings.Capacity.CapacityCompensationInUse ;
+     edRSeriesComp.Value := EDRFile.Settings.Capacity.RSeriesComp ;
+     edCellCapacityComp.Value := EDRFile.Settings.Capacity.CellCapacityComp ;
 
      // Set event detection parameters
      cbChannel.Items.Clear ;
@@ -227,16 +227,16 @@ begin
         begin
         cbChannel.Items.Add(format('Ch.%d %s',[ch,Main.SESLabIO.ADCChannelName[ch]])) ;
         end ;
-     cbChannel.ItemIndex := Min( Settings.RTEventAnalysis.Channel,
+     cbChannel.ItemIndex := Min( EDRFile.Settings.RTEventAnalysis.Channel,
                                  Main.SESLabIO.ADCNumChannels-1 ) ;
 
-     edDetectionThreshold.Value := Settings.RTEventAnalysis.DetectionThreshold ;
-     edDetectionThreshold.Units := Main.SESLabIO.ADCChannelUnits[Settings.RTEventAnalysis.Channel] ;
+     edDetectionThreshold.Value := EDRFile.Settings.RTEventAnalysis.DetectionThreshold ;
+     edDetectionThreshold.Units := Main.SESLabIO.ADCChannelUnits[EDRFile.Settings.RTEventAnalysis.Channel] ;
      edRunningMeanTime.LoLimit := Main.SESLabIO.ADCSamplingInterval ;
-     edRunningMeanTime.Value := Settings.RTEventAnalysis.RunningMeanTime ;
+     edRunningMeanTime.Value := EDRFile.Settings.RTEventAnalysis.RunningMeanTime ;
      edDeadTime.LoLimit := Main.SESLabIO.ADCSamplingInterval ;
-     edDeadTime.Value := Settings.RTEventAnalysis.DeadTime ;
-     edEventCountingInterval.Value := Settings.RTEventAnalysis.CountingInterval ;
+     edDeadTime.Value := EDRFile.Settings.RTEventAnalysis.DeadTime ;
+     edEventCountingInterval.Value := EDRFile.Settings.RTEventAnalysis.CountingInterval ;
 
      // Set resistance parameters
      cbImRes.Items.Clear ;
@@ -246,13 +246,13 @@ begin
         cbImRes.Items.Add(format('Ch.%d %s',[ch,Main.SESLabIO.ADCChannelName[ch]])) ;
         cbVmRes.Items.Add(format('Ch.%d %s',[ch,Main.SESLabIO.ADCChannelName[ch]])) ;
         end ;
-     cbImRes.ItemIndex := Min( Settings.RTResistance.ImChannel,Main.SESLabIO.ADCNumChannels-1 ) ;
-     cbVmRes.ItemIndex := Min( Settings.RTResistance.VmChannel,Main.SESLabIO.ADCNumChannels-1 ) ;
+     cbImRes.ItemIndex := Min( EDRFile.Settings.RTResistance.ImChannel,Main.SESLabIO.ADCNumChannels-1 ) ;
+     cbVmRes.ItemIndex := Min( EDRFile.Settings.RTResistance.VmChannel,Main.SESLabIO.ADCNumChannels-1 ) ;
 
-     edResAmplitude.Value := Settings.RTResistance.Amplitude ;
-     edResDuration.Value := Settings.RTResistance.Duration ;
-     edResInterval.Value := Settings.RTResistance.Interval ;
-     cbResPlot.ItemIndex := Min(Max(Settings.RTResistance.Plot,0),cbResPlot.Items.Count-1) ;
+     edResAmplitude.Value := EDRFile.Settings.RTResistance.Amplitude ;
+     edResDuration.Value := EDRFile.Settings.RTResistance.Duration ;
+     edResInterval.Value := EDRFile.Settings.RTResistance.Interval ;
+     cbResPlot.ItemIndex := Min(Max(EDRFile.Settings.RTResistance.Plot,0),cbResPlot.Items.Count-1) ;
 
      end;
 
@@ -316,58 +316,58 @@ procedure TSetCompFrm.bOKClick(Sender: TObject);
   ------------------------------------- }
 begin
      { Set fluorescence channel selections }
-     Settings.Fluorescence.NumerChan := GetChannel( cbNumerChan, True ) ;
-     Settings.Fluorescence.DenomChan := GetChannel( cbDenomChan, True ) ;
-     Settings.Fluorescence.RatioChan :=  GetChannel( cbRatioChan, ckRatioInUse.Checked ) ;
-     Settings.Fluorescence.ConcChan := GetChannel( cbConcChan, ckConcInUse.Checked ) ;
+     EDRFile.Settings.Fluorescence.NumerChan := GetChannel( cbNumerChan, True ) ;
+     EDRFile.Settings.Fluorescence.DenomChan := GetChannel( cbDenomChan, True ) ;
+     EDRFile.Settings.Fluorescence.RatioChan :=  GetChannel( cbRatioChan, ckRatioInUse.Checked ) ;
+     EDRFile.Settings.Fluorescence.ConcChan := GetChannel( cbConcChan, ckConcInUse.Checked ) ;
 
-     Settings.Fluorescence.RMax := edRMax.Value ;
-     Settings.Fluorescence.RMin := edRMin.Value ;
-     Settings.Fluorescence.Keff := edKeff.Value ;
-     Settings.Fluorescence.FThreshold := edFThreshold.Value ;
-     Settings.Fluorescence.RatioDisplayMax := edRatioDisplayMax.Value ;
-     Settings.Fluorescence.ConcDisplayMax := edConcDisplayMax.Value ;
-     Settings.Fluorescence.IonName := edIonName.Text ;
-     Settings.Fluorescence.IonUnits := edIonUnits.Text ;
+     EDRFile.Settings.Fluorescence.RMax := edRMax.Value ;
+     EDRFile.Settings.Fluorescence.RMin := edRMin.Value ;
+     EDRFile.Settings.Fluorescence.Keff := edKeff.Value ;
+     EDRFile.Settings.Fluorescence.FThreshold := edFThreshold.Value ;
+     EDRFile.Settings.Fluorescence.RatioDisplayMax := edRatioDisplayMax.Value ;
+     EDRFile.Settings.Fluorescence.ConcDisplayMax := edConcDisplayMax.Value ;
+     EDRFile.Settings.Fluorescence.IonName := edIonName.Text ;
+     EDRFile.Settings.Fluorescence.IonUnits := edIonUnits.Text ;
 
      { Set capacity channel selections }
-     Settings.Capacity.GrealChan := Getchannel( cbGrealChan, True ) ;
+     EDRFile.Settings.Capacity.GrealChan := Getchannel( cbGrealChan, True ) ;
      
-     Settings.Capacity.GimagChan := Getchannel( cbGimagChan, True  ) ;
-     Settings.Capacity.ImChan := Getchannel( cbImChan, True  ) ;
-     Settings.Capacity.VmChan := Getchannel( cbVmChan, True  ) ;
-     Settings.Capacity.GsChan := Getchannel(cbGsChan,ckGsInUse.Checked) ;
-     Settings.Capacity.GmChan := Getchannel( cbGmChan, ckGmInUse.Checked) ;
-     Settings.Capacity.CmChan := Getchannel( cbCmChan, ckCmInUse.Checked) ;
+     EDRFile.Settings.Capacity.GimagChan := Getchannel( cbGimagChan, True  ) ;
+     EDRFile.Settings.Capacity.ImChan := Getchannel( cbImChan, True  ) ;
+     EDRFile.Settings.Capacity.VmChan := Getchannel( cbVmChan, True  ) ;
+     EDRFile.Settings.Capacity.GsChan := Getchannel(cbGsChan,ckGsInUse.Checked) ;
+     EDRFile.Settings.Capacity.GmChan := Getchannel( cbGmChan, ckGmInUse.Checked) ;
+     EDRFile.Settings.Capacity.CmChan := Getchannel( cbCmChan, ckCmInUse.Checked) ;
 
-     Settings.Capacity.CmDisplayMax := edCmDisplayMax.Value ;
-     Settings.Capacity.GmDisplayMax := edGmDisplayMax.Value ;
-     Settings.Capacity.GsDisplayMax := edGsDisplayMax.Value ;
-     Settings.Capacity.Frequency := edFrequency.Value ;
-     Settings.Capacity.VRev := edVRev.Value ;
-     Settings.Capacity.InvertGReal := ckInvertGREal.Checked ;
-     Settings.Capacity.InvertGImag := ckInvertGImag.Checked ;
-     Settings.Capacity.GChannelsUseGainTelegraph := ckGChannelsUseGainTelegraph .Checked  ;
-     Settings.Capacity.CapacityCompensationInUse := ckCapacityCompensationInUse.Checked ;
-     Settings.Capacity.RSeriesComp := edRSeriesComp.Value ;
-     Settings.Capacity.CellCapacityComp := edCellCapacityComp.Value ;
+     EDRFile.Settings.Capacity.CmDisplayMax := edCmDisplayMax.Value ;
+     EDRFile.Settings.Capacity.GmDisplayMax := edGmDisplayMax.Value ;
+     EDRFile.Settings.Capacity.GsDisplayMax := edGsDisplayMax.Value ;
+     EDRFile.Settings.Capacity.Frequency := edFrequency.Value ;
+     EDRFile.Settings.Capacity.VRev := edVRev.Value ;
+     EDRFile.Settings.Capacity.InvertGReal := ckInvertGREal.Checked ;
+     EDRFile.Settings.Capacity.InvertGImag := ckInvertGImag.Checked ;
+     EDRFile.Settings.Capacity.GChannelsUseGainTelegraph := ckGChannelsUseGainTelegraph .Checked  ;
+     EDRFile.Settings.Capacity.CapacityCompensationInUse := ckCapacityCompensationInUse.Checked ;
+     EDRFile.Settings.Capacity.RSeriesComp := edRSeriesComp.Value ;
+     EDRFile.Settings.Capacity.CellCapacityComp := edCellCapacityComp.Value ;
 
      // Set event detection parameters
-     Settings.RTEventAnalysis.Channel := cbChannel.ItemIndex ;
-     Settings.RTEventAnalysis.DetectionThreshold := edDetectionThreshold.Value ;
-     Settings.RTEventAnalysis.RunningMeanTime := edRunningMeanTime.Value ;
-     Settings.RTEventAnalysis.DeadTime := edDeadTime.Value ;
-     Settings.RTEventAnalysis.CountingInterval := edEventCountingInterval.Value ;
+     EDRFile.Settings.RTEventAnalysis.Channel := cbChannel.ItemIndex ;
+     EDRFile.Settings.RTEventAnalysis.DetectionThreshold := edDetectionThreshold.Value ;
+     EDRFile.Settings.RTEventAnalysis.RunningMeanTime := edRunningMeanTime.Value ;
+     EDRFile.Settings.RTEventAnalysis.DeadTime := edDeadTime.Value ;
+     EDRFile.Settings.RTEventAnalysis.CountingInterval := edEventCountingInterval.Value ;
 
      // Set resistance parameters
-     Settings.RTResistance.ImChannel := cbImRes.ItemIndex ;
-     Settings.RTResistance.VmChannel := cbVmRes.ItemIndex ;
-     Settings.RTResistance.Amplitude := edResAmplitude.Value ;
-     Settings.RTResistance.Duration := edResDuration.Value ;
-     Settings.RTResistance.Interval := edResInterval.Value ;
-     Settings.RTResistance.Plot := cbResPlot.ItemIndex ;
+     EDRFile.Settings.RTResistance.ImChannel := cbImRes.ItemIndex ;
+     EDRFile.Settings.RTResistance.VmChannel := cbVmRes.ItemIndex ;
+     EDRFile.Settings.RTResistance.Amplitude := edResAmplitude.Value ;
+     EDRFile.Settings.RTResistance.Duration := edResDuration.Value ;
+     EDRFile.Settings.RTResistance.Interval := edResInterval.Value ;
+     EDRFile.Settings.RTResistance.Plot := cbResPlot.ItemIndex ;
 
-     Settings.NewCalculation := True ;
+     EDRFile.Settings.NewCalculation := True ;
 
      Close ;
 

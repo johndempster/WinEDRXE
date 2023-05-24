@@ -28,7 +28,7 @@ implementation
 
 {$R *.DFM}
 
-uses global,fileio ;
+uses EDRFileUnit ;
 
 procedure TInvertDlg.FormShow(Sender: TObject);
 //
@@ -40,8 +40,8 @@ begin
 
      // Fill channel selection list
      cbChannel.Clear ;
-     for ch := 0 to CdrFH.NumChannels-1 do begin
-         cbChannel.items.add( format('Ch.%d %s',[ch,Channel[ch].ADCName]) ) ;
+     for ch := 0 to EDRFile.CdrFH.NumChannels-1 do begin
+         cbChannel.items.add( format('Ch.%d %s',[ch,EDRFile.Channel[ch].ADCName]) ) ;
          end ;
      cbChannel.ItemIndex := 0 ;
 
@@ -65,7 +65,7 @@ var
 begin
 
     // No. of multi-channel sample groups in file
-    NumBlocksInFile := CdrFH.NumSamplesInFile div CdrFH.NumChannels ;
+    NumBlocksInFile := EDRFile.CdrFH.NumSamplesInFile div EDRFile.CdrFH.NumChannels ;
 
     { Initialise progress bar }
     prProgress.Min := 1 ;
@@ -77,16 +77,16 @@ begin
     while not Done do begin
 
        { Read a record from file and add its data to histogram }
-       ReadCDRBuffer(CdrFH,BlockPointer,ADC,NumBlocksPerBuffer) ;
+       EDRFile.ReadBuffer(EDRFile.CdrFH,BlockPointer,ADC,NumBlocksPerBuffer) ;
 
-       j := Channel[cbChannel.ItemIndex].ChannelOffset ;
+       j := EDRFile.Channel[cbChannel.ItemIndex].ChannelOffset ;
         for i := 0 to NumBlocksPerBuffer-1 do begin
             ADC[j] := -ADC[j] ;
-            j := j + CdrFH.NumChannels ;
+            j := j + EDRFile.CdrFH.NumChannels ;
             end ;
 
        { Write record back to file  }
-       WriteCDRBuffer(CdrFH,BlockPointer,ADC,NumBlocksPerBuffer) ;
+       EDRFile.WriteBuffer(EDRFile.CdrFH,BlockPointer,ADC,NumBlocksPerBuffer) ;
 
        // Update progress bar
        prProgress.Position := BlockPointer ;

@@ -87,7 +87,7 @@ type
 
 implementation
 
-uses ComServ, mdiform, global, fileio, sysutils, rec, strutils, math, sealtest, tritonpanelunit ;
+uses ComServ, mdiform, sysutils, rec, strutils, math, sealtest, tritonpanelunit, EDRFileUnit ;
 
 procedure TAUTO.CloseFile;
 // ---------------
@@ -104,16 +104,16 @@ procedure TAUTO.NewFile(FileName: OleVariant);
 // ---------------------
 begin
 
-    CdrFH.FileName := ChangeFileExt( FileName, DataFileExtension ) ;
+    EDRFIle.Cdrfh.FileName := ChangeFileExt( FileName, DataFileExtension ) ;
 
-    if Main.CreateNewDataFile( CdrFH ) then begin
+    if EDRFIle.CreateNewDataFile( EDRFIle.CdrFH ) then begin
        { Close again to permit re-opening by LoadDataFiles }
        Main.CloseFormsAndDataFile( AllForms ) ;
-       WriteToLogFile( 'New file ' + CdrFH.FileName ) ;
+       EDRFIle.WriteToLogFile( 'New file ' + EDRFIle.Cdrfh.FileName ) ;
        { Re-open data file }
-       Main.LoadDataFiles( CdrFH.FileName ) ;
+       EDRFIle.LoadDataFiles( EDRFIle.Cdrfh.FileName ) ;
 
-       Main.DataDirectory := ExtractFilePath( CdrFH.FileName ) ;
+       EDRFIle.DataDirectory := ExtractFilePath( EDRFIle.Cdrfh.FileName ) ;
 
        end ;
 
@@ -130,11 +130,11 @@ begin
 
      if FileExists( FileName ) then begin
 
-        CdrFH.FileName := FileName ;
-        Main.LoadDataFiles( CdrFH.FileName ) ;
+        EDRFIle.Cdrfh.FileName := FileName ;
+        EDRFIle.LoadDataFiles( EDRFIle.Cdrfh.FileName ) ;
 
         { Save data directory }
-        Main.DataDirectory := ExtractFilePath( CdrFH.FileName ) ;
+        EDRFIle.DataDirectory := ExtractFilePath( EDRFIle.Cdrfh.FileName ) ;
 
         end ;
 
@@ -167,7 +167,7 @@ function TAUTO.Get_DACChannel: OleVariant;
 // Return DAC channel selected for updating by HoldingVoltage
 // ----------------------------------------------------------
 begin
-     Result := Settings.DACSelected ;
+     Result := EDRFIle.Settings.DACSelected ;
      end;
 
 
@@ -176,8 +176,8 @@ function TAUTO.Get_HoldingVoltage: OleVariant;
 // Return Holding Voltage on selected DAC output channel
 // ---------------------------------------------------
 begin
-     Result := Main.SESLabIO.DACHoldingVoltage[Settings.DACSelected]*
-               Amplifier.CommandScaleFactor[Settings.DACSelected]*1E3 ;
+     Result := Main.SESLabIO.DACHoldingVoltage[EDRFIle.Settings.DACSelected]*
+               Amplifier.CommandScaleFactor[EDRFIle.Settings.DACSelected]*1E3 ;
      end;
 
 function TAUTO.Get_RecordDuration: OleVariant;
@@ -185,7 +185,7 @@ function TAUTO.Get_RecordDuration: OleVariant;
 // Get recording duration
 // -----------------------
 begin
-     Result := Settings.RecordDuration ;
+     Result := EDRFIle.Settings.RecordDuration ;
      end;
 
 
@@ -194,7 +194,7 @@ function TAUTO.Get_StimulusProtocol: OleVariant;
 // Return current selected stimulus protocol
 // -----------------------------------------
 begin
-     Result := AnsiReplaceText(ExtractFileName( Settings.VProgramFileName),'.sti', '' ) ;
+     Result := AnsiReplaceText(ExtractFileName( EDRFile.Settings.VProgramFileName),'.sti', '' ) ;
      end;
 
 
@@ -203,7 +203,7 @@ function TAUTO.Get_TriggerMode: OleVariant;
 // Return trigger mode (0=free run, 1=ext trigger)
 // -----------------------------------------------
 begin
-    if Settings.TriggerMode = 'F' then Result := 0
+    if EDRFile.Settings.TriggerMode = 'F' then Result := 0
                                   else Result := 1 ;
     end;
 
@@ -213,7 +213,7 @@ procedure TAUTO.Set_DACChannel(Value: OleVariant);
 // Set DAC selected for updating via AUTO interface
 // ------------------------------------------------
 begin
-     Settings.DACSelected := Max(Min(Round(Value),Main.SESLabIO.DACNumChannels-1),0) ;
+     EDRFile.Settings.DACSelected := Max(Min(Round(Value),Main.SESLabIO.DACNumChannels-1),0) ;
      end;
 
 
@@ -222,8 +222,8 @@ procedure TAUTO.Set_HoldingVoltage(Value: OleVariant);
 // Set holding voltage on current selected DAC channel
 // ---------------------------------------------------
 begin
-     Main.SESLabIO.DACHoldingVoltage[Settings.DACSelected] :=
-               Value / (Amplifier.CommandScaleFactor[Settings.DACSelected]*1E3) ;
+     Main.SESLabIO.DACHoldingVoltage[EDRFile.Settings.DACSelected] :=
+               Value / (Amplifier.CommandScaleFactor[EDRFile.Settings.DACSelected]*1E3) ;
      if Main.FormExists('RecordFrm') then RecordFrm.UpdateOutputs ;
      if Main.FormExists('SealTestFrm') then SealTestFrm.HoldingVoltage[1] := Value ;
      end;
@@ -235,7 +235,7 @@ procedure TAUTO.Set_RecordDuration(Value: OleVariant);
 // --------------------
 begin
     If Value <= 0.0 then Exit ;
-    Settings.RecordDuration := Value ;
+    EDRFile.Settings.RecordDuration := Value ;
     if Main.FormExists('RecordFrm') then RecordFrm.RecordDuration := Value ;
     end;
 
@@ -245,7 +245,7 @@ procedure TAUTO.Set_StimulusProtocol(Value: OleVariant);
 // Set stimulus protocol
 // ---------------------
 begin
-     Settings.VProgramFileName := Main.VProtDirectory + Value + '.xml' ;
+     EDRFile.Settings.VProgramFileName := EDRFIle.VProtDirectory + Value + '.xml' ;
      if Main.FormExists('RecordFrm') then RecordFrm.StimulusProtocol := Value ;
      end;
 
@@ -255,8 +255,8 @@ procedure TAUTO.Set_TriggerMode(Value: OleVariant);
 // Set recording sweep trigger mode
 // --------------------------------
 begin
-     if Round(Value) = 0 then Settings.TriggerMode := 'F'
-                         else Settings.TriggerMode := 'E' ;
+     if Round(Value) = 0 then EDRFile.Settings.TriggerMode := 'F'
+                         else EDRFile.Settings.TriggerMode := 'E' ;
      if Main.FormExists('RecordFrm') then RecordFrm.TriggerMode := Round(Value) ;
      end;
 
@@ -288,7 +288,7 @@ function TAUTO.Get_NumTriggerSweeps: OleVariant;
 // Return no. of externally triggered sweeps required
 // --------------------------------------------------
 begin
-     Result := Settings.NumTriggerSweeps ;
+     Result := EDRFile.Settings.NumTriggerSweeps ;
      end;
 
 
@@ -297,9 +297,9 @@ procedure TAUTO.Set_NumTriggerSweeps(Value: OleVariant);
 // Set no. of externally triggered sweeps required
 // --------------------------------------------------
 begin
-     Settings.NumTriggerSweeps := Max(Round(Value),1) ;
+     EDRFile.Settings.NumTriggerSweeps := Max(Round(Value),1) ;
      if Main.FormExists('RecordFrm') then
-        RecordFrm.NumTriggerSweeps := Settings.NumTriggerSweeps ;
+        RecordFrm.NumTriggerSweeps := EDRFile.Settings.NumTriggerSweeps ;
      end;
 
 
@@ -308,7 +308,7 @@ function TAUTO.Get_Cm: OleVariant;
 // Read cell membrane capacity
 // ---------------------------
 begin
-     Result := Main.Cm ;
+     Result := EDRFIle.Cm ;
      end;
 
 
@@ -317,7 +317,7 @@ function TAUTO.Get_Ga: OleVariant;
 // Read pipette access conductance
 // ---------------------------
 begin
-     Result := Main.Ga ;
+     Result := EDRFIle.Ga ;
      end;
 
 function TAUTO.Get_Gm: OleVariant;
@@ -325,7 +325,7 @@ function TAUTO.Get_Gm: OleVariant;
 // Read cell membrane conductance
 // ---------------------------
 begin
-     Result := Main.Gm ;
+     Result := EDRFIle.Gm ;
      end;
 
 function TAUTO.Get_RSeal: OleVariant;
@@ -333,7 +333,7 @@ function TAUTO.Get_RSeal: OleVariant;
 // Read seal resistance
 // ---------------------------
 begin
-     Result := Main.RSeal ;
+     Result := EDRFIle.RSeal ;
      end;
 
 function TAUTO.Get_SealTestPulseAmplitude: OleVariant;
@@ -341,12 +341,12 @@ function TAUTO.Get_SealTestPulseAmplitude: OleVariant;
 // Get test pulse amplitude
 // ------------------------
 begin
-     Result := Settings.SealTest.PulseHeight1 ;
+     Result := EDRFile.Settings.SealTest.PulseHeight1 ;
     end ;
 
 function TAUTO.Get_SealTestPulseDuration: OleVariant;
 begin
-     Result := Settings.SealTest.PulseWidth ;
+     Result := EDRFile.Settings.SealTest.PulseWidth ;
      end;
 
 
@@ -376,10 +376,10 @@ procedure TAUTO.Set_SealTestPulseAmplitude(Value: OleVariant);
 // -----------------------------
 begin
 
-     Settings.SealTest.PulseHeight1 := Value ;
+     EDRFile.Settings.SealTest.PulseHeight1 := Value ;
      if Main.FormExists('SealTestFrm') then begin
         SealTestFrm.TestPulseNumber := 1 ;
-        SealTestFrm.TestPulseAmplitude[1] := Settings.SealTest.PulseHeight1 ;
+        SealTestFrm.TestPulseAmplitude[1] := EDRFile.Settings.SealTest.PulseHeight1 ;
         end ;
 
      end;
@@ -390,10 +390,10 @@ procedure TAUTO.Set_SealTestPulseDuration(Value: OleVariant);
 // Set duration of seal test pulse
 // -------------------------------
 begin
-     Settings.SealTest.PulseWidth := Value ;
+     EDRFile.Settings.SealTest.PulseWidth := Value ;
      if Main.FormExists('SealTestFrm') then begin
         SealTestFrm.TestPulseNumber := 1 ;
-        SealTestFrm.TestPulseWidth := Settings.SealTest.PulseWidth ;
+        SealTestFrm.TestPulseWidth := EDRFile.Settings.SealTest.PulseWidth ;
         end ;
      end ;
 
@@ -694,7 +694,7 @@ function TAUTO.Get_SealTestNumAverages: OleVariant;
 // Get seal test cell parameters no. of averages
 // ---------------------------------------------
 begin
-     Result := Settings.SealTest.NumAverages ;
+     Result := EDRFile.Settings.SealTest.NumAverages ;
 end;
 
 procedure TAUTO.Set_SealTestNumAverages(Value: OleVariant);
@@ -702,7 +702,7 @@ procedure TAUTO.Set_SealTestNumAverages(Value: OleVariant);
 // Set seal test cell parameters no. of averages
 // ---------------------------------------------
 begin
-     Settings.SealTest.NumAverages := Max(Round(Value),1) ;
+     EDRFile.Settings.SealTest.NumAverages := Max(Round(Value),1) ;
      end;
 
 
@@ -711,7 +711,7 @@ function TAUTO.Get_SealTestGaFromPeak: Integer;
 // Get seal test G access calculation mode
 // ---------------------------------------------
 begin
-     if Settings.SealTest.GaFromPeak then Result := 1
+     if EDRFile.Settings.SealTest.GaFromPeak then Result := 1
                                      else Result := 0 ;
 end;
 
@@ -720,8 +720,8 @@ procedure TAUTO.Set_SealTestGaFromPeak(Value: Integer);
 // Set seal test G access calculation mode
 // ---------------------------------------------
 begin
-    if Value <> 0 then Settings.SealTest.GaFromPeak := True
-                  else  Settings.SealTest.GaFromPeak := False ;
+    if Value <> 0 then EDRFile.Settings.SealTest.GaFromPeak := True
+                  else  EDRFile.Settings.SealTest.GaFromPeak := False ;
 end;
 
 

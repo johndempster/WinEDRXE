@@ -105,7 +105,7 @@ var
 
 implementation
 
-uses MDIForm, Printgra;
+uses MDIForm, Printgra, EDRFileUnit;
 
 {$R *.dfm}
 
@@ -442,8 +442,8 @@ var
     FileName : String ;
 begin
 
-     if CdrFH.FileName <> '' then FileName := ChangeFileExt(CdrFH.FileName,'.txt')
-                             else FileName := Main.DataDirectory + DateToStr(Date) + '.txt' ;
+     if EDRFile.CdrFH.FileName <> '' then FileName := ChangeFileExt(EDRFile.CdrFH.FileName,'.txt')
+                                     else FileName := EDRFile.DataDirectory + DateToStr(Date) + '.txt' ;
      case PlotType of
         ptFrequency : FileName := ANSIReplaceText( FileName, '.txt','(F).txt') ;
         ptResistance : FileName := ANSIReplaceText( FileName, '.txt','(R).txt') ;
@@ -561,8 +561,8 @@ begin
 //     PrintGraphFrm.ShowModal ;
 //     if PrintGraphFrm.ModalResult = mrOK then begin
         plPlot.ClearPrinterTitle ;
-        plPlot.AddPrinterTitleLine( ' File : ' + CDRFH.FileName ) ;
-        plPlot.AddPrinterTitleLine( ' ' + CDRFH.IdentLine ) ;
+        plPlot.AddPrinterTitleLine( ' File : ' + EDRFile.CDRFH.FileName ) ;
+        plPlot.AddPrinterTitleLine( ' ' + EDRFile.CDRFH.IdentLine ) ;
         plPlot.Print ;
 //        end ;
      end ;

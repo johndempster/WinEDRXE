@@ -45,7 +45,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Variants, Classes, Graphics, Controls, Forms,
-  Dialogs, StdCtrls, ValidatedEdit, TritonUnit, global, math, ExtCtrls,
+  Dialogs, StdCtrls, ValidatedEdit, TritonUnit, math, ExtCtrls, EDRFileUnit,
   ComCtrls, xmldoc, xmlintf, strutils, ActiveX ;
 
 const
@@ -1113,17 +1113,17 @@ begin
 
      // Get auto compensation holding and test pulse amplitudes and duration from current seal test settings
 
-//     TStep := Min(Max(Settings.SealTest.PulseWidth, 0.01 ), 0.1 ) ;
+//     TStep := Min(Max(EDRFile.Settings.SealTest.PulseWidth, 0.01 ), 0.1 ) ;
 //     THold := TStep ;
-     case Settings.SealTest.Use of
+     case EDRFile.Settings.SealTest.Use of
           3 : begin
-              VHold :=  Settings.SealTest.HoldingVoltage3 ;
+              VHold :=  EDRFile.Settings.SealTest.HoldingVoltage3 ;
               end ;
           2 : begin
-              VHold :=  Settings.SealTest.HoldingVoltage2 ;
+              VHold :=  EDRFile.Settings.SealTest.HoldingVoltage2 ;
               end ;
           else begin
-              VHold :=  Settings.SealTest.HoldingVoltage1 ;
+              VHold :=  EDRFile.Settings.SealTest.HoldingVoltage1 ;
               end ;
           end;
 
@@ -1355,17 +1355,17 @@ begin
 
      // Get auto compensation holding and test pulse amplitudes and duration from current seal test settings
 
-     TStep := Min(Max(Settings.SealTest.PulseWidth, 0.01 ), 0.1 ) ;
+     TStep := Min(Max(EDRFile.Settings.SealTest.PulseWidth, 0.01 ), 0.1 ) ;
      THold := TStep ;
-     case Settings.SealTest.Use of
+     case EDRFile.Settings.SealTest.Use of
           3 : begin
-              VHold :=  Settings.SealTest.HoldingVoltage3 ;
+              VHold :=  EDRFile.Settings.SealTest.HoldingVoltage3 ;
               end ;
           2 : begin
-              VHold :=  Settings.SealTest.HoldingVoltage2 ;
+              VHold :=  EDRFile.Settings.SealTest.HoldingVoltage2 ;
               end ;
           else begin
-              VHold :=  Settings.SealTest.HoldingVoltage1 ;
+              VHold :=  EDRFile.Settings.SealTest.HoldingVoltage1 ;
               end ;
           end;
 
@@ -1434,15 +1434,15 @@ begin
 
      // Get auto compensation holding and test pulse amplitudes and duration from current seal test settings
 
-     case Settings.SealTest.Use of
+     case EDRFile.Settings.SealTest.Use of
           3 : begin
-              VHold :=  Settings.SealTest.HoldingVoltage3 ;
+              VHold :=  EDRFile.Settings.SealTest.HoldingVoltage3 ;
               end ;
           2 : begin
-              VHold :=  Settings.SealTest.HoldingVoltage2 ;
+              VHold :=  EDRFile.Settings.SealTest.HoldingVoltage2 ;
               end ;
           else begin
-              VHold :=  Settings.SealTest.HoldingVoltage1 ;
+              VHold :=  EDRFile.Settings.SealTest.HoldingVoltage1 ;
               end ;
           end;
 
@@ -1524,17 +1524,17 @@ begin
 
      // Get auto compensation holding and test pulse amplitudes and duration from current seal test settings
 
-     TStep := Min(Max(Settings.SealTest.PulseWidth, 0.01 ), 0.1 ) ;
+     TStep := Min(Max(EDRFile.Settings.SealTest.PulseWidth, 0.01 ), 0.1 ) ;
      THold := TStep ;
-     case Settings.SealTest.Use of
+     case EDRFile.Settings.SealTest.Use of
           3 : begin
-              VHold :=  Settings.SealTest.HoldingVoltage3 ;
+              VHold :=  EDRFile.Settings.SealTest.HoldingVoltage3 ;
               end ;
           2 : begin
-              VHold :=  Settings.SealTest.HoldingVoltage2 ;
+              VHold :=  EDRFile.Settings.SealTest.HoldingVoltage2 ;
               end ;
           else begin
-              VHold :=  Settings.SealTest.HoldingVoltage1 ;
+              VHold :=  EDRFile.Settings.SealTest.HoldingVoltage1 ;
               end ;
           end;
 
@@ -2208,7 +2208,7 @@ begin
        { Correct for use of comma/period as decimal separator }
        s := ChildNode.Text ;
        { Correct for use of comma/period as decimal separator }
-       {$IF CompilerVersion > 7.0} dsep := formatsettings.DECIMALSEPARATOR ;
+       {$IF CompilerVersion > 7.0} dsep := formatSettings.DECIMALSEPARATOR ;
        {$ELSE} dsep := DECIMALSEPARATOR ;
        {$IFEND}
        if dsep = '.' then s := ANSIReplaceText(s ,',',dsep);
@@ -2434,7 +2434,7 @@ begin
      CompensationTStep := 0.02 ;
 
      // Load settings from XML file
-     SettingsFileName := Main.SettingsDirectory + 'tecella settings.xml' ;
+     SettingsFileName := EDRFile.SettingsDirectory + 'tecella EDRFile.Settings.xml' ;
      if FileExists( SettingsFileName ) then LoadFromXMLFile( SettingsFileName ) ;
 
      end;

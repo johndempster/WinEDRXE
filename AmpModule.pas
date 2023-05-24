@@ -142,7 +142,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs, Math, strutils,
-  xmldoc, xmlintf,ActiveX, shlobj, fileio, mmsystem  ;
+  xmldoc, xmlintf,ActiveX, shlobj, mmsystem  ;
 
 const
      MaxAmplifiers = 4 ;
@@ -1356,7 +1356,8 @@ var
 
 implementation
 
-uses Mdiform, maths, shared, VP500Unit,VP500Lib,TritonUnit,HekaUnit ;
+uses Mdiform, maths, shared, VP500Unit,VP500Lib,TritonUnit,HekaUnit ,
+  EDRFileUnit;
 
 {$R *.DFM}
 
@@ -6255,11 +6256,11 @@ begin
     AXC_GetSignalScaleFactor(Axoclamp900AHnd, ScaleFactor, iSignal, Err);
     LogErrorAxoClamp900A(format('GetAxoclamp900AChannelSettings.AXC_GetSignalScaleFactor Sig.%d ',[iSignal]),Err,False) ;
 
-    if Contains(ChanUnits,'mA') then ScaleFactor := ScaleFactor*1E-3
-    else if Contains(ChanUnits,'uA') then ScaleFactor := ScaleFactor*1E-6
-    else if Contains(ChanUnits,'nA') then ScaleFactor := ScaleFactor*1E-9
-    else if Contains(ChanUnits,'pA') then ScaleFactor := ScaleFactor*1E-12
-    else if Contains(ChanUnits,'mV') then ScaleFactor := ScaleFactor*1E-3 ;
+    if ContainsText(ChanUnits,'mA') then ScaleFactor := ScaleFactor*1E-3
+    else if ContainsText(ChanUnits,'uA') then ScaleFactor := ScaleFactor*1E-6
+    else if ContainsText(ChanUnits,'nA') then ScaleFactor := ScaleFactor*1E-9
+    else if ContainsText(ChanUnits,'pA') then ScaleFactor := ScaleFactor*1E-12
+    else if ContainsText(ChanUnits,'mV') then ScaleFactor := ScaleFactor*1E-3 ;
     ChanCalFactor := ScaleFactor*Gain ;
 
     // Update primary/secondary channel settings
@@ -6412,7 +6413,7 @@ begin
         begin
         // First device found
         Axoclamp900AList.Add(ansistring(SerialNum)) ;
-        WriteToLogFile( format('Axoclamp 900A #%d found: Serial No. %s: ',
+        EDRFile.WriteToLogFile( format('Axoclamp 900A #%d found: Serial No. %s: ',
                         [Axoclamp900AList.Count,Axoclamp900AList[0]]) );
 
         // Find any additional devices
@@ -6420,7 +6421,7 @@ begin
         while AXC_FindNextDevice( Axoclamp900AHnd, SerialNum, High(SerialNum), Err ) do
            begin
            Axoclamp900AList.Add(ansistring(SerialNum)) ;
-           WriteToLogFile( format('Axoclamp 900A #%d found: Serial No. %s: ',
+           EDRFile.WriteToLogFile( format('Axoclamp 900A #%d found: Serial No. %s: ',
                            [Axoclamp900AList.Count,Axoclamp900AList[Axoclamp900AList.Count-1]]) );
            end;
 
@@ -6564,7 +6565,7 @@ begin
      if Err <> 0 then
         begin
         AXC_BuildErrorText( Axoclamp900AHnd, Err, ErrText, High(ErrText)) ;
-        WriteToLogFile( s + ' : ' + ansistring(ErrText) ) ;
+        EDRFile.WriteToLogFile( s + ' : ' + ansistring(ErrText) ) ;
         if DisplayMessage then ShowMessage(ErrText) ;
         end ;
      end ;
@@ -7020,7 +7021,7 @@ begin
        for i := 0 to MCNumChannels-1 do begin
            if not PostMessage( HWND_BROADCAST, MCCloseMessageID, Application.Handle, MCChannels[i] )
            then ShowMessage( 'Multi-Clamp Commander(Failed to close channel)' ) ;
-           WriteToLogFile( format('Multiclamp: Channel %x closed.',[MCChannels[i]]) ) ;
+           EDRFile.WriteToLogFile( format('Multiclamp: Channel %x closed.',[MCChannels[i]]) ) ;
            end ;
        end ;
        MCConnectionOpen := False ;
@@ -7483,7 +7484,7 @@ begin
             if TData.ComPortID = MinComPortID then iChan := TData.ChannelID -1
                                               else iChan := TData.ChannelID +1 ;
             iChan := Min(Max(iChan,0),3);
-            WriteToLogFile(format(
+            EDRFile.WriteToLogFile(format(
             'Multiclamp V1.1: Message received from ComPortID=%d ChannelID=%d as Amplifier #%d',
             [TData.ComPortID,TData.ChannelID,iChan+1]));
             end
@@ -7502,7 +7503,7 @@ begin
             if SerialNum = MinSerialNum then iChan := TData.ChannelID -1
                                         else iChan := TData.ChannelID +1 ;
             iChan := Min(Max(iChan,0),3);
-             WriteToLogFile(format(
+             EDRFile.WriteToLogFile(format(
              'Multiclamp V2.x: Message received from Device=%s  ChannelID=%d as Amplifier #%d',
              [ANSIString(TData.SerialNumber),TData.ChannelID,iChan+1]));
             end ;
@@ -7515,7 +7516,7 @@ begin
     if (Message.Msg = MCIDMessageID) or (Message.Msg = MCReconnectMessageID) then begin
          AddChannel := True ;
          for i := 0 to MCNumChannels-1 do if MCChannels[i] = Message.lParam then AddChannel := False ;
-         WriteToLogFile(format('Multiclamp: Channel detected ID=%x',[Message.lParam]));
+         EDRFile.WriteToLogFile(format('Multiclamp: Channel detected ID=%x',[Message.lParam]));
 
          if AddChannel then begin
              // Store server device/channel ID in list
@@ -7525,7 +7526,7 @@ begin
                 ShowMessage( 'MultiClamp Commander (Open Message Failed)' ) ;
              Main.StatusBar.SimpleText := format('Multiclamp: MCOpenMessageID broadcast to channel %x',
              [MCChannels[MCNumChannels]]) ;
-             WriteToLogFile(Main.StatusBar.SimpleText) ;
+             EDRFile.WriteToLogFile(Main.StatusBar.SimpleText) ;
              Inc(MCNumChannels) ;
              end ;
          Result := True ;

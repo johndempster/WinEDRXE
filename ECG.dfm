@@ -29,6 +29,10 @@ object ECGFrm: TECGFrm
     OnChange = PageControlChange
     object ECGPage: TTabSheet
       Caption = 'ECG'
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object ECGControlGrp: TGroupBox
         Left = 8
         Top = 0
@@ -860,10 +864,10 @@ object ECGFrm: TECGFrm
           PrinterFontName = 'Arial'
           PrinterLineWidth = 1
           PrinterMarkerSize = 5
-          PrinterLeftMargin = 14
-          PrinterRightMargin = 14
-          PrinterTopMargin = 8
-          PrinterBottomMargin = 8
+          PrinterLeftMargin = 11
+          PrinterRightMargin = 11
+          PrinterTopMargin = 5
+          PrinterBottomMargin = 5
           PrinterDisableColor = False
           MetafileWidth = 500
           MetafileHeight = 400
@@ -983,6 +987,10 @@ object ECGFrm: TECGFrm
     object PlotPage: TTabSheet
       Caption = 'Graph Plots'
       ImageIndex = 2
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object PlotControlsGrp: TGroupBox
         Left = 8
         Top = 0
@@ -1188,10 +1196,10 @@ object ECGFrm: TECGFrm
           PrinterFontName = 'Arial'
           PrinterLineWidth = 1
           PrinterMarkerSize = 5
-          PrinterLeftMargin = 14
-          PrinterRightMargin = 14
-          PrinterTopMargin = 8
-          PrinterBottomMargin = 8
+          PrinterLeftMargin = 11
+          PrinterRightMargin = 11
+          PrinterTopMargin = 5
+          PrinterBottomMargin = 5
           PrinterDisableColor = False
           MetafileWidth = 500
           MetafileHeight = 400

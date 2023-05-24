@@ -64,7 +64,7 @@ implementation
 
 {$R *.DFM}
 
-uses shared ;
+uses shared , EDRFileUnit;
 
 const
     cNumExps = 0 ;
@@ -242,7 +242,7 @@ var
 begin
 
      { Set print font and size }
-     Printer.Canvas.font.name := Settings.Plot.FontName ;
+     Printer.Canvas.font.name := EDRFile.Settings.Plot.FontName ;
      Printer.Canvas.Font.Size := 10 ;
 
      CharWidth := Printer.canvas.TextWidth('X') ;

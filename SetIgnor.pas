@@ -13,7 +13,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  StdCtrls, RangeEdit, global, fileio, ComCtrls, ValEdit, ValidatedEdit ;
+  StdCtrls, RangeEdit, ComCtrls, ValEdit, ValidatedEdit ;
 
 type
   TSetIgnoreFrm = class(TForm)
@@ -55,7 +55,7 @@ var
 
 implementation
 
-uses Mdiform, SingleChanAnal;
+uses Mdiform, SingleChanAnal, EDRFileUnit;
 
 {$R *.DFM}
 
@@ -79,23 +79,23 @@ begin
 
      { Initialise duration range }
      if edDurationHi.Value = edDurationHi.HiLimit then begin
-        edDurationLo.Scale := Settings.TScale ;
-        edDurationLo.Units := Settings.TUnits ;
+        edDurationLo.Scale := EDRFile.Settings.TScale ;
+        edDurationLo.Units := EDRFile.Settings.TUnits ;
         edDurationHi.Value := 1E-3 ;
         edDurationLo.Value := 0.0 ;
         end ;
 
      { Initialise amplitude range }
-     edAmplitudeLo.Units := Channel[SelectedChannel].ADCUnits ;
-     edAmplitudeHi.Units := Channel[SelectedChannel].ADCUnits ;
+     edAmplitudeLo.Units := EDRFile.Channel[SelectedChannel].ADCUnits ;
+     edAmplitudeHi.Units := EDRFile.Channel[SelectedChannel].ADCUnits ;
      if edAmplitudeHi.Value = edAmplitudeHi.HiLimit then begin
         edAmplitudeHi.Value := 1.0 ;
         edAmplitudeLo.Value := 0.0 ;
         end ;
 
      { Initialise standard dev. range }
-     edSDLo.Units := Channel[SelectedChannel].ADCUnits ;
-     edSDHi.Units := Channel[SelectedChannel].ADCUnits ;
+     edSDLo.Units := EDRFile.Channel[SelectedChannel].ADCUnits ;
+     edSDHi.Units := EDRFile.Channel[SelectedChannel].ADCUnits ;
      if edAmplitudeHi.Value = edAmplitudeHi.HiLimit then begin
         edAmplitudeHi.Value := 1.0 ;
         edAmplitudeLo.Value := 0.0 ;

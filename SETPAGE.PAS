@@ -8,7 +8,7 @@ interface
 
 uses
   SysUtils, WinTypes, WinProcs, Messages, Classes, Graphics, Controls,
-  Forms, Dialogs, StdCtrls, Spin, Buttons, Global, Printers, Shared ;
+  Forms, Dialogs, StdCtrls, Spin, Buttons, Printers ;
 
 type
   TSetPageFrm = class(TForm)
@@ -52,24 +52,24 @@ implementation
 
 {$R *.DFM}
 
-uses maths ;
+uses maths, EDRFileUnit ;
 
 var
    KeepSettings : TPageSettings ;
 
 procedure TSetPageFrm.FormShow(Sender: TObject);
 begin
-     KeepSettings := Settings.Plot ;
-     edTopMargin.text := format( '%.1f cm',[Settings.Plot.TopMargin]);
-     edBottomMargin.text := format( '%.1f cm',[Settings.Plot.BottomMargin]);
-     edLeftMargin.text := format( '%.1f cm',[Settings.Plot.LeftMargin]);
-     edRightMargin.text := format( '%.1f cm',[Settings.Plot.RightMargin]);
+     KeepSettings := EDRFile.Settings.Plot ;
+     edTopMargin.text := format( '%.1f cm',[EDRFile.Settings.Plot.TopMargin]);
+     edBottomMargin.text := format( '%.1f cm',[EDRFile.Settings.Plot.BottomMargin]);
+     edLeftMargin.text := format( '%.1f cm',[EDRFile.Settings.Plot.LeftMargin]);
+     edRightMargin.text := format( '%.1f cm',[EDRFile.Settings.Plot.RightMargin]);
      { Font names }
      cbFontName.clear ;
      cbFontName.sorted := True ;
      cbFontName.items := screen.fonts ;
-     cbFontName.ItemIndex := cbFontname.items.indexof( Settings.Plot.FontName ) ;
-     edPointSize.text := format( ' %d', [Settings.Plot.FontSize]) ;
+     cbFontName.ItemIndex := cbFontname.items.indexof( EDRFile.Settings.Plot.FontName ) ;
+     edPointSize.text := format( ' %d', [EDRFile.Settings.Plot.FontSize]) ;
 
      UpdateSettings ;
      end;
@@ -81,30 +81,30 @@ procedure TSetPageFrm.UpdateSettings ;
   ---------------------------}
 begin
      { Top of page margin }
-     Settings.Plot.TopMargin := ExtractFloat(edTopMargin.text,
-                                Settings.Plot.TopMargin) ;
-     edTopMargin.text := format( '%.1f cm',[Settings.Plot.TopMargin]);
+     EDRFile.Settings.Plot.TopMargin := ExtractFloat(edTopMargin.text,
+                                EDRFile.Settings.Plot.TopMargin) ;
+     edTopMargin.text := format( '%.1f cm',[EDRFile.Settings.Plot.TopMargin]);
 
      { Bottom of page margin }
-     Settings.Plot.BottomMargin := ExtractFloat(edBottomMargin.text,
-                                   Settings.Plot.BottomMargin) ;
-     edBottomMargin.text := format( '%.1f cm',[Settings.Plot.BottomMargin]);
+     EDRFile.Settings.Plot.BottomMargin := ExtractFloat(edBottomMargin.text,
+                                   EDRFile.Settings.Plot.BottomMargin) ;
+     edBottomMargin.text := format( '%.1f cm',[EDRFile.Settings.Plot.BottomMargin]);
 
      { Left page margin }
-     Settings.Plot.LeftMargin := ExtractFloat(edLeftMargin.text,
-                                 Settings.Plot.LeftMargin) ;
-     edLeftMargin.text := format( '%.1f cm',[Settings.Plot.LeftMargin]);
+     EDRFile.Settings.Plot.LeftMargin := ExtractFloat(edLeftMargin.text,
+                                 EDRFile.Settings.Plot.LeftMargin) ;
+     edLeftMargin.text := format( '%.1f cm',[EDRFile.Settings.Plot.LeftMargin]);
 
      { Right page margin }
-     Settings.Plot.RightMargin := ExtractFloat(edRightMargin.text,
-                                  Settings.Plot.RightMargin) ;
-     edRightMargin.text := format( '%.1f cm',[Settings.Plot.RightMargin]);
+     EDRFile.Settings.Plot.RightMargin := ExtractFloat(edRightMargin.text,
+                                  EDRFile.Settings.Plot.RightMargin) ;
+     edRightMargin.text := format( '%.1f cm',[EDRFile.Settings.Plot.RightMargin]);
 
      { Text size (points) }
-     Settings.Plot.FontSize := ExtractInt(edPointSize.text) ;
-     edPointSize.text := format(' %d pts ',[Settings.Plot.FontSize]) ;
+     EDRFile.Settings.Plot.FontSize := ExtractInt(edPointSize.text) ;
+     edPointSize.text := format(' %d pts ',[EDRFile.Settings.Plot.FontSize]) ;
      { Font name }
-     Settings.Plot.FontName := cbFontName.Text ;
+     EDRFile.Settings.Plot.FontName := cbFontName.Text ;
 
      end ;
 
@@ -145,7 +145,7 @@ begin
 procedure TSetPageFrm.bCancelClick(Sender: TObject);
 begin
      { If operation has been cancelled, restore old settings }
-     Settings.Plot := KeepSettings ;
+     EDRFile.Settings.Plot := KeepSettings ;
      end;
 
 procedure TSetPageFrm.edPointSizeKeyPress(Sender: TObject; var Key: Char);

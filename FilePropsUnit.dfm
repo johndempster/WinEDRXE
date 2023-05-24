@@ -60,6 +60,10 @@ object FilePropsDlg: TFilePropsDlg
     TabOrder = 2
     object TabProperties: TTabSheet
       Caption = 'Properties'
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       object meProperties: TMemo
         Left = 8
         Top = 104
@@ -181,6 +185,11 @@ object FilePropsDlg: TFilePropsDlg
         ParentFont = False
         ScrollBars = ssNone
         TabOrder = 0
+        ColWidths = (
+          50
+          50
+          50
+          50)
         RowHeights = (
           18
           18

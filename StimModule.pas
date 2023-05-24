@@ -61,7 +61,7 @@ interface
 
 uses
   Windows, Messages, SysUtils, Classes, Graphics, Controls, Forms, Dialogs,
-  stdctrls, maths, global, winprocs, math, fileio, seslabio,
+  stdctrls, maths, winprocs, math, seslabio,
   xmldoc, xmlintf, extctrls, strutils, ActiveX ;
 
 const
@@ -489,7 +489,7 @@ var
 
 implementation
 
-uses Mdiform, shared , AmpModule, Rec, Sealtest;
+uses Mdiform, shared , AmpModule, Rec, Sealtest, EDRFileUnit;
 
 {$R *.DFM}
 
@@ -540,7 +540,7 @@ begin
         NumDACPoints := MaxDACPoints ;
         Main.StatusBar.SimpleText :=
         ' WARNING! D/A buffer overflow! Stimulus waveform may be truncated. '  ;
-        WriteToLogFile( Main.StatusBar.SimpleText ) ;
+        EDRFile.WriteToLogFile( Main.StatusBar.SimpleText ) ;
         end ;
 
      // Set total duration of protocol
@@ -1263,14 +1263,14 @@ begin
      repeat
         { Find file }
         if First then
-           FileFound := FindFirst( Main.VProtDirectory + '*.xml',
+           FileFound := FindFirst( EDRFile.VProtDirectory + '*.xml',
                                    faAnyFile,
                                    SearchRec )
         else
            FileFound := FindNext( SearchRec ) ;
 
         { Add file name (no extension or path) to list }
-        if FileFound = 0 then cbList.items.Add(ExtractFileNameOnly(SearchRec.Name))
+        if FileFound = 0 then cbList.items.Add(EDRFile.ExtractFileNameOnly(SearchRec.Name))
                         else FindClose(SearchRec.FindHandle) ;
         First := False ;
         Until FileFound <> 0 ;
@@ -1304,7 +1304,7 @@ begin
      repeat
         { Find file }
         if First then
-           FileFound := FindFirst( Main.VProtDirectory + '*.sti',
+           FileFound := FindFirst( EDRFile.VProtDirectory + '*.sti',
                                    faAnyFile,
                                    SearchRec )
         else FileFound := FindNext( SearchRec ) ;
@@ -1316,7 +1316,7 @@ begin
         if FileFound = 0 then begin
 
            // Load STI Protocol
-           STIFileName := Main.VProtDirectory + SearchRec.Name ;
+           STIFileName := EDRFile.VProtDirectory + SearchRec.Name ;
 
            if LoadSTIProgram(STIProg,STIFileName,ExtVBuf) then begin
               // Clear XML protocol
@@ -1476,7 +1476,7 @@ begin
               Main.StatusBar.SimpleText := format('Converting %s to %s',
                                         [ExtractFileName(STIFileName),
                                          ExtractFileName(XMLFileName)]) ;
-              WriteToLogFile( format('Stimulus protocol %s converted to %s',
+              EDRFile.WriteToLogFile( format('Stimulus protocol %s converted to %s',
                                         [ExtractFileName(STIFileName),
                                          ExtractFileName(XMLFileName)])) ;
               SaveProtocolToXMLFile( Prot^, XMLFileName) ;
@@ -1484,7 +1484,7 @@ begin
            else begin
               Main.StatusBar.SimpleText := format('Stimulus protocol %s file damaged (not converted)',
                                         [ExtractFileName(STIFileName)]) ;
-              WriteToLogFile( Main.StatusBar.SimpleText ) ;
+              EDRFile.WriteToLogFile( Main.StatusBar.SimpleText ) ;
               end ;
 
            Application.ProcessMessages ;
@@ -1968,7 +1968,7 @@ begin
            // Get file name of .dat file
            WaveFileName := ExtractFileName(Prot.Stimulus[iElement].Parameters[spFileName].Text) ;
            WaveFileName := ChangeFileExt( WaveFileName, '.dat' ) ;
-           WaveFileName := Main.VProtDirectory + WaveFileName ;
+           WaveFileName := EDRFile.VProtDirectory + WaveFileName ;
 
            OK := True ;
            // Check for blank file name
@@ -2021,7 +2021,7 @@ begin
      if not FileExists(FileName) then Exit ;
 
      // Create binary output file
-     BinFileName := Main.VProtDirectory +
+     BinFileName := EDRFile.VProtDirectory +
                     ChangeFileExt(ExtractFileName(FileName),'.DAT') ;
 
      // Open text input file
@@ -2102,7 +2102,7 @@ begin
         end ;
 
      // Exit if unable to find file
-     FileName := Main.VProtDirectory + ChangeFileExt( ExtractFileName(FileName), '.dat' ) ;
+     FileName := EDRFile.VProtDirectory + ChangeFileExt( ExtractFileName(FileName), '.dat' ) ;
      if not FileExists(FileName) then begin
         ShowMessage('Stimulus Protocol: Unable to load ' + FileName ) ;
         Prot.Stimulus[iStimElement].NumPointsInBuf := 0 ;
@@ -2157,7 +2157,7 @@ begin
      if Prot.Stimulus[iStimElement].Buf = Nil then Exit ;
 
      // Create DAT file
-     FileName := Main.VProtDirectory + ChangeFileExt(ExtractFileName(
+     FileName := EDRFile.VProtDirectory + ChangeFileExt(ExtractFileName(
                  Prot.Stimulus[iStimElement].Parameters[spFileName].Text),'.DAT') ;
      FileHandle := FileCreate( FileName ) ;
      if FileHandle < 0 then begin

@@ -7,7 +7,7 @@ interface
 
 uses
   SysUtils, WinTypes, WinProcs, Messages, Classes, Graphics, Controls,
-  Forms, Dialogs, StdCtrls, Global, FileIo ;
+  Forms, Dialogs, StdCtrls ;
 
 type
   TLogFrm = class(TForm)
@@ -34,7 +34,7 @@ var
 implementation
 
 {$R *.DFM}
-uses MdiForm ;
+uses MdiForm , EDRFileUnit;
 
 
 procedure TLogFrm.bCloseClick(Sender: TObject);
@@ -51,18 +51,18 @@ begin
 
 procedure TLogFrm.FormActivate(Sender: TObject);
 begin
-     Caption := 'Log File ' + LogFileName ;
-     CloseLogFile ;
-     mmText.Lines.LoadFromFile( LogFileName ) ;
-     OpenLogFile ;
+     Caption := 'Log File ' + EDRFile.LogFileName ;
+     EDRFile.CloseLogFile ;
+     mmText.Lines.LoadFromFile( EDRFile.LogFileName ) ;
+     EDRFile.OpenLogFile ;
      Resize ;
      end;
 
 procedure TLogFrm.FormDeactivate(Sender: TObject);
 begin
-     CloseLogFile ;
-     mmText.Lines.SaveToFile( LogFileName ) ;
-     OpenLogFile ;
+     EDRFile.CloseLogFile ;
+     mmText.Lines.SaveToFile( EDRFile.LogFileName ) ;
+     EDRFile.OpenLogFile ;
      end;
 
 
@@ -93,15 +93,15 @@ var
 begin
 
     // Add note to log file
-    for i := 0 to meAdd.Lines.Count-1 do WriteToLogFile( meAdd.Lines[i] ) ;
+    for i := 0 to meAdd.Lines.Count-1 do EDRFile.WriteToLogFile( meAdd.Lines[i] ) ;
 
     // CLear note
     meAdd.Lines.Clear ;
 
     // Update log file display
-    CloseLogFile ;
-    mmText.Lines.LoadFromFile( LogFileName ) ;
-    OpenLogFile ;
+    EDRFile.CloseLogFile ;
+    mmText.Lines.LoadFromFile( EDRFile.LogFileName ) ;
+    EDRFile.OpenLogFile ;
 
     end;
 

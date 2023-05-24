@@ -58,6 +58,8 @@ implementation
 
 {$R *.DFM}
 
+uses EDRFileUnit;
+
 
 procedure TPrintGraphFrm.FormShow(Sender: TObject);
 { --------------------------------------------
@@ -81,21 +83,21 @@ begin
         edLineThickness.Units := 'pixels' ;
         end ;
 
-     edTopMargin.Value := Settings.Plot.TopMargin ;
-     edBottomMargin.Value := Settings.Plot.BottomMargin ;
-     edLeftMargin.Value := Settings.Plot.LeftMargin ;
-     edRightMargin.Value := Settings.Plot.RightMargin ;
-     edBitMapWidth.Value := Settings.BitMapWidth ;
-     edBitMapHeight.Value := Settings.BitMapHeight ;
+     edTopMargin.Value := EDRFile.Settings.Plot.TopMargin ;
+     edBottomMargin.Value := EDRFile.Settings.Plot.BottomMargin ;
+     edLeftMargin.Value := EDRFile.Settings.Plot.LeftMargin ;
+     edRightMargin.Value := EDRFile.Settings.Plot.RightMargin ;
+     edBitMapWidth.Value := EDRFile.Settings.BitMapWidth ;
+     edBitMapHeight.Value := EDRFile.Settings.BitMapHeight ;
 
      { Fill Fonts list with typefaces available to printer }
      cbFontName.items := printer.fonts ;
-     edFontSize.Value := Settings.Plot.FontSize ;
-     edLineThickness.Value := Settings.Plot.LineThickness ;
-     edMarkerSize.Value := Settings.Plot.MarkerSize ;
-     cbFontName.itemindex := cbFontName.items.indexof(Settings.Plot.FontName) ;
+     edFontSize.Value := EDRFile.Settings.Plot.FontSize ;
+     edLineThickness.Value := EDRFile.Settings.Plot.LineThickness ;
+     edMarkerSize.Value := EDRFile.Settings.Plot.MarkerSize ;
+     cbFontName.itemindex := cbFontName.items.indexof(EDRFile.Settings.Plot.FontName) ;
      if cbFontName.itemindex < 0 then  cbFontName.itemindex := 0 ;
-     ckUseColor.checked := Settings.Plot.UseColor ;
+     ckUseColor.checked := EDRFile.Settings.Plot.UseColor ;
 
      end;
 
@@ -103,30 +105,30 @@ begin
 procedure TPrintGraphFrm.bOKClick(Sender: TObject);
 begin
      { Save new settings }
-     Settings.Plot.TopMargin := edTopMargin.Value ;
-     Settings.Plot.BottomMargin := edBottomMargin.Value ;
-     Settings.Plot.LeftMargin:= edLeftMargin.Value  ;
-     Settings.Plot.RightMargin := edRightMargin.Value ;
-     Settings.Plot.FontName := cbFontName.text ;
-     Settings.Plot.FontSize := Round(edFontSize.Value) ;
-     Settings.Plot.LineThickness := Round(edLineThickness.Value) ;
-     Settings.Plot.MarkerSize := Round(edMarkerSize.Value) ;
-     Settings.BitMapWidth := Round(edBitMapWidth.Value)  ;
-     Settings.BitMapHeight := Round(edBitMapHeight.Value)  ;
-     Settings.Plot.UseColor := ckUseColor.checked ;
+     EDRFile.Settings.Plot.TopMargin := edTopMargin.Value ;
+     EDRFile.Settings.Plot.BottomMargin := edBottomMargin.Value ;
+     EDRFile.Settings.Plot.LeftMargin:= edLeftMargin.Value  ;
+     EDRFile.Settings.Plot.RightMargin := edRightMargin.Value ;
+     EDRFile.Settings.Plot.FontName := cbFontName.text ;
+     EDRFile.Settings.Plot.FontSize := Round(edFontSize.Value) ;
+     EDRFile.Settings.Plot.LineThickness := Round(edLineThickness.Value) ;
+     EDRFile.Settings.Plot.MarkerSize := Round(edMarkerSize.Value) ;
+     EDRFile.Settings.BitMapWidth := Round(edBitMapWidth.Value)  ;
+     EDRFile.Settings.BitMapHeight := Round(edBitMapHeight.Value)  ;
+     EDRFile.Settings.Plot.UseColor := ckUseColor.checked ;
 
      { Update settings in XYplot component }
-     Plot.PrinterTopMargin := Round(Settings.Plot.TopMargin) ;
-     Plot.PrinterBottomMargin := Round(Settings.Plot.BottomMargin) ;
-     Plot.PrinterLeftMargin := Round(Settings.Plot.LeftMargin) ;
-     Plot.PrinterRightMargin := Round(Settings.Plot.RightMargin) ;
-     Plot.PrinterDisableColor := not Settings.Plot.UseColor ;
-     Plot.PrinterFontSize := Settings.Plot.FontSize ;
-     Plot.PrinterFontName := Settings.Plot.FontName ;
-     Plot.PrinterLineWidth := Settings.Plot.LineThickness ;
-     Plot.PrinterMarkerSize := Settings.Plot.MarkerSize ;
-     Plot.MetafileWidth := Settings.BitMapWidth ;
-     Plot.MetafileHeight := Settings.BitMapHeight ;
+     Plot.PrinterTopMargin := Round(EDRFile.Settings.Plot.TopMargin) ;
+     Plot.PrinterBottomMargin := Round(EDRFile.Settings.Plot.BottomMargin) ;
+     Plot.PrinterLeftMargin := Round(EDRFile.Settings.Plot.LeftMargin) ;
+     Plot.PrinterRightMargin := Round(EDRFile.Settings.Plot.RightMargin) ;
+     Plot.PrinterDisableColor := not EDRFile.Settings.Plot.UseColor ;
+     Plot.PrinterFontSize := EDRFile.Settings.Plot.FontSize ;
+     Plot.PrinterFontName := EDRFile.Settings.Plot.FontName ;
+     Plot.PrinterLineWidth := EDRFile.Settings.Plot.LineThickness ;
+     Plot.PrinterMarkerSize := EDRFile.Settings.Plot.MarkerSize ;
+     Plot.MetafileWidth := EDRFile.Settings.BitMapWidth ;
+     Plot.MetafileHeight := EDRFile.Settings.BitMapHeight ;
 
      end;
 
