@@ -419,6 +419,7 @@ unit Mdiform;
   V4.0.5  12.05.23 EDR File header size now increased to avoid overflow when more than 16 channels in file
                    EDRFileUnit.pas replaces fileio,global,shared.pas
           23.05.23 rec.pas Failure of writing to file to keep up when sampling slowly now fixed.
+  V4.0.6  26.06.23 Missing DD1550b.dll added to program folder
   =======================================================================}
 
 interface
@@ -640,7 +641,7 @@ var
    FileName : String ;
 begin
 
-     EDRFile.Version := 'V4.0.5' ;
+     EDRFile.Version := 'V4.0.6' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + EDRFile.Version ;
 
 
