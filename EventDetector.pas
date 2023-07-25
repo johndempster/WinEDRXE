@@ -103,6 +103,8 @@ unit EventDetector;
 // 09.03.22 ... Set Ampl. = 4*SD button now works (was setting wrong detection windows cursor
 // 24.06.22 ... Set SD x button multiple of S.D. can now be set by user
 //              Mid-point of rise alignment algorithm improved to be more robust with noisy signals
+// 10.7.23  ... Decay time to absolute level option added
+// 14.7.23  ... Peak + Baseline measurement added
 
 interface
 
@@ -253,8 +255,8 @@ type
     CVFit: TCurveFitter;
     lbAvgFitResults: THTMLLabel;
     lbHistResults: THTMLLabel;
-    GroupBox23: TGroupBox;
-    edTDecayPercentage: TValidatedEdit;
+    gpTDecay: TGroupBox;
+    edTDecayTo: TValidatedEdit;
     Label4: TLabel;
     edPreTrigger: TValidatedEdit;
     bAbortAverage: TButton;
@@ -347,6 +349,8 @@ type
     gpEventAlignment: TGroupBox;
     cbEventAlignment: TComboBox;
     edAmpSDScale: TValidatedEdit;
+    cbDecayTo: TComboBox;
+    Label24: TLabel;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormResize(Sender: TObject);
@@ -402,7 +406,7 @@ type
     procedure edDetDisplayWidthKeyPress(Sender: TObject; var Key: Char);
     procedure bAverageFitCurveClick(Sender: TObject);
     procedure edPreTriggerKeyPress(Sender: TObject; var Key: Char);
-    procedure edTDecayPercentageKeyPress(Sender: TObject; var Key: Char);
+    procedure edTDecayToKeyPress(Sender: TObject; var Key: Char);
     procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
     procedure bAbortAverageClick(Sender: TObject);
     procedure scEditDisplayMouseUp(Sender: TObject; Button: TMouseButton;
@@ -434,6 +438,7 @@ type
     procedure bExportAnalysisClick(Sender: TObject);
     procedure cbBaselineChange(Sender: TObject);
     procedure cbEventAlignmentChange(Sender: TObject);
+    procedure cbDecayToChange(Sender: TObject);
   private
     { Private declarations }
 
@@ -612,6 +617,8 @@ const
     cTDecayFromPeak = 0 ;
     cTDecayFromMidRise = 1 ;
     cTDecayFromA0 = 2 ;
+    cTDecayToPercentage = 0 ;
+    cTDecayToLevel = 1 ;
 
 
 procedure TEventDetFrm.HeapBuffers( Operation : THeapBufferOp ) ;
@@ -693,7 +700,7 @@ begin
      VarNames[vTDecay] := 'T(90%)' ;
      VarNames[vTauDecay] := 'Tau(decay)' ;
      VarNames[vDuration] := 'Duration' ;
-     VarNames[vBaseline] := 'Zero Baseline' ;
+     VarNames[vBaseline] := 'Baseline' ;
 
      // X/Y Plot variables
      cbPlotYVar.Clear ;
@@ -868,9 +875,9 @@ begin
      ckSubtractBaseline.Checked := EDRFile.Settings.EventDetector.SubtractBaseline ;
      edZeroNumAvg.Value := Max(EDRFile.Settings.EventDetector.NumBaselinePoints,2) ;
      edZeroGap.Value := Max(EDRFile.Settings.EventDetector.NumBaselineGap,0) ;
-     edTDecayPercentage.Value := Min(Max(EDRFile.Settings.EventDetector.TDecayPercent,0.0),100.0) ;
-     cbDecayFrom.ItemIndex := Min(Max(EDRFile.Settings.EventDetector.TDecayFrom,0),
-                              cbDecayFrom.Items.Count-1) ;
+     edTDecayTo.Value := EDRFile.Settings.EventDetector.TDecayLevel ;
+     cbDecayFrom.ItemIndex := Min(Max(EDRFile.Settings.EventDetector.TDecayFrom,0),cbDecayFrom.Items.Count-1) ;
+     cbDecayTo.ItemIndex := Min(Max(EDRFile.Settings.EventDetector.TDecayTo,0),cbDecayTo.Items.Count-1) ;
 
      Temp := Round(edDetDisplayWidth.Value) ;
      edDetDisplayWidth.Scale := EDRFile.CDRFH.dt ;
@@ -1263,7 +1270,6 @@ begin
    if InitialiseRunningMean and ckEnableBaselineTracking.checked then
       begin
       j := EDRFile.Channel[cbChannel.ItemIndex].ChannelOffset ;
-      i := Round(RunningMean) ;
       RunningMean := YBuf[j] ;
       InitialiseRunningMean := False ;
       end ;
@@ -1510,8 +1516,7 @@ var
     Sum : single ;
     Buf : PSmallIntArray ;
     DBuf : PSmallIntArray ;
-    iPeakRateOfRise,iYMidAt,yDiff,yMinDiff : Integer ;
-    Done : Boolean ;
+    iPeakRateOfRise,iYMidAt : Integer ;
 begin
 
    // Get a signal buffer post detection point
@@ -1721,7 +1726,7 @@ var
     iEnd,iSample,StartAtSample,EndAtSample,iEventSample : Integer ;
     DeadSamples : Integer ;
     i,OverThresholdCount,TimeThreshold,ThresholdLevel, Polarity : Integer ;
-    Done,NewBufferNeeded, UpdateStatusBar, InitialiseRunningMean : Boolean ;
+    Done,NewBufferNeeded, UpdateStatusBar : Boolean ;
 
 begin
 
@@ -1781,7 +1786,6 @@ begin
     if rbThreshold.Checked then
        begin
        TimeThreshold := Round( edTimeThreshold.Value/EDRFile.cdrfh.dt ) ;
-       InitialiseRunningMean := True ;
        end
     else TimeThreshold := 0 ;
 
@@ -1840,7 +1844,6 @@ begin
                       // Subtract TimeThreshold samples to find detection point
                       iSample := Max(iSample - TimeThreshold,0) ;
                       i := i - TimeThreshold ;
-                      InitialiseRunningMean := True ;
                       end;
 
                  // Set alignment point
@@ -2150,16 +2153,12 @@ begin
 
         iKeep := cbPlotXVar.ItemIndex ;
         i := cbPlotYVar.Items.IndexOfObject(TObject(vTDecay)) ;
-        cbPlotXVar.Items.Strings[i] := format(
-                                       'T.%d%%',
-                                       [Round(edTDecayPercentage.Value)]) ;
+        cbPlotXVar.Items.Strings[i] := format('T(%4g%s)',[edTDecayTo.Value,edTDecayTo.Units]) ;
         cbPlotXVar.ItemIndex := iKeep ;
 
         iKeep := cbPlotYVar.ItemIndex ;
         i := cbPlotYVar.Items.IndexOfObject(TObject(vTDecay)) ;
-        cbPlotYVar.Items.Strings[i] := format(
-                                       'T.%d%%',
-                                       [Round(edTDecayPercentage.Value)]) ;
+        cbPlotYVar.Items.Strings[i] := format('T(%4g%s)',[edTDecayTo.Value,edTDecayTo.Units]) ;
         cbPlotYVar.ItemIndex := iKeep ;
 
         if NumEvents > 0 then bNewPlot.Enabled := True
@@ -2176,7 +2175,7 @@ begin
         i := cbPlotXVar.Items.IndexOfObject(TObject(vTDecay)) ;
         cbHistVar.Items.Strings[i] := format(
                                        'T.%d%%',
-                                       [Round(edTDecayPercentage.Value)]) ;
+                                       [Round(edTDecayTo.Value)]) ;
 
         if NumEvents > 0 then begin
            bNewHistogram.Enabled := True ;
@@ -2260,6 +2259,9 @@ begin
      // Display event
      DisplayEditRecord ;
 
+     if cbDecayTo.ItemIndex = cTDecayToLevel then edTDecayTo.Units := EDRFile.Channel[cbChannel.ItemIndex].ADCUnits
+                                             else edTDecayTo.Units := '%' ;
+
      // Calculate event waveform measurements
      AnalyseEvent( sbEvent.Position-1, Event ) ;
 
@@ -2271,26 +2273,26 @@ begin
                                 [Events[sbEvent.Position-1]*EDRFile.cdrfh.dt] )) ;
 
      meResults.Lines.Add( format( 'Peak (a-a)= %.5g %s',
-                                  [Event.Peak,
-                                   EDRFile.Channel[cbChannel.ItemIndex].ADCUnits]));
-
-     meResults.Lines.Add( format( 'Area (a-a)= %.5g %s.ms',
-                                  [Event.Area,
-                                   EDRFile.Channel[cbChannel.ItemIndex].ADCUnits]));
-
-     meResults.Lines.Add( format( 'T(rise)= %.5g ms',[Event.TRise]));
-
-     meResults.Lines.Add( format( 'T(%.0f%%)= %.5g ms',
-                          [edTDecayPercentage.Value,Event.TDecay]));
-
-     meResults.Lines.Add( format( 'Tau(decay)= %.5g ms',[Event.TauDecay]));
-
-     meResults.Lines.Add( format( 'Duration= %.5g ms',[Event.Duration]));
+                                  [Event.Peak,EDRFile.Channel[cbChannel.ItemIndex].ADCUnits]));
 
      meResults.Lines.Add( format( 'Baseline= %.5g %s',
                           [EDRFile.Channel[cbChannel.ItemIndex].ADCScale*(Event.YBaseline - EDRFile.Channel[cbChannel.ItemIndex].ADCZero),
                            EDRFile.Channel[cbChannel.ItemIndex].ADCUnits]));
 
+     meResults.Lines.Add( format( 'Peak+Basel.= %.5g %s',
+                          [Event.Peak + EDRFile.Channel[cbChannel.ItemIndex].ADCScale*(Event.YBaseline  - EDRFile.Channel[cbChannel.ItemIndex].ADCZero),
+                           EDRFile.Channel[cbChannel.ItemIndex].ADCUnits]));
+
+     meResults.Lines.Add( format( 'Area (a-a)= %.5g %s.ms',
+                                  [Event.Area,EDRFile.Channel[cbChannel.ItemIndex].ADCUnits]));
+
+     meResults.Lines.Add( format( 'T(rise)= %.5g ms',[Event.TRise]));
+
+     meResults.Lines.Add( format( 'T(%.4g%s)= %.5g ms', [edTDecayTo.Value,edTDecayTo.Units,Event.TDecay]));
+
+     meResults.Lines.Add( format( 'Tau(decay)= %.5g ms',[Event.TauDecay]));
+
+     meResults.Lines.Add( format( 'Duration= %.5g ms',[Event.Duration]));
 
      scEditDisplay.HorizontalCursors[0] := Event.YBaseline ;
 
@@ -2418,10 +2420,12 @@ begin
    YMax := -1E30 ;
    SumY := 0.0 ;
    PeakAt := AnalysisStart ;
-   for i := AnalysisStart to AnalysisEnd do begin
+   for i := AnalysisStart to AnalysisEnd do
+       begin
        j := (i*EDRFile.cdrfh.NumChannels) + EDRFile.Channel[cbChannel.ItemIndex].ChannelOffset ;
        Y := Polarity*(Buf[j] - Event.YBaseline) ;
-       if Y >= YMax then begin
+       if Y >= YMax then
+          begin
           YMax := Y ;
           PeakAt := i ;
           end ;
@@ -2439,7 +2443,8 @@ begin
    Num10to90PercentPeak := 0 ;
    Num10toPeak := 0 ;
    Done := False ;
-   while not Done do begin
+   while not Done do
+       begin
        j := (i*EDRFile.cdrfh.NumChannels) + EDRFile.Channel[cbChannel.ItemIndex].ChannelOffset ;
        Y := Polarity*(Buf[j] - Event.YBaseline) ;
        if Y <= Y90 then Inc(Num10to90PercentPeak) ;
@@ -2452,7 +2457,23 @@ begin
 
    // Find time from peak to X% of peak decay
    i := PeakAt ;
-   YDecay := YMax*(1.0 - (0.01*edTDecayPercentage.Value)) ;
+   if cbDecayTo.ItemIndex = cTDecayToLevel then
+      begin
+      // Measure decay time to absolute level
+      YDecay := Round(edTDecayTo.Value/EDRFile.Channel[cbChannel.ItemIndex].ADCScale) ;
+      // Add channel zero level
+      YDecay := YDecay + EDRFile.Channel[cbChannel.ItemIndex].ADCZero ;
+      // Subtract event baseline
+      YDecay := YDecay - Event.YBaseline ;
+      // Invert if negative-going waveform
+      YDecay := YDecay*Polarity ;
+      end
+   else
+      begin
+      // Measure decay time to % of peak
+      YDecay := YMax*(1.0 - (0.01*edTDecayTo.Value)) ;
+      end;
+
    Done := False ;
    while not Done do begin
        j := (i*EDRFile.cdrfh.NumChannels) + EDRFile.Channel[cbChannel.ItemIndex].ChannelOffset ;
@@ -2461,11 +2482,13 @@ begin
        if (Y < YDecay) or (i >= NumScans) then Done := True ;
        end ;
 
-   if cbDecayFrom.ItemIndex = cTDecayFromPeak then begin
+   if cbDecayFrom.ItemIndex = cTDecayFromPeak then
+      begin
       // Decay time from peak
       Event.TDecay := (i-PeakAt)*EDRFile.cdrfh.dt*SecsToMs ;
       end
-   else if cbDecayFrom.ItemIndex = cTDecayFromMidRise then begin
+   else if cbDecayFrom.ItemIndex = cTDecayFromMidRise then
+      begin
       // Decay time from mid-point of rising phase
       Event.TDecay := (i-MidPointOfRiseAt)*EDRFile.cdrfh.dt*SecsToMs ;
       end
@@ -2478,7 +2501,8 @@ begin
    i := PeakAt ;
    YDecay := YMax*0.1 ;
    Done := False ;
-   while not Done do begin
+   while not Done do
+       begin
        j := (i*EDRFile.cdrfh.NumChannels) + EDRFile.Channel[cbChannel.ItemIndex].ChannelOffset ;
        Y := Polarity*(Buf[j] - Event.YBaseline) ;
        Inc(i) ;
@@ -2495,10 +2519,12 @@ begin
    SumYT := 0.0 ;
    nPoints := 0 ;
    Done := False ;
-   while not Done do begin
+   while not Done do
+      begin
       j := (i*EDRFile.cdrfh.NumChannels) + EDRFile.Channel[cbChannel.ItemIndex].ChannelOffset ;
       Y := Polarity*(Buf[j] - Event.YBaseline) ;
-      if Y > Y10 then begin
+      if Y > Y10 then
+         begin
          Y := Ln(Y) ;
          SumT := SumT + T ;
          SumT2 := SumT2 + T*T ;
@@ -2511,7 +2537,8 @@ begin
       T := T + EDRFile.cdrfh.dt ;
       if i >= AnalysisEnd then Done := True ;
       end ;
-   if nPoints > 1 then begin
+   if nPoints > 1 then
+      begin
       Slope := ((nPoints*SumYT) - (SumT*SumY)) /
                ((nPoints*SumT2) - (SumT*SumT)) ;
       if Slope < 0.0 then Event.TauDecay := (-1.0/Slope)*SecsToMs
@@ -2618,10 +2645,9 @@ var
      A,B,H,Y : Single ;
 begin
 
-
-
     // Calculate cublic splines for baseline interpolation
-    if not BaselineSplinesAvailable then begin
+    if not BaselineSplinesAvailable then
+       begin
        CalculateBaselineSplines ;
        end ;
 
@@ -2629,18 +2655,21 @@ begin
 
         iScan :=  BufStartScan + i ;
 
-        if iScan < Events[iEvent] then begin
+        if iScan < Events[iEvent] then
+           begin
            KLo := Max(iEvent-1,0) ;
            KHi := iEvent ;
            end
-        else begin
+        else
+           begin
            KLo := iEvent ;
            KHi := Min(iEvent+1,NumEvents-1) ;
            end ;
 
         H := Events[KHi] - Events[KLo] ;
 
-        if H <> 0.0 then begin
+        if H <> 0.0 then
+           begin
            A := (Events[KHi] - iScan)/H ;
            B := (iScan - Events[KLo])/H ;
            Y := A*YBaseline[KLo] + B*YBaseline[KHi] +
@@ -2692,7 +2721,8 @@ begin
 
     // Calculate pre-event baselines
 
-    for i := 0 to NumEvents-1 do begin
+    for i := 0 to NumEvents-1 do
+        begin
 
         // Find limits of event
         StartScan := Max( Events[i] - PreScans,0) ;
@@ -4931,7 +4961,7 @@ begin
 
      // Find time to X% decay
      i := PeakAt ;
-     YDecay := YMax*(1.0 - (0.01*edTDecayPercentage.Value)) ;
+     YDecay := YMax*(1.0 - (0.01*edTDecayTo.Value)) ;
      Done := False ;
      while not Done do begin
           j := (i*EDRFile.cdrfh.NumChannels) + EDRFile.Channel[cbChannel.ItemIndex].ChannelOffset ;
@@ -5016,7 +5046,7 @@ begin
      meAverageResults.Lines.Add( format( 'T(rise)= %.5g ms',[Event.TRise]));
 
      meAverageResults.Lines.Add( format( 'T(%.0f%%)= %.5g ms',
-                                 [edTDecayPercentage.Value,Event.TDecay]));
+                                 [edTDecayTo.Value,Event.TDecay]));
 
      meAverageResults.Lines.Add( format( 'Tau(decay)= %.5g ms',[Event.TauDecay]));
 
@@ -5296,14 +5326,14 @@ begin
      end ;
 
      
-procedure TEventDetFrm.edTDecayPercentageKeyPress(Sender: TObject;
+procedure TEventDetFrm.edTDecayToKeyPress(Sender: TObject;
   var Key: Char);
 // -----------------------------
 // Decay time percentage changed
 // -----------------------------
 begin
      if Key = #13 then begin
-        EDRFile.Settings.EventDetector.TDecayPercent := edTDecayPercentage.Value ;
+        EDRFile.Settings.EventDetector.TDecayLevel := edTDecayTo.Value ;
         EDRFile.SaveHeader( EDRFile.CDRFH ) ;
         DisplayEvent ;
         end ;
@@ -5423,6 +5453,17 @@ begin
      EDRFile.SaveHeader( EDRFile.CDRFH ) ;
      DisplayEvent ;
      end;
+
+procedure TEventDetFrm.cbDecayToChange(Sender: TObject);
+// ------------------------------------
+// Decay time termination point changed
+// ------------------------------------
+begin
+     EDRFile.Settings.EventDetector.TDecayTo := cbDecayTo.ItemIndex ;
+     EDRFile.SaveHeader( EDRFile.CDRFH ) ;
+     DisplayEvent ;
+     end;
+
 
 procedure TEventDetFrm.cbEventAlignmentChange(Sender: TObject);
 // ----------------------------

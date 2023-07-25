@@ -4601,7 +4601,7 @@ const
      VGainSpacing = 0.5 ;
 var
    Gains : Array[0..NumGains-1] of single ;
-   V,VOffset : single ;
+   V : single ;
    iGain : Integer ;
 begin
 
@@ -6100,7 +6100,7 @@ const
      VStart = 0.4 ;
 var
    Gain : Double ;
-   Mode,Err,AXChan,iMode,AmpNum : Integer ;
+   Err,AXChan,iMode,AmpNum : Integer ;
 begin
 
      Result := 1.0 ;
@@ -6143,7 +6143,7 @@ function TAmplifier.GetAxoclamp900AMode(
 // Read voltage/current clamp mode telegraph
 // -----------------------------------------
 var
-    ch, iMode, Err, AmpNum : Integer;
+    ch, iMode, Err : Integer;
     CommandSensitivity : Array[0..1] of Double ;
 begin
 

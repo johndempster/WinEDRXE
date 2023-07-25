@@ -69,6 +69,7 @@ unit EDRFileUnit;
   22.06.22 ... 'DETAMPSDSCALE=', Settings.EventDetector.AmpSDScale added to INI and EDR file
   02.05.23 ... Replaces fileio.pas, global.pas, shared.pas
   09.05.23 ... EDR File V6.2 File header size now increased when no. channels > 16, 1-16 = 2048, 17-32 = 4096 , ...
+  10.07.23 ... 'DETDECTO', Settings.EventDetector.TDecayTo added
   }
 
 interface
@@ -305,8 +306,9 @@ TEventDetector = record
                SubtractBaseline : Boolean ;
                NumBaselinePoints : Integer ;
                NumBaselineGap : Integer ;
-               TDecayPercent : Single ;
+               TDecayLevel : Single ;
                TDecayFrom : Integer ;
+               TDecayTo : Integer ;
                RisingEdgeWindow : Integer ;
                AvgFrequencyInterval : Single ;
                EnableBaselineTracking : Boolean ;
@@ -872,8 +874,9 @@ begin
      AddKeyValue( Header, 'DETBASSUB', Settings.EventDetector.SubtractBaseline ) ;
      AddKeyValue( Header, 'DETBASPTS', Settings.EventDetector.NumBaselinePoints ) ;
      AddKeyValue( Header, 'DETBASGAP', Settings.EventDetector.NumBaselineGap ) ;
-     AddKeyValue( Header, 'DETTDECP', Settings.EventDetector.TDecayPercent ) ;
+     AddKeyValue( Header, 'DETTDECP', Settings.EventDetector.TDecayLevel ) ;
      AddKeyValue( Header, 'DETDECFR', Settings.EventDetector.TDecayFrom ) ;
+     AddKeyValue( Header, 'DETDECTO', Settings.EventDetector.TDecayTo ) ;
      AddKeyValue( Header, 'DETREW', Settings.EventDetector.RisingEdgeWindow ) ;
      AddKeyValue( Header, 'DETEBT', Settings.EventDetector.EnableBaselineTracking ) ;
      AddKeyValue( Header, 'DETAMPSDSCALE', Settings.EventDetector.AmpSDScale ) ;
@@ -1084,8 +1087,9 @@ begin
      Settings.EventDetector.SubtractBaseline := GetKeyValue( Header, 'DETBASSUB', Settings.EventDetector.SubtractBaseline ) ;
      Settings.EventDetector.NumBaselinePoints := GetKeyValue( Header, 'DETBASPTS', Settings.EventDetector.NumBaselinePoints ) ;
      Settings.EventDetector.NumBaselineGap := GetKeyValue( Header, 'DETBASGAP', Settings.EventDetector.NumBaselineGap ) ;
-     Settings.EventDetector.TDecayPercent := GetKeyValue( Header, 'DETTDECP', Settings.EventDetector.TDecayPercent ) ;
+     Settings.EventDetector.TDecayLevel := GetKeyValue( Header, 'DETTDECP', Settings.EventDetector.TDecayLevel ) ;
      Settings.EventDetector.TDecayFrom := GetKeyValue( Header, 'DETDECFR', Settings.EventDetector.TDecayFrom ) ;
+     Settings.EventDetector.TDecayTo := GetKeyValue( Header, 'DETDECTO', Settings.EventDetector.TDecayTo ) ;
      Settings.EventDetector.RisingEdgeWindow := GetKeyValue( Header, 'DETREW', Settings.EventDetector.RisingEdgeWindow ) ;
      Settings.EventDetector.EnableBaselineTracking := GetKeyValue( Header, 'DETEBT', Settings.EventDetector.EnableBaselineTracking ) ;
      Settings.EventDetector.AmpSDScale := GetKeyValue( Header, 'DETAMPSDSCALE', Settings.EventDetector.AmpSDScale ) ;
@@ -1882,8 +1886,9 @@ begin
      Settings.EventDetector.SubtractBaseline := False ;
      Settings.EventDetector.NumBaselinePoints := 20 ;
      Settings.EventDetector.NumBaselineGap := 0 ;
-     Settings.EventDetector.TDecayPercent := 90.0 ;
+     Settings.EventDetector.TDecayLevel := 90.0 ;
      Settings.EventDetector.TDecayFrom := 0 ;
+     Settings.EventDetector.TDecayTo := 0 ;
      Settings.EventDetector.RisingEdgeWindow := 20 ;
      Settings.EventDetector.AvgFrequencyInterval := 1.0 ;
      Settings.EventDetector.EnableBaselineTracking := True ;

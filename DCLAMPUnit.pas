@@ -25,6 +25,7 @@ unit DCLAMPUnit;
 //                Updating time now reported in status bar
 // 05.08.16       DCLAMP parameters now updated when form opened
 // 15.07.22       SaveSettings() and LoadSettings() now use TStringList to hold KEY=Value pairs
+// 24.07.23       SaveSettings() and LoadSettings() '=' removed from keys.
 
 interface
 
@@ -1194,55 +1195,55 @@ begin
      // Load list from file
      Header.LoadFromFile( IniFileName ) ;
 
-     edGMax.Value := EDRFIle.GetKeyValue( Header, 'GMX=', edGMax.Value) ;
+     edGMax.Value := EDRFIle.GetKeyValue( Header, 'GMX', edGMax.Value) ;
 
-     edNumRecords.Value := EDRFIle.GetKeyValue( Header, 'NUMREPS=', edNumRecords.Value) ;
+     edNumRecords.Value := EDRFIle.GetKeyValue( Header, 'NUMREPS', edNumRecords.Value) ;
 
-     edVrev.Value := EDRFIle.GetKeyValue( Header, 'VRV=', edVrev.Value) ;
+     edVrev.Value := EDRFIle.GetKeyValue( Header, 'VRV', edVrev.Value) ;
 
-     edMSSVhalf.Value := EDRFIle.GetKeyValue( Header, 'MVH=', edMSSVhalf.Value) ;
+     edMSSVhalf.Value := EDRFIle.GetKeyValue( Header, 'MVH', edMSSVhalf.Value) ;
 
-     edMSSVslope.Value := EDRFIle.GetKeyValue( Header, 'MVS=', edMSSVslope.Value) ;
+     edMSSVslope.Value := EDRFIle.GetKeyValue( Header, 'MVS', edMSSVslope.Value) ;
 
-     edMTauVhalf.Value := EDRFIle.GetKeyValue( Header, 'MTVH=', edMTauVhalf.Value) ;
+     edMTauVhalf.Value := EDRFIle.GetKeyValue( Header, 'MTVH', edMTauVhalf.Value) ;
 
-     edMTauVslope.Value := EDRFIle.GetKeyValue( Header, 'MTVS=', edMTauVslope.Value) ;
+     edMTauVslope.Value := EDRFIle.GetKeyValue( Header, 'MTVS', edMTauVslope.Value) ;
 
-     edMTauMin.Value := EDRFIle.GetKeyValue( Header, 'MTMN=', edMTauMin.Value) ;
+     edMTauMin.Value := EDRFIle.GetKeyValue( Header, 'MTMN', edMTauMin.Value) ;
 
-     edMTauMax.Value := EDRFIle.GetKeyValue( Header, 'MTMX=', edMTauMax.Value) ;
+     edMTauMax.Value := EDRFIle.GetKeyValue( Header, 'MTMX', edMTauMax.Value) ;
 
-     edHSSVhalf.Value := EDRFIle.GetKeyValue( Header, 'HVH=', edHSSVhalf.Value) ;
+     edHSSVhalf.Value := EDRFIle.GetKeyValue( Header, 'HVH', edHSSVhalf.Value) ;
 
-     edHSSVslope.Value := EDRFIle.GetKeyValue( Header, 'HVS=', edHSSVslope.Value) ;
+     edHSSVslope.Value := EDRFIle.GetKeyValue( Header, 'HVS', edHSSVslope.Value) ;
 
-     edHTauFVhalf.Value := EDRFIle.GetKeyValue( Header, 'HTFVH=', edHTauFVhalf.Value) ;
+     edHTauFVhalf.Value := EDRFIle.GetKeyValue( Header, 'HTFVH', edHTauFVhalf.Value) ;
 
-     edHTauFVslope.Value := EDRFIle.GetKeyValue( Header, 'HTFVS=', edHTauFVslope.Value) ;
+     edHTauFVslope.Value := EDRFIle.GetKeyValue( Header, 'HTFVS', edHTauFVslope.Value) ;
 
-     edHTauFMin.Value := EDRFIle.GetKeyValue( Header, 'HTFMN=', edHTauFMin.Value) ;
+     edHTauFMin.Value := EDRFIle.GetKeyValue( Header, 'HTFMN', edHTauFMin.Value) ;
 
-     edHTauFMax.Value := EDRFIle.GetKeyValue( Header, 'HTFMX=', edHTauFMax.Value) ;
+     edHTauFMax.Value := EDRFIle.GetKeyValue( Header, 'HTFMX', edHTauFMax.Value) ;
 
-     edHTauSVhalf.Value := EDRFIle.GetKeyValue( Header, 'HTSVH=', edHTauSVhalf.Value ) ;
+     edHTauSVhalf.Value := EDRFIle.GetKeyValue( Header, 'HTSVH', edHTauSVhalf.Value ) ;
 
-     edHTauSVslope.Value := EDRFIle.GetKeyValue( Header, 'HTSVS=', edHTauSVslope.Value) ;
+     edHTauSVslope.Value := EDRFIle.GetKeyValue( Header, 'HTSVS', edHTauSVslope.Value) ;
 
-     edHTauSMin.Value := EDRFIle.GetKeyValue( Header, 'HTSMN=', edHTauSMin.Value) ;
+     edHTauSMin.Value := EDRFIle.GetKeyValue( Header, 'HTSMN', edHTauSMin.Value) ;
 
-     edHTauSMax.Value := EDRFIle.GetKeyValue( Header, 'HTSMX=', edHTauSMax.Value) ;
+     edHTauSMax.Value := EDRFIle.GetKeyValue( Header, 'HTSMX', edHTauSMax.Value) ;
 
-     edHFastFraction.Value := EDRFIle.GetKeyValue( Header, 'HTFF=', edHFastFraction.Value ) ;
+     edHFastFraction.Value := EDRFIle.GetKeyValue( Header, 'HTFF', edHFastFraction.Value ) ;
 
-     edmPower.Value := EDRFIle.GetKeyValue( Header, 'P=', edmPower.Value ) ;
+     edmPower.Value := EDRFIle.GetKeyValue( Header, 'P', edmPower.Value ) ;
 
-     ckEnableInhibitInput.Checked := EDRFIle.GetKeyValue( Header, 'ENINH=', ckEnableInhibitInput.Checked ) ;
+     ckEnableInhibitInput.Checked := EDRFIle.GetKeyValue( Header, 'ENINH', ckEnableInhibitInput.Checked ) ;
 
-     edCurrentCommandScaleFactor.Value := EDRFIle.GetKeyValue( Header, 'CCSF=', edCurrentCommandScaleFactor.Value) ;
+     edCurrentCommandScaleFactor.Value := EDRFIle.GetKeyValue( Header, 'CCSF', edCurrentCommandScaleFactor.Value) ;
 
      for i := 0 to sgSteps.RowCount-1 do
          begin
-         Value := EDRFIle.GetKeyValue( Header, format('STEPSIZE%d=',[i]), 0.0 ) ;
+         Value := EDRFIle.GetKeyValue( Header, format('STEPSIZE%d',[i]), 0.0 ) ;
          sgSteps.Cells[1,i] := format('%.4g %s',[Value,StepUnits[i]]) ;
          end;
 
@@ -1264,41 +1265,41 @@ begin
      // Create file header Name=Value string list
      Header := TStringList.Create ;
 
-     EDRFIle.AddKeyValue( Header, 'GMX=', edGMax.Value) ;
-     EDRFIle.AddKeyValue( Header, 'NUMREPS=', edNumRecords.Value );
-     EDRFIle.AddKeyValue( Header, 'STEPPAR=', SteppedParameter );
+     EDRFIle.AddKeyValue( Header, 'GMX', edGMax.Value) ;
+     EDRFIle.AddKeyValue( Header, 'NUMREPS', edNumRecords.Value );
+     EDRFIle.AddKeyValue( Header, 'STEPPAR', SteppedParameter );
 
-     EDRFIle.AddKeyValue( Header, 'VRV=', edVrev.Value) ;
-     EDRFIle.AddKeyValue( Header, 'MVH=', edMSSVHalf.Value) ;
-     EDRFIle.AddKeyValue( Header, 'MVS=', edMSSVSlope.Value) ;
-     EDRFIle.AddKeyValue( Header, 'MTMN=', edMTauMin.Value) ;
-     EDRFIle.AddKeyValue( Header, 'MTMX=', edMTauMax.Value) ;
-     EDRFIle.AddKeyValue( Header, 'MTVH=', edMTauVHalf.Value) ;
-     EDRFIle.AddKeyValue( Header, 'MTVS=', edMTauVSlope.Value) ;
+     EDRFIle.AddKeyValue( Header, 'VRV', edVrev.Value) ;
+     EDRFIle.AddKeyValue( Header, 'MVH', edMSSVHalf.Value) ;
+     EDRFIle.AddKeyValue( Header, 'MVS', edMSSVSlope.Value) ;
+     EDRFIle.AddKeyValue( Header, 'MTMN', edMTauMin.Value) ;
+     EDRFIle.AddKeyValue( Header, 'MTMX', edMTauMax.Value) ;
+     EDRFIle.AddKeyValue( Header, 'MTVH', edMTauVHalf.Value) ;
+     EDRFIle.AddKeyValue( Header, 'MTVS', edMTauVSlope.Value) ;
 
-     EDRFIle.AddKeyValue( Header, 'HVH=', edHSSVHalf.Value) ;
-     EDRFIle.AddKeyValue( Header, 'HVS=', edHSSVSlope.Value) ;
+     EDRFIle.AddKeyValue( Header, 'HVH', edHSSVHalf.Value) ;
+     EDRFIle.AddKeyValue( Header, 'HVS', edHSSVSlope.Value) ;
 
-     EDRFIle.AddKeyValue( Header, 'HTFMN=', edHTauFMin.Value) ;
-     EDRFIle.AddKeyValue( Header, 'HTFMX=', edHTauFMax.Value) ;
-     EDRFIle.AddKeyValue( Header, 'HTFVH=', edHTauFVHalf.Value) ;
-     EDRFIle.AddKeyValue( Header, 'HTFVS=', edHTauFVSlope.Value) ;
+     EDRFIle.AddKeyValue( Header, 'HTFMN', edHTauFMin.Value) ;
+     EDRFIle.AddKeyValue( Header, 'HTFMX', edHTauFMax.Value) ;
+     EDRFIle.AddKeyValue( Header, 'HTFVH', edHTauFVHalf.Value) ;
+     EDRFIle.AddKeyValue( Header, 'HTFVS', edHTauFVSlope.Value) ;
 
-     EDRFIle.AddKeyValue( Header, 'HTSMN=', edHTauSMin.Value) ;
-     EDRFIle.AddKeyValue( Header, 'HTSMX=', edHTauSMax.Value) ;
-     EDRFIle.AddKeyValue( Header, 'HTSVH=', edHTauSVHalf.Value) ;
-     EDRFIle.AddKeyValue( Header, 'HTSVS=', edHTauSVSlope.Value) ;
+     EDRFIle.AddKeyValue( Header, 'HTSMN', edHTauSMin.Value) ;
+     EDRFIle.AddKeyValue( Header, 'HTSMX', edHTauSMax.Value) ;
+     EDRFIle.AddKeyValue( Header, 'HTSVH', edHTauSVHalf.Value) ;
+     EDRFIle.AddKeyValue( Header, 'HTSVS', edHTauSVSlope.Value) ;
 
-     EDRFIle.AddKeyValue( Header, 'HTFF=', edHFastFraction.Value) ;
+     EDRFIle.AddKeyValue( Header, 'HTFF', edHFastFraction.Value) ;
 
-     EDRFIle.AddKeyValue( Header, 'P=', edmPower.Value) ;
+     EDRFIle.AddKeyValue( Header, 'P', edmPower.Value) ;
 
-     EDRFIle.AddKeyValue( Header, 'ENINH=', ckEnableInhibitInput.Checked ) ;
+     EDRFIle.AddKeyValue( Header, 'ENINH', ckEnableInhibitInput.Checked ) ;
 
-     EDRFIle.AddKeyValue( Header, 'CCSF=', edCurrentCommandScaleFactor.Value) ;
+     EDRFIle.AddKeyValue( Header, 'CCSF', edCurrentCommandScaleFactor.Value) ;
 
      for i := 0 to sgSteps.RowCount-1 do begin
-         EDRFIle.AddKeyValue( Header, format('STEPSIZE%d=',[i]), GetStepSize(i)) ;
+         EDRFIle.AddKeyValue( Header, format('STEPSIZE%d',[i]), GetStepSize(i)) ;
          end;
 
      // Save list to file

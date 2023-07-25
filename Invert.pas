@@ -1,4 +1,8 @@
 unit Invert;
+// ---------------------------------
+// Invert signal in selected channel
+// ---------------------------------
+// 18.07.23 BlockStart now correctly starts at 0 rather than 1
 
 interface
 
@@ -40,7 +44,8 @@ begin
 
      // Fill channel selection list
      cbChannel.Clear ;
-     for ch := 0 to EDRFile.CdrFH.NumChannels-1 do begin
+     for ch := 0 to EDRFile.CdrFH.NumChannels-1 do
+         begin
          cbChannel.items.add( format('Ch.%d %s',[ch,EDRFile.Channel[ch].ADCName]) ) ;
          end ;
      cbChannel.ItemIndex := 0 ;
@@ -72,7 +77,7 @@ begin
     prProgress.Max := NumBlocksInFile ;
     prProgress.Position := 1 ;
 
-    BlockPointer := 1 ;
+    BlockPointer := 0 ;
     Done := False ;
     while not Done do begin
 
@@ -80,7 +85,8 @@ begin
        EDRFile.ReadBuffer(EDRFile.CdrFH,BlockPointer,ADC,NumBlocksPerBuffer) ;
 
        j := EDRFile.Channel[cbChannel.ItemIndex].ChannelOffset ;
-        for i := 0 to NumBlocksPerBuffer-1 do begin
+        for i := 0 to NumBlocksPerBuffer-1 do
+            begin
             ADC[j] := -ADC[j] ;
             j := j + EDRFile.CdrFH.NumChannels ;
             end ;
@@ -94,7 +100,7 @@ begin
        // Increment to next record
        BlockPointer := BlockPointer + NumBlocksPerBuffer ;
        // Terminate loop
-       if BlockPointer > NumBlocksInFile then Done := True ;
+       if BlockPointer >= NumBlocksInFile then Done := True ;
 
        // Allow other events to be serviced
        Application.ProcessMessages ;

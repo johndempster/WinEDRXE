@@ -420,6 +420,7 @@ unit Mdiform;
                    EDRFileUnit.pas replaces fileio,global,shared.pas
           23.05.23 rec.pas Failure of writing to file to keep up when sampling slowly now fixed.
   V4.0.6  26.06.23 Missing DD1550b.dll added to program folder
+  V4.0.7  24.07.23 Event Detector: Decay time to absolute level option added,
   =======================================================================}
 
 interface
@@ -641,7 +642,7 @@ var
    FileName : String ;
 begin
 
-     EDRFile.Version := 'V4.0.6' ;
+     EDRFile.Version := 'V4.0.7' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + EDRFile.Version ;
 
 
@@ -1616,9 +1617,14 @@ procedure TMain.mnInvertClick(Sender: TObject);
  // Open Invert channel dialog box (invert.pas)
  // --------------------------------------------
 begin
+
+     InvertDlg.Left := Self.Left + 50 ;
+     InvertDlg.Top := Self.Top + 50 ;
      InvertDlg.ShowModal ;
+
      if InvertDlg.ModalResult = mrOK then UpdateViewSig
      end;
+
 
 procedure TMain.mnDetectEvent2Click(Sender: TObject);
 { ---------------------------
