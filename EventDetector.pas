@@ -105,6 +105,10 @@ unit EventDetector;
 //              Mid-point of rise alignment algorithm improved to be more robust with noisy signals
 // 10.7.23  ... Decay time to absolute level option added
 // 14.7.23  ... Peak + Baseline measurement added
+// 24.08.23 ... Display controls now sized correctly for all screen resolutions, preventing controls dropping
+//              below bottom of window on low resolution displays.
+//              Delete Event button disabled when no events in list
+//              F1/F2 buttons now only link to Insert/Delete Events button when Event Edit page displayed
 
 interface
 
@@ -1665,44 +1669,46 @@ procedure TEventDetFrm.FormResize(Sender: TObject);
 begin
      // Adjust size of tabs page to form size
 
+//   Detect Events page
+
      scDisplay.Width := Max( DetectEventsPage.Width - scDisplay.Left - 2,2) ;
      scDetDisplay.Width := scDisplay.Width ;
-//     sbDisplay.Width := scDisplay.Width ;
-
+     DetDisplayPanel.Top := EditEventsPage.Height - DetDisplayPanel.Height - 5 ;
+     sbDisplay.Top :=  DetDisplayPanel.Top - sbDisplay.Height - 2 ;
      scDisplay.Height := Max( (2*(sbDisplay.Top - scDisplay.Top)) div 3,2) ;
      scDetDisplay.Top := scDisplay.Top + scDisplay.Height + 2 ;
      scDetDisplay.Height := Max( sbDisplay.Top - scDetDisplay.Top - 1,2) ;
-
      scDetDisplay.Left := scDisplay.Left ;
 
-     // Display points label and box
+//   Review/Edit page
 
+     EventFilterGrp.Top := DetectEventsPage.Height - EventFilterGrp.Height - 5 ;
+     EditDisplayWidthPanel.Top := EventFilterGrp.Top - EditDisplayWidthPanel.Height - 2 ;
+     sbEditDisplay.Top :=  EditDisplayWidthPanel.Top - sbEDitDisplay.Height - 2 ;
      scMarkDisplay.Height := Max( (sbEditDisplay.Top - scEditDisplay.Top) div 5,2) ;
      scMarkDisplay.Top := sbEditDisplay.Top - scMarkDisplay.Height ;
      scEditDisplay.Height := Max( scMarkDisplay.Top - scEditDisplay.Top - 2, 2) ;
-
      // Set horizontal positions/sizes of controls
      scEditDisplay.Width := Max(DetectEventsPage.Width - scEditDisplay.Left - 2,2) ;
      scMarkDisplay.Width := scEditDisplay.Width ;
 
      // Set sizes of controls on X/Y Plot page
 
-     plPlot.Width := Max( XYPlotPage.ClientWidth - plPlot.Left - 5,2) ;
-     plPlot.Height := Max( XYPlotPage.ClientHeight - plPlot.Top - 5,2) ;
+     plPlot.Width := Max( XYPlotPage.Width - plPlot.Left - 5,2) ;
+     plPlot.Height := Max( XYPlotPage.Height - plPlot.Top - 5,2) ;
 
      // Set sizes of controls on histogram page
-     meHistResults.Height := Max( HistGrp.Height - meHistResults.Top - 5,2) ;
+     HistResultsGrp.Top := HistPage.Height - HistResultsGrp.Height - 5 ;
+     meHistResults.Height := Max( HistResultsGrp.Height - meHistResults.Top - 5,2) ;
      lbHistResults.Width := Max( HistResultsGrp.Width - lbHistResults.Left - 5,2) ;
-
      plHist.Width := Max( HistPage.Width - plHist.Left - 2,2) ;
-
      // Histogram display area height
      plHist.Height := Max( HistResultsGrp.Top - plHist.Top - 5,2) ;
 
      // Set sizes of controls on average page
 
+     AverageResultsGrp.Top := AveragePage.Height - AverageResultsGrp.Height - 5 ;
      lbAvgFitResults.Width := Max(AverageResultsGrp.Width - lbAvgFitResults.Left - 5,2) ;
-
      scAverageDisplay.Height := Max(AverageResultsGrp.Top - scAverageDisplay.Top - 2,2) ;
      scAverageDisplay.Width := Max(AveragePage.ClientWidth - scAverageDisplay.Left - 5,2) ;
 
@@ -2314,6 +2320,10 @@ begin
      OldEditC0CursorPos := scEditDisplay.VerticalCursors[EditC0Cursor] ;
      OldEditC1CursorPos := scEditDisplay.VerticalCursors[EditC1Cursor] ;
 
+     // Disable Delete Events if none available
+     if NumEvents > 0 then bDeleteEvent.Enabled := True
+                      else bDeleteEvent.Enabled := False ;
+
      end;
 
 
@@ -2856,6 +2866,8 @@ var
    iEvent,i : Integer ;
 begin
 
+   if NumEvents <= 0 then Exit ;
+
    // Delete current event from list
    iEvent := sbEvent.Position - 1 ;
    for i := iEvent to NumEvents-1 do Events[i] := Events[i+1] ;
@@ -2906,13 +2918,15 @@ begin
       // Enable/disable Insert Event and Delete Event buttons
       // depending upon whether cursor is over an event
       if CursorAtSample = Events[sbEvent.Position-1] then begin
-         bDeleteEvent.Enabled := True ;
+
          bInsertEvent.Enabled := False ;
          end
       else begin
          bDeleteEvent.Enabled := True ;
          bInsertEvent.Enabled := True ;
          end ;
+
+     if NumEvents <= 0 then bDeleteEvent.Enabled := False ;
 
      for ch := 0 to scEditDisplay.NumChannels-1 do
          if scEditDisplay.ChanVisible[ch] then begin
@@ -4541,10 +4555,18 @@ procedure TEventDetFrm.FormKeyDown(Sender: TObject; var Key: Word;
 // Special control keys processing
 // -------------------------------
 begin
-     Case Key of
-          VK_F2 : bDeleteEvent.Click ;
-          VK_F1 : bInsertEvent.Click ;
-          end ;
+
+//   Link F1, F2 function keys to Insert / Delete Event buttons
+//   only when Edit Events page selected
+
+     if Page.ActivePage = EditEventsPage then
+        begin
+        Case Key of
+             VK_F2 : bDeleteEvent.Click ;
+             VK_F1 : bInsertEvent.Click ;
+             end ;
+        end;
+
      end;
 
 

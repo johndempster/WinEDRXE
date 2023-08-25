@@ -421,6 +421,9 @@ unit Mdiform;
           23.05.23 rec.pas Failure of writing to file to keep up when sampling slowly now fixed.
   V4.0.6  26.06.23 Missing DD1550b.dll added to program folder
   V4.0.7  24.07.23 Event Detector: Decay time to absolute level option added,
+  V4.0.8  24.08.23 Event Detector: Controls no longer drop of bottom of page on low resolution displays
+                   Delete Events button now disabled when no events in list.
+                   F1/F2 function keys now only operate when Edit Events page displayed
   =======================================================================}
 
 interface
@@ -642,7 +645,7 @@ var
    FileName : String ;
 begin
 
-     EDRFile.Version := 'V4.0.7' ;
+     EDRFile.Version := 'V4.0.8' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + EDRFile.Version ;
 
 
