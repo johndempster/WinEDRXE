@@ -108,6 +108,9 @@ unit Sealtest;
   04.08.21 .. Test pulse rate speeded up by only updating test pulse waveform when required and by changes to NIDAQMXunit to make
               ADCToMemory() more efficient.
   18.08.21 .. Display All Channels tick option added to display. Tecella Triton channels can now be selected individually for display
+  30.10.23 .. Seal test holding voltages no longer updated by default holding voltage when seal test form opened
+  30.10.23 .. Auto scale option now toggled by F6 key
+
 
   ==================================================}
 
@@ -826,7 +829,7 @@ begin
     ChangeUnits( edZapAmplitude, Units, Scale ) ;
 
     // Use current default holding potential for selected AO channel
-    TestDAC := Min(Max(TestDAC,0),Main.SESLabIO.DACNumChannels-1) ;
+ {   TestDAC := Min(Max(TestDAC,0),Main.SESLabIO.DACNumChannels-1) ;
     case EDRFile.Settings.SealTest.Use of
           2 : begin
              EDRFile.Settings.SealTest.HoldingVoltage2 :=  Main.SESLabIO.DACHoldingVoltage[TestDAC] ;
@@ -840,7 +843,7 @@ begin
               EDRFile.Settings.SealTest.HoldingVoltage1 :=  Main.SESLabIO.DACHoldingVoltage[TestDAC] ;
               edHoldingVoltage1.Value := EDRFile.Settings.SealTest.HoldingVoltage1 ;
               end ;
-          end ;
+          end ;}
 
 
     end ;
@@ -1634,6 +1637,10 @@ begin
           VK_F5 : begin
                rbUseHoldingVoltage3.checked := True ;
                end ;
+          { F6 toggle auto scale option }
+          VK_F6 : begin
+               ckAutoScale.Checked := not ckAutoScale.Checked ;
+               end;
           end ;
      end;
 

@@ -424,6 +424,8 @@ unit Mdiform;
   V4.0.8  24.08.23 Event Detector: Controls no longer drop of bottom of page on low resolution displays
                    Delete Events button now disabled when no events in list.
                    F1/F2 function keys now only operate when Edit Events page displayed
+  V4.0.9  30.10.23 Seal test holding voltages no longer updated by default holding voltage when seal test form opened
+                   Auto scale option now toggled by F6 key
   =======================================================================}
 
 interface
@@ -645,7 +647,7 @@ var
    FileName : String ;
 begin
 
-     EDRFile.Version := 'V4.0.8' ;
+     EDRFile.Version := 'V4.0.9' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + EDRFile.Version ;
 
 
