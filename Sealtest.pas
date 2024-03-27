@@ -110,6 +110,8 @@ unit Sealtest;
   18.08.21 .. Display All Channels tick option added to display. Tecella Triton channels can now be selected individually for display
   30.10.23 .. Seal test holding voltages no longer updated by default holding voltage when seal test form opened
   30.10.23 .. Auto scale option now toggled by F6 key
+  15.03.24 ... Form position saved to INI file
+  19.03.24 ... Patch clamp control panels load requests now made from timer to ensure seal form is on display BEFORE panel is displayed
 
 
   ==================================================}
@@ -339,7 +341,7 @@ type
     t0 : integer ;
     t0max : integer ;
     State : Integer ;
-    LoadEPC9Panel : Boolean ;
+    LoadControlPanel : Boolean ;                //
     procedure StopADCandDAC ;
     procedure StartADCandDAC ;
     procedure ChangeDisplayGrid ;
@@ -383,33 +385,20 @@ procedure TSealTestFrm.FormShow(Sender: TObject);
   Initialise form
   ---------------}
 var
-   i,ch : Integer ;
+   iLeft,i,ch : Integer ;
 begin
      t0 := 0 ;
      t0Max := 0 ;
      // Exit if no interface selected
      if (Main.SESLabIO.LabInterfaceType = NoInterface12) or
-        (Main.SESLabIO.LabInterfaceType = NoInterface16) then begin
+        (Main.SESLabIO.LabInterfaceType = NoInterface16) then
+        begin
         ShowMessage( 'No laboratory interface selected!' ) ;
         Close ;
         Exit ;
         end ;
 
      // Display Triton control panel if it is not open
-     case Main.SESLabIO.LabInterfaceType of
-          Triton : begin
-             if not Main.FormExists( 'TritonPanelFrm' ) then begin
-                Main.mnTriton.Enabled := True ;
-                Main.mnTriton.Click ;
-                end ;
-             end ;
-          HekaEPC9,HekaEPC10,HekaEPC10Plus,HekaEPC10USB,HekaEPC9USB : begin
-             if not Main.FormExists( 'EPC9PanelFrm' ) then begin
-                Main.mnEPC9Panel.Enabled := True ;
-                Main.mnEPC9Panel.Click ;
-                end ;
-             end ;
-          end;
 
      ClientWidth := ZapGrp.Left + ZapGrp.Width + 5 ;
 
@@ -558,6 +547,8 @@ begin
      Resize ;
      State := StartSweep ;
      Initialised := True ;
+     LoadControlPanel := True ;    // Request display of patch clamp control panel (if in use)
+
      end ;
 
 
@@ -631,11 +622,28 @@ begin
      if not TimerBusy then begin
           TimerBusy := True ;
 
-          if LoadEPC9Panel then
+//
+//        Load virtual control panel if required
+//
+          if LoadControlPanel then
              begin
-             Main.mnEPC9Panel.Enabled := True ;
-             Main.mnEPC9Panel.Click ;
-             LoadEPC9Panel := False ;
+             case Main.SESLabIO.LabInterfaceType of
+                  Triton : begin
+                      if not Main.FormExists( 'TritonPanelFrm' ) then
+                         begin
+                         Main.mnTriton.Enabled := True ;
+                         Main.mnTriton.Click ;
+                         end ;
+                      end ;
+                  HekaEPC9,HekaEPC10,HekaEPC10Plus,HekaEPC10USB,HekaEPC9USB : begin
+                     if not Main.FormExists( 'EPC9PanelFrm' ) then
+                        begin
+                        Main.mnEPC9Panel.Enabled := True ;
+                        Main.mnEPC9Panel.Click ;
+                        end ;
+                     end ;
+                  end;
+             LoadControlPanel := False ;
              end ;
 
           case State of
@@ -1344,7 +1352,7 @@ begin
 
      // Calculate membrane capacity
      TauC := -1.0 / Slope ;
-     outputdebugstring(pchar(format('Tau=%.4g',[TauC])));
+//     outputdebugstring(pchar(format('Tau=%.4g',[TauC])));
      Capacity[iAverage] := TauC*(GAccess[iAverage] + GMembrane[iAverage]) ;
      if Capacity[iAverage] < 0.0 then Exit ;
 
@@ -1607,16 +1615,23 @@ begin
      { Close the form }
      Action := caFree ;
 
+     // Save form position
+     EDRFile.SaveFormPosition( Self ) ;
+
      end;
 
 
 procedure TSealTestFrm.FormCreate(Sender: TObject);
+// -----------------------
+// Inits when form created
+// -----------------------
 begin
      Timer.Enabled := False ;
-     LoadEPC9Panel := False ;
+     LoadControlPanel := False ;
      Initialised := False ;
      State := Idle ;
      end;
+
 
 procedure TSealTestFrm.FormKeyDown(Sender: TObject; var Key: Word;
   Shift: TShiftState);

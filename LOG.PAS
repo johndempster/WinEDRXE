@@ -2,6 +2,7 @@ unit Log;
 { ====================================================
   WinEDR - Display log file text (c) J. Dempster 1996
   ====================================================}
+//  14.03.24 ... Form position saved to INI file
 
 interface
 
@@ -22,6 +23,7 @@ type
     procedure FormCreate(Sender: TObject);
     procedure FormResize(Sender: TObject);
     procedure bAddNoteClick(Sender: TObject);
+    procedure FormShow(Sender: TObject);
   private
     { Private declarations }
   public
@@ -46,8 +48,13 @@ procedure TLogFrm.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
      { Enable "Inspect Log File" option of "File" menu}
      Main.InspectLogFile.enabled := true ;
+
+    // Save form position
+    EDRFile.SaveFormPosition( Self ) ;
+
      Action := caFree ;
      end;
+
 
 procedure TLogFrm.FormActivate(Sender: TObject);
 begin
@@ -57,6 +64,7 @@ begin
      EDRFile.OpenLogFile ;
      Resize ;
      end;
+
 
 procedure TLogFrm.FormDeactivate(Sender: TObject);
 begin
@@ -83,6 +91,16 @@ begin
      meAdd.Width := AddGrp.ClientWidth - meAdd.Left - 5 ;
 
      end;
+
+procedure TLogFrm.FormShow(Sender: TObject);
+// -----------
+// Form shown
+// -----------
+begin
+
+     Resize ;
+
+end;
 
 procedure TLogFrm.bAddNoteClick(Sender: TObject);
 // ---------------

@@ -7,6 +7,7 @@ unit EPC9PanelUnit;
 // 12.03.14 Final working version A
 // 24.03.14 Cslow and RS compensation turned off during auto Cfast to avoid access violations
 // 29.01.22 Main.SESLabIO.EPC9Amplifier no longer set in cbChannelChanging method since it is set in EPC9UpdateSettings
+// 14.03.24 ... Form position saved to INI file
 
 interface
 
@@ -929,6 +930,9 @@ procedure TEPC9PanelFrm.FormClose(Sender: TObject; var Action: TCloseAction);
 // Tidy up and close form
 // ----------------------
 begin
+
+    // Save form position to INI file
+    EDRFile.SaveFormPosition( Self ) ;
 
      Action := caFree ;
 

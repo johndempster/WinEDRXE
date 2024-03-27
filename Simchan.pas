@@ -15,6 +15,7 @@ unit Simchan;
   12.09.03 ... Channel name and units now set correcting
   12.01.10 ... Simulation data file now correctly updated with ADCMaxValue
   13.08.12 ... Sampling interval can now be set in window
+  15.03.24 ... Form position saved to INI file
   }
 
 interface
@@ -398,6 +399,10 @@ begin
 
      { Display results }
       if EDRFile.CdrFH.NumSamplesInFile > 0 then Main.UpdateMDIWIndows ;
+
+      // Save form position
+      EDRFile.SaveFormPosition( Self ) ;
+
      end;
 
 

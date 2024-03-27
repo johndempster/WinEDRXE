@@ -1,4 +1,5 @@
 object PageViewFrm: TPageViewFrm
+  Tag = 12
   Left = 882
   Top = 396
   Caption = 'Page View'

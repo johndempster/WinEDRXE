@@ -426,6 +426,12 @@ unit Mdiform;
                    F1/F2 function keys now only operate when Edit Events page displayed
   V4.0.9  30.10.23 Seal test holding voltages no longer updated by default holding voltage when seal test form opened
                    Auto scale option now toggled by F6 key
+  V4.1.0  27.03.24 Form positions now saved to INI file
+                   Order than MDI child forms closed changed to high->low to avoid access violations when more than 2 forms closed
+                   Left/Right arrow cursor control keys now work to move display readout/analysis cursors
+                   Mutex Dempster.WinEDR now used to prevent more than one instance of WinEDR.exe program running.
+
+
   =======================================================================}
 
 interface
@@ -440,7 +446,8 @@ uses
 
 const
     AllForms = True ;
-    AllExceptRecordFrm = False ;  
+    AllExceptRecordFrm = False ;
+    Margin = 20 ;
 type
   TMain = class(TForm)
     MainMenu: TMainMenu;
@@ -619,6 +626,8 @@ type
     procedure UpdateAllDisplays ;
     function FormExists( FormName : String ) : Boolean ;
     function GetSpecialFolder(const ASpecialFolderID: Integer): string;
+
+
 function ShowTritonPanel : Boolean ;
 
 
@@ -647,7 +656,7 @@ var
    FileName : String ;
 begin
 
-     EDRFile.Version := 'V4.0.9' ;
+     EDRFile.Version := 'V4.1.0' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + EDRFile.Version ;
 
 
@@ -703,6 +712,9 @@ begin
            end ;
         end ;
 
+     // Set main form position
+     EDRFile.SetFormPosition( Self,20,20,Screen.Width - 40,Screen.Height - 80 );
+
      end;
 
 
@@ -740,8 +752,7 @@ begin
         OpenDialog.InitialDir := EDRFile.DataDirectory ;
         OpenDialog.FileName := '' ;
         end ;
-     OpenDialog.Filter := format( ' EDR Files (*%s)|*%s',
-                                  [DataFileExtension,DataFileExtension]) ;
+     OpenDialog.Filter := format( ' EDR Files (*%s)|*%s',[DataFileExtension,DataFileExtension]) ;
      OpenDialog.Title := 'Open File ' ;
 
      if OpenDialog.execute then
@@ -758,6 +769,7 @@ begin
         end ;
 
      SetMenus ;
+
      end;
 
 
@@ -773,7 +785,8 @@ begin
      for i := 0 to mnZoomIn.Count-1 do mnZoomIn.Items[i].Visible := False ;
      if MDIChildCount <= 0 then Exit ;
 
-     if ActiveMDIChild.Name = 'RecordFrm' then begin
+     if ActiveMDIChild.Name = 'RecordFrm' then
+        begin
         // Use Recording channels if recording form is active
         for ch := 0 to EDRFile.Settings.NumChannels-1 do begin
             mnZoomIn.Items[ch].Caption := format( 'Ch.%d (%s)',
@@ -821,7 +834,8 @@ begin
          Main.SESLabIO.ADCChannelYMax[ch] := Main.SESLabIO.ADCMaxValue ;
          end ;
 
-     for i := 0 to MDIChildCount-1 do begin
+     for i := 0 to MDIChildCount-1 do
+          begin
           if MDIChildren[I].Name = 'SimMEPCFrm' then
              TSimMEPCFrm(MDIChildren[I]).ZoomOut
           else if MDIChildren[I].Name = 'SimNoiseFrm' then
@@ -863,14 +877,17 @@ var
    i : Integer ;
 begin
 
-     { Close all child windows }
-     for i := 0 to MDIChildCount-1 do
+//   Close all child windows
+//   Note. Loop has to be from high to low because MDIChildCount decrements as forms are closed
+//
+     for i:= MDIChildCount-1 downto 0 do
          begin
          if CloseAllForms or
             ((MDICHildren[i].Name <> 'RecordFrm') and
              (MDICHildren[i].Name <> 'RecPlotFrm') and
-             (MDICHildren[i].Name <> 'TritonPanelFrm')) then MDICHildren[i].Close
-         end ;
+             (MDICHildren[i].Name <> 'TritonPanelFrm') and
+             (MDICHildren[i].Name <> 'EPC9PanelFrm')) then MDICHildren[i].Close
+         end;
 
      { Close files }
      EDRFile.CloseDataFile ;
@@ -916,6 +933,9 @@ procedure TMain.mnPrintClick(Sender: TObject);
   Print the record or graph displayed in the currently active form
   ----------------------------------------------------------------}
 begin
+
+     if MDIChildCount <= 0 then Exit ;
+
      if ActiveMDIChild.Name = 'ViewSigFrm' then
         TViewSigFrm(ActiveMDIChild).PrintDisplay ;
      if ActiveMDIChild.Name = 'NoiseAnalFrm' then
@@ -953,11 +973,7 @@ begin
         end
      else begin
         RecordFrm := TRecordFrm.Create(Self) ;
-        RecordFrm.Left := 15 ;
-        RecordFrm.Top := 15 ;
-        RecordFrm.Height := ClientHeight - RecordFrm.Top - 30 ;
-        RecordFrm.Width := Min( RecordFrm.Width,
-                                 ClientWidth - RecordFrm.Left - 30 ) ;
+        EDRFile.SetFormPosition( RecordFrm, Margin, Margin, ClientWidth - Margin*2, ClientHeight - Margin*2 ) ;
         end ;
 
      end;
@@ -1023,13 +1039,15 @@ procedure TMain.mnStimulusGeneratorClick(Sender: TObject);
 begin
 
     if FormExists('EditProtocolFrm') then begin
+       if EditProtocolFrm.WindowState = wsMinimized then EditProtocolFrm.WindowState := wsNormal ;
+       EditProtocolFrm.BringToFront ;
        EditProtocolFrm.SetFocus ;
        end
     else begin
        EditProtocolFrm := TEditProtocolFrm.Create(Self) ;
-       EditProtocolFrm.Left := 10 ;
-       EditProtocolFrm.Top := 10 ;
+       EDRFile.SetFormPosition( EditProtocolFrm, 20,20, EditProtocolFrm.Width, EditProtocolFrm.Height ) ;
        end ;
+
     end ;
 
 
@@ -1090,16 +1108,11 @@ procedure TMain.mnSaveDataToFileClick(Sender: TObject);
   -----------------------------}
 begin
 
+     if MDIChildCount <= 0 then Exit ;
 
-//     if ActiveMDIChild.Name = 'SingleChanAnalFrm' then
-//        TSingleChanAnalFrm(ActiveMDIChild).SaveDataToFile(FileName) ;
      if ActiveMDIChild.Name = 'ViewSigFrm' then TViewSigFrm(ActiveMDIChild).SaveDataToFile
-      else if (ActiveMDIChild.Name = 'EventDetFrm') then TEventDetFrm(ActiveMDIChild).SaveDataToFile
-      else if (ActiveMDIChild.Name = 'NoiseAnalFrm') then TNoiseAnalFrm(ActiveMDIChild).SaveDataToFile ;
-//     if ActiveMDIChild.Name = 'ECGFrm' then
-//        TECGFrm(ActiveMDIChild).SaveDataToFile(FileName) ;
-//     if ActiveMDIChild.Name = 'RecPlotFrm' then
-//        TRecPlotFrm(ActiveMDIChild).SaveDataToFile(FileName) ;
+     else if (ActiveMDIChild.Name = 'EventDetFrm') then TEventDetFrm(ActiveMDIChild).SaveDataToFile
+     else if (ActiveMDIChild.Name = 'NoiseAnalFrm') then TNoiseAnalFrm(ActiveMDIChild).SaveDataToFile ;
 
      end ;
 
@@ -1109,23 +1122,36 @@ procedure TMain.mnSealTestClick(Sender: TObject);
   Menu - Open seal test module
   ----------------------------}
 begin
-     if FormExists('SealTestFrm') then begin
+     if FormExists('SealTestFrm') then
+        begin
         if SealTestFrm.WindowState = wsMinimized then SealTestFrm.WindowState := wsNormal ;
         SealTestFrm.BringToFront ;
         SealTestFrm.SetFocus ;
         end
      else begin
         SealTestFrm := TSealTestFrm.Create(Self) ;
-        SealTestFrm.Left := 15 ;
-        SealTestFrm.Top := 15 ;
+        EDRFile.SetFormPosition( SealTestFrm, Margin, Margin, SealTestFrm.Width, SealTestFrm.Height ) ;
         end ;
      end;
 
 
 procedure TMain.AboutClick(Sender: TObject);
+// ------------------
+// Display About form
+// ------------------
 begin
-     AboutDlg := TAboutDlg.Create(Self) ;
-     AboutDlg.ShowModal ;
+
+     if FormExists('AboutDlg') then
+        begin
+        if AboutDlg.WindowState = wsMinimized then AboutDlg.WindowState := wsNormal ;
+        AboutDlg.BringToFront ;
+        AboutDlg.SetFocus ;
+        end
+     else begin
+        AboutDlg := TAboutDlg.Create(Self) ;
+        EDRFile.SetFormPosition( AboutDlg, Margin, Margin,AboutDlg.Width, AboutDlg.Height ) ;
+        end ;
+
      end;
 
 
@@ -1136,8 +1162,21 @@ begin
 
 
 procedure TMain.InspectLogFileClick(Sender: TObject);
+// ---------------------
+// Display log file text
+// ---------------------
 begin
-     LogFrm := TLogFrm.Create(Self) ;
+     if FormExists('LogFrm') then
+        begin
+        if LogFrm.WindowState = wsMinimized then LogFrm.WindowState := wsNormal ;
+        LogFrm.BringToFront ;
+        LogFrm.SetFocus ;
+        end
+     else begin
+        LogFrm := TLogFrm.Create(Self) ;
+        EDRFile.SetFormPosition( LogFrm, Margin, Margin, LogFrm.Width, LogFrm.Height ) ;
+        end ;
+
      end;
 
 
@@ -1167,6 +1206,9 @@ procedure TMain.CopyDataClick(Sender: TObject);
   Copy data values to clipboard
   -----------------------------}
 begin
+
+     if MDIChildCount <= 0 then Exit ;
+
      if ActiveMDIChild.Name = 'ViewSigFrm' then
         TViewSigFrm(ActiveMDIChild).scDisplay.CopyDataToClipBoard ;
      if ActiveMDIChild.Name = 'NoiseAnalFrm' then
@@ -1188,6 +1230,9 @@ procedure TMain.CopyImageClick(Sender: TObject);
   Copy displayed image to clipboard
   ---------------------------------}
 begin
+
+     if MDIChildCount <= 0 then Exit ;
+
      if ActiveMDIChild.Name = 'ViewSigFrm' then
         TViewSigFrm(ActiveMDIChild).CopyImageToClipboard ;
      if ActiveMDIChild.Name = 'NoiseAnalFrm' then
@@ -1206,19 +1251,30 @@ begin
 
 
 procedure TMain.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+// ------------------------------
+// Warn user msin form is closing
+// ------------------------------
 begin
      if MessageDlg( 'Exit Program! Are you Sure? ', mtConfirmation,
         [mbYes,mbNo], 0 ) = mrYes then CanClose := True
                                   else CanClose := False ;
      end;
 
+
 procedure TMain.FormClose(Sender: TObject; var Action: TCloseAction);
+// ----------------
+// Form is closing
+// ----------------
 begin
 
         CloseFormsAndDataFile( AllForms ) ;
 
+        // Save form position
+        EDRFile.SaveFormPosition( Main ) ;
+
         { Close log file }
         EDRFile.CloseLogFile ;
+
         { Save initialization file }
         EDRFile.SaveInitializationFile( EDRFile.SettingsFileName ) ;
 
@@ -1245,8 +1301,7 @@ begin
         end
      else begin
         DefSetFrm := TDefSetFrm.Create(Self) ;
-        DefSetFrm.Left := 10 ;
-        DefSetFrm.Top := 10 ;
+        EDRFile.SetFormPosition( DefSetFrm, Margin,Margin, DefSetFrm.Width, DefSetFrm.Height ) ;
         end ;
 
      end;
@@ -1264,8 +1319,7 @@ begin
         end
      else begin
         CED1902Frm := TCED1902Frm.Create(Self) ;
-        CED1902Frm.Left := 10 ;
-        CED1902Frm.Top := 10 ;
+        EDRFile.SetFormPosition( CED1902Frm, Margin,Margin, CED1902Frm.Width, CED1902Frm.Height ) ;
         end ;
 
      end;
@@ -1328,7 +1382,19 @@ procedure TMain.mnExportClick(Sender: TObject);
   Export records to a foreign data file type
   --------------------------------------------}
 begin
-     ExportFrm.ShowModal ;
+
+     if FormExists('ExportFrm') then
+        begin
+        if ExportFrm.WindowState = wsMinimized then ExportFrm.WindowState := wsNormal ;
+        ExportFrm.BringToFront ;
+        ExportFrm.SetFocus ;
+        end
+     else begin
+        ExportFrm := TExportFrm.Create(Self) ;
+        EDRFile.SetFormPosition( ExportFrm, Margin, Margin, ExportFrm.Width, ExportFrm.Height ) ;
+        ExportFrm.BringToFront ;
+        end ;
+
      end ;
 
 
@@ -1337,18 +1403,15 @@ procedure TMain.mnViewSigClick(Sender: TObject);
   Open signal display window
   -------------------------- }
 begin
-     if FormExists('ViewSigFrm') then begin
+     if FormExists('ViewSigFrm') then
+        begin
         if ViewSigFrm.WindowState = wsMinimized then ViewSigFrm.WindowState := wsNormal ;
         ViewSigFrm.BringToFront ;
         ViewSigFrm.SetFocus ;
         end
      else begin
         ViewSigFrm := TViewSigFrm.Create(Self) ;
-        ViewSigFrm.Left := 15 ;
-        ViewSigFrm.Top := 15 ;
-        ViewSigFrm.Height := ClientHeight - ViewSigFrm.Top - 10 ;
-        ViewSigFrm.Width := Min( ViewSigFrm.Width,
-                                 ClientWidth - ViewSigFrm.Left - 30 ) ;
+        EDRFile.SetFormPosition( ViewSigFrm, Margin, Margin, ClientWidth - Margin*2, ClientHeight - Margin*2 ) ;
         end ;
      end;
 
@@ -1364,9 +1427,8 @@ begin
         simmepcfrm.SetFocus ;
         end
      else begin
-        simmepcfrm := Tsimmepcfrm.Create(Self) ;
-        simmepcfrm.Left := 20 ;
-        simmepcfrm.Top := 20 ;
+        SimmepcFrm := Tsimmepcfrm.Create(Self) ;
+        EDRFile.SetFormPosition( SimmepcFrm, Margin, Margin, simmepcfrm.Width, simmepcfrm.Height ) ;
         end ;
      end;
 
@@ -1382,9 +1444,9 @@ begin
         NoiseAnalFrm.SetFocus ;
         end
      else begin
+        // Create form
         NoiseAnalFrm := TNoiseAnalFrm.Create(Self) ;
-        NoiseAnalFrm.Left := 20 ;
-        NoiseAnalFrm.Top := 20 ;
+        EDRFile.SetFormPosition( NoiseAnalFrm, Margin, Margin, ClientWidth - Margin*2, ClientHeight - Margin*2 ) ;
         end ;
      end;
 
@@ -1401,8 +1463,7 @@ begin
         end
      else begin
         SimNoiseFrm := TSimNoiseFrm.Create(Self) ;
-        SimNoiseFrm.Left := 20 ;
-        SimNoiseFrm.Top := 20 ;
+        EDRFile.SetFormPosition( SimNoiseFrm, Margin, Margin, SimNoiseFrm.Width, SimNoiseFrm.Height ) ;
         end ;
      end;
 
@@ -1430,8 +1491,7 @@ begin
         end
      else begin
         SimChanFrm := TSimChanFrm.Create(Self) ;
-        SimChanFrm.Left := 20 ;
-        SimChanFrm.Top := 20 ;
+        EDRFile.SetFormPosition( SimChanFrm, Margin, Margin, SimChanFrm.Width, SimChanFrm.Height ) ;
         end ;
      end;
 
@@ -1447,9 +1507,10 @@ begin
         singlechananalfrm.SetFocus ;
         end
      else begin
-        singlechananalfrm := Tsinglechananalfrm.Create(Self) ;
-        singlechananalfrm.Left := 20 ;
-        singlechananalfrm.Top := 20 ;
+        // Create form
+        SingleChananalFrm := TSinglechananalfrm.Create(Self) ;
+        EDRFile.SetFormPosition( SingleChananalFrm, Margin, Margin, ClientWidth - Margin*2, ClientHeight - Margin*2 ) ;
+        SingleChananalFrm.BringToFront ;
         end ;
      end;
 
@@ -1459,8 +1520,19 @@ procedure TMain.mnDigitalFilterClick(Sender: TObject);
   Open digital filter dialog form (digfilt.pas)
   --------------------------------------------}
 begin
-     DigFilterDlg.ShowModal ;
-     if DigFilterDlg.ModalResult = mrOK then UpdateViewSig
+
+     if FormExists('DigFilterDlg') then begin
+        if DigFilterDlg.WindowState = wsMinimized then DigFilterDlg.WindowState := wsNormal ;
+        DigFilterDlg.BringToFront ;
+        DigFilterDlg.SetFocus ;
+        end
+     else begin
+        // Create form
+        DigFilterDlg := TDigFilterDlg.Create(Self) ;
+        EDRFile.SetFormPosition( DigFilterDlg, Margin, Margin, DigFilterDlg.Width, DigFilterDlg.Height ) ;
+        DigFilterDlg.BringToFront ;
+        end ;
+
      end;
 
 
@@ -1504,7 +1576,8 @@ begin
      SetMenus ;
 
      ViewSigExists := False ;
-     for i := 0 to MDIChildCount-1 do begin
+     for i := 0 to MDIChildCount-1 do
+         begin
          if MDIChildren[I].Name = 'ViewSigFrm' then begin
             TViewSigFrm(MDIChildren[I]).DisplayFromFile ;
             ViewSigExists := True ;
@@ -1512,8 +1585,8 @@ begin
          end ;
 
      { If no replay form ... create one }
-     if (EDRFile.CdrfH.NumSamplesInFile > 0) and (not ViewSigExists) then
-        ViewSigFrm := TViewSigFrm.Create(Self) ;
+     if (EDRFile.CdrfH.NumSamplesInFile > 0) and (not ViewSigExists) then mnViewSig.Click ;
+//        ViewSigFrm := TViewSigFrm.Create(Self) ;
 
      end;
 
@@ -1623,11 +1696,27 @@ procedure TMain.mnInvertClick(Sender: TObject);
  // --------------------------------------------
 begin
 
-     InvertDlg.Left := Self.Left + 50 ;
+  {   InvertDlg.Left := Self.Left + 50 ;
      InvertDlg.Top := Self.Top + 50 ;
-     InvertDlg.ShowModal ;
+     InvertDlg.ShowModal ;}
 
-     if InvertDlg.ModalResult = mrOK then UpdateViewSig
+{     if InvertDlg.ModalResult = mrOK then UpdateViewSig}
+
+     if FormExists('EventDetFrm') then
+        begin
+        if InvertDlg.WindowState = wsMinimized then InvertDlg.WindowState := wsNormal ;
+        InvertDlg.BringToFront ;
+        InvertDlg.SetFocus ;
+        end
+     else
+        begin
+        // Create form
+        InvertDlg := TInvertDlg.Create(Self) ;
+        EDRFile.SetFormPosition( InvertDlg, Margin, Margin, InvertDlg.Width, InvertDlg.Height ) ;
+        InvertDlg.BringToFront ;
+        InvertDlg.SetFocus ;
+        end ;
+
      end;
 
 
@@ -1642,9 +1731,11 @@ begin
         EventDetFrm.SetFocus ;
         end
      else begin
+        // Create form
         EventDetFrm := TEventDetFrm.Create(Self) ;
-        EventDetFrm.Left := 20 ;
-        EventDetFrm.Top := 20 ;
+        EDRFile.SetFormPosition( EventDetFrm, Margin, Margin, ClientWidth - Margin*2, ClientHeight - Margin*2 ) ;
+        EventDetFrm.BringToFront ;
+        EventDetFrm.SetFocus ;
         end ;
      end;
 
@@ -1694,7 +1785,7 @@ begin
         end ;
 
      if EDRFile.CDRFH.FileHandle >= 0 then mnEditMarkers.Enabled := True
-                              else mnEditMarkers.Enabled := False ;
+                                      else mnEditMarkers.Enabled := False ;
 
      end;
 
@@ -1708,6 +1799,7 @@ begin
      mnShowHints.Checked := Application.ShowHint ;
      end;
 
+
 procedure TMain.mnPageViewClick(Sender: TObject);
 // ------------------------------------------
 // Open Multi-line page signal display window
@@ -1720,8 +1812,7 @@ begin
         end
      else begin
         PageViewFrm := TPageViewFrm.Create(Self) ;
-        PageViewFrm.Left := 15 ;
-        PageViewFrm.Top := 15 ;
+        EDRFile.SetFormPosition( PageViewFrm, Margin, Margin, ClientWidth - Margin*2, ClientHeight - Margin*2 ) ;
         end ;
 
      end;
@@ -1773,12 +1864,16 @@ begin
      EditMarkersFrm.Top :=Main.Top +  55 ;
      EditMarkersFrm.showmodal ;
 
-     // Save settings
-     EDRFile.SaveHeader( EDRFile.CDRFH ) ;
-
-     // Update display
-     if FormExists('ViewSigFrm') then ViewSigFrm.DisplayFromFile ;
-     if FormExists('PageViewFrm') then PageViewFrm.NewFile ;
+     if FormExists('EditMarkersFrm') then begin
+        if EditMarkersFrm.WindowState = wsMinimized then EditMarkersFrm.WindowState := wsNormal ;
+        EditMarkersFrm.BringToFront ;
+        EditMarkersFrm.SetFocus ;
+        end
+     else begin
+        EditMarkersFrm := TEditMarkersFrm.Create(Self) ;
+        EDRFile.SetFormPosition( EditMarkersFrm, Margin, Margin,EditMarkersFrm.Width, EditMarkersFrm.Height ) ;
+        EditMarkersFrm.BringToFront ;
+        end ;
 
      end ;
 
@@ -1880,11 +1975,14 @@ begin
         // ASCII format data files
         ImportASCIIFrm.ImportFile := ImportFile ;
         ImportASCIIFrm.FileName := FileName ;
+        EDRFile.SetFormPosition( ImportASCIIFrm, Main.Left + 20,Main.Top + 60, ImportASCIIFrm.Width, ImportASCIIFrm.Height ) ;
         if ImportASCIIFrm.ShowModal <> mrOK Then Exit ;
         if not Main.ImportFile.OpenDataFile( FileName, FileType ) then Exit ;
         end
      else if FileType = ftRaw then begin
         // Raw binary data files
+        // Set form position
+        EDRFile.SetFormPosition( ImportRawFrm, Main.Left + 20,Main.Top + 60, ImportRawFrm.Width, ImportRawFrm.Height ) ;
         ImportRawFrm.ImportFile := ImportFile ;
         if ImportRawFrm.ShowModal <> mrOK Then Exit ;
         if not Main.ImportFile.OpenDataFile( FileName, FileType ) then Exit ;
@@ -2112,8 +2210,7 @@ begin
         end
      else begin
         VP500PanelFrm := TVP500PanelFrm.Create(Self) ;
-        VP500PanelFrm.Left := 10 ;
-        VP500PanelFrm.Top := 10 ;
+        EDRFile.SetFormPosition( VP500PanelFrm , Margin, Margin , VP500PanelFrm .Width, VP500PanelFrm .Height ) ;
         end ;
      end ;
 
@@ -2218,6 +2315,8 @@ procedure TMain.mnEPC9Click(Sender: TObject);
 // -------------------------------
 //  Display EPC9/10 control window
 // ------------------------------- }
+var
+    i : Integer ;
 begin
 
      if FormExists( 'EPC9PanelFrm' ) then begin
@@ -2228,8 +2327,26 @@ begin
         end
      else begin
         EPC9PanelFrm := TEPC9PanelFrm.Create(Self) ;
-        EPC9PanelFrm.Top := 10 ;
-        EPC9PanelFrm.Left := Width - EPC9PanelFrm.Width - 50 ;
+        // Set form position
+        EDRFile.SetFormPosition( EPC9PanelFrm , Margin, Margin , EPC9PanelFrm .Width, EPC9PanelFrm .Height ) ;
+        // Prevent it overlapping seal test or record window
+        for i := 0 to MDIChildCount-1 do
+            begin
+
+            if MDIChildren[i].Name = 'SealTestFrm' then
+                begin
+                EPC9PanelFrm.Left := Max( EPC9PanelFrm.Left,
+                                            TSealTestFrm(MDIChildren[i]).Width + TSealTestFrm(MDIChildren[i]).Left + 5 ) ;
+                end;
+
+            if MDIChildren[i].Name = 'RecordFrm' then
+                begin
+                TritonPanelFrm.Left := Max( EPC9PanelFrm.Left,
+                                            TRecordFrm(MDIChildren[i]).Width + TRecordFrm(MDIChildren[i]).Left + 5 ) ;
+                end;
+
+            end ;
+
         end ;
 
      end;
@@ -2315,8 +2432,7 @@ begin
         end
      else begin
         FilePropsDlg := TFilePropsDlg.Create(Self) ;
-        FilePropsDlg.Left := 10 ;
-        FilePropsDlg.Top := 10 ;
+        EDRFile.SetFormPosition( FilePropsDlg, 20,20, FilePropsDlg.Width, FilePropsDlg.Height ) ;
         end ;
      end ;
 
@@ -2368,10 +2484,10 @@ begin
         end
      else begin
         DBSPanelFrm := TDBSPanelFrm.Create(Self) ;
-        DBSPanelFrm.Left := 10 ;
-        DBSPanelFrm.Top := 10 ;
+        EDRFile.SetFormPosition( DBSPanelFrm, 20,20, DBSPanelFrm.Width, DBSPanelFrm.Height ) ;
         end ;
      end ;
+
 
 procedure TMain.mnDClampClick(Sender: TObject);
 // --------------------------------------------
@@ -2386,8 +2502,8 @@ begin
         end
      else begin
         DCLAMPFrm := TDCLAMPFrm.Create(Self) ;
-        DCLAMPFrm.Top := 10 ;
-        DCLAMPFrm.Left := 10 ;
+             // Set form position
+        EDRFile.SetFormPosition( Self, 20,20, Self.Width, Self.Height ) ;
         end ;
 
      end;
@@ -2396,18 +2512,39 @@ procedure TMain.mnTritonClick(Sender: TObject);
 // -------------------------------
 //  Display Triton control window
 // ------------------------------- }
+var
+    i : Integer ;
 begin
 
-     if FormExists( 'TritonPanelFrm' ) then begin
+     if FormExists( 'TritonPanelFrm' ) then
+        begin
         // Make form visible, active and on top
         if TritonPanelFrm.WindowState = wsMinimized then TritonPanelFrm.WindowState := wsNormal ;
         TritonPanelFrm.BringToFront ;
         TritonPanelFrm.SetFocus ;
         end
-     else begin
+     else
+        begin
         TritonPanelFrm := TTritonPanelFrm.Create(Self) ;
-        TritonPanelFrm.Top := 10 ;
-        TritonPanelFrm.Left := 650 ;
+        EDRFile.SetFormPosition( TritonPanelFrm, 10,10, TritonPanelFrm.Width, TritonPanelFrm.Height ) ;
+        // Prevent it overlapping seal test or record window
+        for i := 0 to MDIChildCount-1 do
+            begin
+
+            if MDIChildren[i].Name = 'SealTestFrm' then
+                begin
+                TritonPanelFrm.Left := Max( TritonPanelFrm.Left,
+                                            TSealTestFrm(MDIChildren[i]).Width + TSealTestFrm(MDIChildren[i]).Left + 5 ) ;
+                end;
+
+            if MDIChildren[i].Name = 'RecordFrm' then
+                begin
+                TritonPanelFrm.Left := Max( TritonPanelFrm.Left,
+                                            TRecordFrm(MDIChildren[i]).Width + TRecordFrm(MDIChildren[i]).Left + 5 ) ;
+                end;
+
+            end ;
+
         end ;
 
      end;
@@ -2427,11 +2564,11 @@ begin
         end
      else begin
         LabInterfaceSetupFrm := TLabInterfaceSetupFrm.Create(Self) ;
-        LabInterfaceSetupFrm.Top := 10 ;
-        LabInterfaceSetupFrm.Left := 10 ;
+        EDRFile.SetFormPosition( LabInterfaceSetupFrm, Margin,Margin, LabInterfaceSetupFrm.Width, LabInterfaceSetupFrm.Height ) ;
         end ;
 
      end;
+
 
 procedure TMain.mnInputChannelsAndAmplifiersClick(Sender: TObject);
 { - Menu Item -------------------------------
@@ -2446,8 +2583,7 @@ begin
         end
      else begin
         InputChannelSetupFrm := TInputChannelSetupFrm.Create(Self) ;
-        InputChannelSetupFrm.Top := 10 ;
-        InputChannelSetupFrm.Left := 10 ;
+        EDRFile.SetFormPosition( InputChannelSetupFrm, Margin,Margin, InputChannelSetupFrm.Width, InputChannelSetupFrm.Height ) ;
         end ;
 
      end;
@@ -2484,8 +2620,7 @@ begin
                 begin
                 // Create form
                 TritonPanelFrm := TTritonPanelFrm.Create(Self) ;
-                TritonPanelFrm.Top := 15 ;
-                TritonPanelFrm.Left := 710 ;
+                EDRFile.SetFormPosition( TritonPanelFrm, 710,10, TritonPanelFrm.Width, TritonPanelFrm.Height ) ;
                 end
              else
                 begin
@@ -2497,7 +2632,8 @@ begin
              Result := True ;
              end ;
           end;
-end;
+      end ;
+
 
 
 

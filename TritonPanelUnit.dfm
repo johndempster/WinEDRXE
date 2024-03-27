@@ -1,9 +1,10 @@
 object TritonPanelFrm: TTritonPanelFrm
+  Tag = 22
   Left = 598
   Top = 11
   Caption = 'Tecella Patch Clamp '
   ClientHeight = 667
-  ClientWidth = 1107
+  ClientWidth = 387
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -42,10 +43,6 @@ object TritonPanelFrm: TTritonPanelFrm
         TabOrder = 0
         object AutoPage: TTabSheet
           Caption = 'Auto'
-          ExplicitLeft = 0
-          ExplicitTop = 0
-          ExplicitWidth = 0
-          ExplicitHeight = 0
           object ckCompensateAllChannels: TCheckBox
             Left = 167
             Top = 240

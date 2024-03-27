@@ -14,6 +14,7 @@ unit PageView;
 //              channel changed
 // 28.08.12 ... Zero Level popup and Fixed Zero level option added
 // 07.08.15 ... Min/Max compression of large array signal arrays now handled by ScopeDisplay.pas
+// 15.03.24 ... Form position saved to INI file
 
 interface
 
@@ -538,6 +539,10 @@ procedure TPageViewFrm.FormClose(Sender: TObject;
 begin
 
      Action := caFree ;
+
+     // Save form position
+     EDRFile.SaveFormPosition( Self ) ;
+
      end;
 
 

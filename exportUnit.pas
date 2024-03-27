@@ -30,6 +30,7 @@ unit exportUnit;
   09.06.15 ... Replaces export.pas module in WinEDR.
   25.08.15 ... Long export file names no longer split across two lines
                No. of samples in exported EDR files now correct.
+// 14.03.24 ... Form position saved to INI file
   }
 interface
 
@@ -39,10 +40,21 @@ uses
 
 type
   TExportFrm = class(TForm)
+    gpFileList: TGroupBox;
+    bChangeName: TButton;
+    bOK: TButton;
+    bCancel: TButton;
+    ExportFile: TADCDataFile;
+    meFileList: TMemo;
+    OpenDialog: TOpenDialog;
+    gpOptions: TGroupBox;
     GroupBox8: TGroupBox;
     rbAllRecords: TRadioButton;
     rbRange: TRadioButton;
     edRange: TRangeEdit;
+    GroupBox2: TGroupBox;
+    ckCombineRecords: TCheckBox;
+    cbExportFormat: TComboBox;
     ChannelsGrp: TGroupBox;
     ckCh0: TCheckBox;
     ckCh1: TCheckBox;
@@ -52,13 +64,6 @@ type
     ckCh5: TCheckBox;
     ckCh6: TCheckBox;
     ckCh7: TCheckBox;
-    GroupBox3: TGroupBox;
-    GroupBox2: TGroupBox;
-    bChangeName: TButton;
-    bOK: TButton;
-    bCancel: TButton;
-    ExportFile: TADCDataFile;
-    ckCombineRecords: TCheckBox;
     ckCh8: TCheckBox;
     ckCh9: TCheckBox;
     ckCh10: TCheckBox;
@@ -83,18 +88,20 @@ type
     ckCh29: TCheckBox;
     ckCh30: TCheckBox;
     ckCh31: TCheckBox;
-    meFileList: TMemo;
-    cbExportFormat: TComboBox;
-    OpenDialog: TOpenDialog;
     procedure FormShow(Sender: TObject);
     procedure bChangeNameClick(Sender: TObject);
     procedure bOKClick(Sender: TObject);
     procedure cbExportFormatChange(Sender: TObject);
+    procedure FormResize(Sender: TObject);
+    procedure bCancelClick(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure FormCloseQuery(Sender: TObject; var CanClose: Boolean);
   private
     { Private declarations }
     ExportFileName : string ;
     ExportExtension : Array[0..100] of String ;
     KeepFileName : String ;
+    AbortExport : Boolean ;     // Abort export flag
 
     procedure SetChannel( CheckBox : TCheckBox ; ch : Integer ) ;
     function CreateExportFileName(FileName : string ) : String ;
@@ -119,14 +126,62 @@ uses Mdiform, EDRFileUnit;
 {$R *.DFM}
 
 
+procedure TExportFrm.FormClose(Sender: TObject; var Action: TCloseAction);
+// ---------------------------
+// Procedures when form closed
+// ---------------------------
+begin
+    if bOK.Enabled then Action := caFree ;
+
+    // Save form position to INI file
+    EDRFile.SaveFormPosition( Self ) ;
+
+
+end;
+
+
+procedure TExportFrm.FormCloseQuery(Sender: TObject; var CanClose: Boolean);
+// ---------------------------
+// Check if form can be closed
+// ---------------------------
+begin
+      if not bOK.Enabled then
+         begin
+         // If export in progress request abort
+         AbortExport := True ;
+         CanClose := False ;
+
+         end
+      else CanClose := True ;
+
+
+end;
+
+
+procedure TExportFrm.FormResize(Sender: TObject);
+// ---------------------------------
+// Adjust controls when form resized
+// ---------------------------------
+begin
+    gpFileList.Width := ClientWidth - 5 - gpFileList.Left ;
+    meFileList.Width := gpFileList.Width - 5 - meFileList.Left ;
+
+    bOK.Top := ClientHeight - bOk.Height - 5 ;
+    bCancel.Top := bOK.Top ;
+    gpOptions.Top := bOK.Top - 5 - gpOptions.Height ;
+    gpOptions.Width := gpFileList.Width ;
+    gpFileList.Height := gpOptions.Top - gpFileList.Top - 5 ;
+    bChangeName.Top := gpFileList.ClientHeight - bChangeName.Height - 5 ;
+    meFileList.Height := bChangeName.Top - meFileList.Top - 5 ;
+end;
+
+
 procedure TExportFrm.FormShow(Sender: TObject);
 // ------------------------------
 // Initialise form when displayed
 // ------------------------------
 begin
 
-     Top := Main.Top + 60 ;
-     Left := Main.Left + 20 ;
 
     KeepFileName := EDRFIle.CDRFH.FileName ;
 
@@ -167,6 +222,11 @@ begin
      meFileList.Lines[0] := EDRFIle.CDRFH.FileName ;
      ckCombineRecords.Visible := False ;
      UpdateChannelSelectionList ;
+
+     Resize ;
+
+     AbortExport := False ;
+     bOK.Enabled := True ;
 
      end;
 
@@ -518,6 +578,16 @@ begin
      end;
 
 
+procedure TExportFrm.bCancelClick(Sender: TObject);
+// -------------
+// Cancel export
+// -------------
+begin
+      if not bOK.Enabled then AbortExport := True
+                         else Close ;
+end;
+
+
 procedure TExportFrm.bChangeNameClick(Sender: TObject);
 { ------------------------
   Select files for export
@@ -601,13 +671,17 @@ var
     i : Integer ;
 begin
 
+    bOK.Enabled := False ;
+    AbortExport := False ;
+
     ExportType := TADCDataFileType(cbExportFormat.Items.objects[cbExportFormat.ItemIndex]);
 
     // Close currently open data file
     FileClose(EDRFIle.Cdrfh.FileHandle) ;
     EDRFIle.Cdrfh.FileHandle := -1 ;
 
-    for i := 0 to meFileList.Lines.Count-1 do begin
+    for i := 0 to meFileList.Lines.Count-1 do
+        begin
 
         FileName := meFileList.Lines[i] ;
         EDRFile.LoadDataFiles(FileName) ;
@@ -621,9 +695,15 @@ begin
         FileClose(EDRFIle.Cdrfh.FileHandle) ;
         EDRFIle.Cdrfh.FileHandle := -1 ;
 
+        if not AbortExport then Break ;
+
         end;
 
     EDRFile.LoadDataFiles(KeepFileName) ;
+
+    EDRFile.SaveFormPosition( Self ) ;
+
+    bOK.Enabled := True ;
 
     end ;
 

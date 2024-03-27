@@ -3,6 +3,7 @@ unit DBSPanelUnit;
 // Direct Brain Stimulator Control Panel
 // -------------------------------------
 // V1.0 6/7/11
+// 14.03.24 Form position saved to INI file
 
 interface
 
@@ -49,11 +50,14 @@ var
 
 implementation
 
-uses Mdiform;
+uses Mdiform, EDRFileUnit;
 
 {$R *.dfm}
 
 procedure TDBSPanelFrm.FormShow(Sender: TObject);
+// ---------------------------------
+// Procedures when form is displayed
+// ---------------------------------
 begin
      ClientWidth := StimGrp.Left + StimGrp.Width + 5 ;
      ClientHeight := bUpdateDBS.Top + bUpdateDBS.Height + 10 ;
@@ -113,6 +117,11 @@ procedure TDBSPanelFrm.FormClose(Sender: TObject;
   var Action: TCloseAction);
 begin
      Action := caFree ;
+
+    // Save form position to INI file
+    EDRFile.SaveFormPosition( Self ) ;
+
+
      end;
 
 procedure TDBSPanelFrm.edPulseWidthKeyPress(Sender: TObject;

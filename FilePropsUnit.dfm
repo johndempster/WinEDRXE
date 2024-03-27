@@ -1,4 +1,5 @@
 object FilePropsDlg: TFilePropsDlg
+  Tag = 28
   Left = 652
   Top = 169
   BorderStyle = bsDialog
@@ -16,6 +17,7 @@ object FilePropsDlg: TFilePropsDlg
   Position = poDefault
   Visible = True
   OnClose = FormClose
+  OnResize = FormResize
   OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 13
@@ -51,7 +53,7 @@ object FilePropsDlg: TFilePropsDlg
     TabOrder = 1
     OnClick = bOKClick
   end
-  object PageControl1: TPageControl
+  object Page: TPageControl
     Left = 8
     Top = 8
     Width = 337
@@ -60,10 +62,6 @@ object FilePropsDlg: TFilePropsDlg
     TabOrder = 2
     object TabProperties: TTabSheet
       Caption = 'Properties'
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object meProperties: TMemo
         Left = 8
         Top = 104
@@ -163,10 +161,6 @@ object FilePropsDlg: TFilePropsDlg
     object TabCalTable: TTabSheet
       Caption = 'Calibration Table'
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object ChannelTable: TStringGrid
         Left = 8
         Top = 8
@@ -205,10 +199,6 @@ object FilePropsDlg: TFilePropsDlg
     object TabFileHeader: TTabSheet
       Caption = 'File Header'
       ImageIndex = 2
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object meFileHeader: TMemo
         Left = 8
         Top = 8

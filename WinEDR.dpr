@@ -2,6 +2,7 @@ program WinEDR;
 
 uses
   Forms,
+  Winapi.Windows,System.SysUtils,VCL.Dialogs,   { Required for CreateMutex 27.3.24}
   WinEDR_TLB in 'WinEDR_TLB.pas',
   AutoUnit in 'AutoUnit.pas' {AUTO: CoClass},
   MDIFORM in 'MDIFORM.PAS' {Main},
@@ -64,6 +65,15 @@ uses
 {$R *.res}
 
 begin
+
+  // Prevent multiple instances
+  if CreateMutex(nil, True, 'Dempster.WinEDR') = 0 then RaiseLastOSError ;
+  if GetLastError = ERROR_ALREADY_EXISTS then
+     begin
+     ShowMessage('WinEDR - Program alreading running! Unable to start another.');
+     Exit;
+     end;
+
   Application.Initialize;
   Application.HelpFile := 'winedr.chm';
   Application.Title := 'WinEDR - Electrophysiology Disk Recorder';
@@ -78,8 +88,6 @@ begin
   Application.CreateForm(TPrintGraphFrm, PrintGraphFrm);
   Application.CreateForm(TSetIgnoreFrm, SetIgnoreFrm);
   Application.CreateForm(TSetFitParsFrm, SetFitParsFrm);
-  Application.CreateForm(TDigFilterDlg, DigFilterDlg);
-  Application.CreateForm(TInvertDlg, InvertDlg);
   Application.CreateForm(TFTestFrm, FTestFrm);
   Application.CreateForm(TPrintPageViewFrm, PrintPageViewFrm);
   Application.CreateForm(TEditMarkersFrm, EditMarkersFrm);
@@ -89,7 +97,6 @@ begin
   Application.CreateForm(TStimulator, Stimulator);
   Application.CreateForm(TAmplifier, Amplifier);
   Application.CreateForm(TDirectorySelectFrm, DirectorySelectFrm);
-  Application.CreateForm(TExportFrm, ExportFrm);
   Application.CreateForm(TEDRFile, EDRFile);
   Application.Run;
 end.

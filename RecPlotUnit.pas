@@ -7,6 +7,7 @@ unit RecPlotUnit;
 // 08.08.12 Frequency count period now set in config dialog box
 // 09.08.12 Resistance Scale units now selected correctly for current
 //          Axes ticks now automatically set to integer values.
+// 15.03.24 Form position saved to INI file
 
 interface
 
@@ -476,13 +477,17 @@ begin
      end ;
 
 procedure TRecPlotFrm.FormClose(Sender: TObject; var Action: TCloseAction);
-//
-//
+// -------------
+// Form closing
+// -------------
 begin
 
      SavePlotDataToFile ;
 
      Action := caFree ;
+
+     // Save form position
+     EDRFile.SaveFormPosition( Self ) ;
 
      end;
 

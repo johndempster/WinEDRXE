@@ -40,6 +40,7 @@ unit TritonPanelUnit;
 //          rather than as advanced proerties.
 // 18.08.19 Support for 16/32 channel Triton X added
 // 27.08.21 Auto compensation functions now stop A/D and D/A in both seal test and record forms
+// 14.03.24 Form position saved to INI file
 
 interface
 
@@ -476,7 +477,7 @@ procedure TTritonPanelFrm.FormShow(Sender: TObject);
 // Initialisations when form is displayed
 // --------------------------------------
 var
-    ch : Integer ;
+    ch,i : Integer ;
 begin
 
      ClientWidth := gControls.Left + gControls.Width + 5 ;
@@ -687,7 +688,7 @@ begin
     s := s + format('Range %.4g - %.4g step %.4g',[VMin,Vmax,VStep]);
     if CanBeDisabled then s := s + ' Can be disabled';
 
-    outputdebugstring(pchar(s));
+//    outputdebugstring(pchar(s));
 
     end ;
 
@@ -972,6 +973,8 @@ begin
      SaveToXMLFile( SettingsFileName ) ;
 
      Action := caFree ;
+
+     EDRFile.SaveFormPosition( Self ) ;
 
      end;
 

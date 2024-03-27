@@ -1,9 +1,10 @@
 object DCLAMPFrm: TDCLAMPFrm
+  Tag = 3
   Left = 0
   Top = 0
   Caption = 'DCLAMP - Dynamic Clamp Control Panel'
   ClientHeight = 597
-  ClientWidth = 780
+  ClientWidth = 795
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText
@@ -1075,10 +1076,6 @@ object DCLAMPFrm: TDCLAMPFrm
     object GraphsTab: TTabSheet
       Caption = 'Graphs'
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object plPlot: TXYPlotDisplay
         Left = 8
         Top = 40

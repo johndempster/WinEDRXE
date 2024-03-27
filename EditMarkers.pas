@@ -3,6 +3,7 @@ unit EditMarkers;
 // CHART - Edit chart markers dialog box
 // -------------------------------------
 // 20.05.03
+// 24.03.24 ... Form change to MDIChild and position saved to INI file
 
 interface
 
@@ -22,6 +23,7 @@ type
     procedure FormShow(Sender: TObject);
     procedure bOKClick(Sender: TObject);
     procedure bDeleteMarkerClick(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
   private
     { Private declarations }
   public
@@ -33,9 +35,23 @@ var
 
 implementation
 
-uses MDIForm, maths, math ;
+uses MDIForm, maths, math , ViewSig, PageView;
 
 {$R *.dfm}
+
+procedure TEditMarkersFrm.FormClose(Sender: TObject; var Action: TCloseAction);
+// ------------------------------
+// Procedures when form is closed
+// ------------------------------
+begin
+
+     Action := caFree ;
+
+    // Save form position to INI file
+    EDRFile.SaveFormPosition( Self ) ;
+
+     end;
+
 
 procedure TEditMarkersFrm.FormShow(Sender: TObject);
 // --------------------------------------
@@ -66,7 +82,6 @@ begin
          Table.Cells[1,i+1] := EDRFile.MarkerList.Strings[i] ;
          end ;
 
-
      end;
 
 
@@ -95,6 +110,9 @@ begin
 
      // Save file header
      EDRFile.SaveHeader( EDRFile.CDRFH ) ;
+
+     // Update display
+     Main.UpdateViewSig ;
 
      end;
 

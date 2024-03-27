@@ -38,6 +38,8 @@ unit NoiseAnal;
     30.07.19 ... Power spectrum now only computed in Variance plot when median frequency selected
                  to improve efficiency. Progress now updated every 100 records to increase speed.
                  and power spectrum results not updated in variance plot
+    11.03.24 ... Vertical cursors can now be moved using left/right arrow keys
+    14.03.24 ... Form position saved to INI file
     }
 
 
@@ -188,6 +190,7 @@ type
     Label5: TLabel;
     EdTime: TEdit;
     bStopVariance: TButton;
+    edDisplayKeyPressSource: TEdit;
     procedure FormShow(Sender: TObject);
     procedure edRecordSizeKeyPress(Sender: TObject; var Key: Char);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -199,8 +202,6 @@ type
     procedure cbRecTypeChange(Sender: TObject);
     procedure ckRejectedClick(Sender: TObject);
     procedure edRecordKeyPress(Sender: TObject; var Key: Char);
-    procedure FormKeyDown(Sender: TObject; var Key: Word;
-      Shift: TShiftState);
     procedure bFitLorentzianClick(Sender: TObject);
     procedure bVarFitClick(Sender: TObject);
     procedure FormResize(Sender: TObject);
@@ -232,6 +233,8 @@ type
       Shift: TShiftState; X, Y: Integer);
     procedure edRecordOverlapKeyPress(Sender: TObject; var Key: Char);
     procedure bStopVarianceClick(Sender: TObject);
+    procedure edDisplayKeyPressSourceKeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
   private
     { Private declarations }
     procedure HeapBuffers( Operation : THeapBufferOp ) ;
@@ -815,6 +818,9 @@ procedure TNoiseAnalFrm.FormClose(Sender: TObject; var Action: TCloseAction);
   -------------------------}
 begin
 
+    // Save form position
+    EDRFile.SaveFormPosition( Self ) ;
+
      { Save record status data to file }
      RecordStatusFile( rsfSave ) ;
 
@@ -871,38 +877,6 @@ begin
         sbRecord.Position := Round(edRecord.LoValue)-1 ;
         GetRecord ;
         end ;
-     end;
-
-
-procedure TNoiseAnalFrm.FormKeyDown(Sender: TObject; var Key: Word;
-  Shift: TShiftState);
-{ --------------------------------
-  Process special accelerator keys
-  --------------------------------}
-begin
-     case key of
-          VK_SUBTRACT : begin { - key }
-                if sbRecord.Position >= 0 then begin
-                   sbRecord.Position := sbRecord.Position - 1 ;
-                   GetRecord ;
-                   end ;
-                end ;
-          VK_ADD : begin { + key }
-                if sbRecord.Position < Data.MaxRecord then begin
-                   sbRecord.Position := sbRecord.Position + 1 ;
-                   GetRecord ;
-                   end ;
-                end ;
-          $54,$4c,$45,$4d,$46 : begin
-              { if (Shift = [ssCtrl]) then Action := NewRecordType ;}
-               end ;
-          $52 : begin
-               if (Shift = [ssCtrl]) then begin
-                   ckRejected.Checked := not ckRejected.Checked ;
-                   end ;
-               end ;
-          else ;
-          end ;
      end;
 
 
@@ -1999,6 +1973,7 @@ var
 begin
      { Calculate variance as integral of power spectrum }
      Spectrum.Variance := 0.0 ;
+     BinWidth := Spectrum.Frequency[1] - Spectrum.Frequency[0] ;
      for i := 0 to Spectrum.NumPoints-1 do begin
          if i < (Spectrum.NumPoints-2) then
             BinWidth := Spectrum.Frequency[i+1] - Spectrum.Frequency[i] ;
@@ -2123,6 +2098,7 @@ begin
                         EDRFile.Channel[ACChan].ADCUnits)  ;
         if SpecFunc.Equation = None then OK := False ;
 
+        nFit := 0 ;
         if OK then begin
 
            { Get range of points to be fitted }
@@ -2130,17 +2106,19 @@ begin
                          plSpecPlot.VerticalCursors[SpecCursors.Fit1]) ;
            FreqHi := Max(plSpecPlot.VerticalCursors[SpecCursors.Fit0],
                          plSpecPlot.VerticalCursors[SpecCursors.Fit1]) ;
-           nFit := 0 ;
+
            for i := 0 to PowerSpectrum^.NumPoints-1 do
                if (FreqLo <= PowerSpectrum^.Frequency[i]) and
-                  (PowerSpectrum^.Frequency[i] <= FreqHi ) then begin
+                  (PowerSpectrum^.Frequency[i] <= FreqHi ) then
+                  begin
                   FitData^.x[nFit] := PowerSpectrum^.Frequency[i] ;
                   FitData^.y[nFit] := PowerSpectrum^.Power[i] ;
                   Inc(nFit) ;
                   end ;
 
            { Abandon fit if not enough data points }
-           if nFit < SpecFunc.NumParameters then begin
+           if nFit < SpecFunc.NumParameters then
+              begin
               MessageDlg( format('%d points is insufficient for fit',[nFit]),
                           mtWarning, [mbOK], 0 ) ;
               OK := False ;
@@ -2833,6 +2811,12 @@ begin
 
      DisplayMeanAndVariance ;
 
+      // Move focus of form to hidden control used to source  <- -> arrow key presses
+      // used to control display readout cursors. Note only set focus if form is active
+      // to avoid cursorchange events in inactive forms pulling focus back to recently
+      // inactivated forms
+      if Self.Active then edDisplayKeyPressSource.SetFocus ;
+
      end;
 
 
@@ -3073,6 +3057,46 @@ begin
         edNumBins.Value := Round((edBinsUpper.Value - edBinsLower.Value)/edBinWidth.Value) ;
         end;
     end;
+
+procedure TNoiseAnalFrm.edDisplayKeyPressSourceKeyDown(Sender: TObject;
+  var Key: Word; Shift: TShiftState);
+// ------------------
+// Handle key presses
+// ------------------
+begin
+
+    case key of
+
+          VK_SUBTRACT : begin { - key }
+                if sbRecord.Position >= 0 then begin
+                   sbRecord.Position := sbRecord.Position - 1 ;
+                   GetRecord ;
+                   end ;
+                end ;
+
+          VK_ADD : begin { + key }
+                if sbRecord.Position < Data.MaxRecord then begin
+                   sbRecord.Position := sbRecord.Position + 1 ;
+                   GetRecord ;
+                   end ;
+                end ;
+
+          $54,$4c,$45,$4d,$46 : begin
+              { if (Shift = [ssCtrl]) then Action := NewRecordType ;}
+               end ;
+
+          $52 : begin
+               if (Shift = [ssCtrl]) then begin
+                   ckRejected.Checked := not ckRejected.Checked ;
+                   end ;
+               end ;
+
+          VK_LEFT : scDisplay.MoveActiveVerticalCursor(-1) ;
+          VK_RIGHT : scDisplay.MoveActiveVerticalCursor(1) ;
+
+          end ;
+
+end;
 
 procedure TNoiseAnalFrm.edNumBinsKeyPress(Sender: TObject;
   var Key: Char);

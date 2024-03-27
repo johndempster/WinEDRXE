@@ -25,6 +25,7 @@ unit Simmepc;
                Settings saved in INI file
   15.05.13 ... Binomial release probability and depression/facilitation added to fixed frequency trains
   07.06.13 ... Fixed frequency variation now functions from start of trains
+  15.03.24 ... Form position saved to INI file
   }
 
 interface
@@ -421,6 +422,9 @@ begin
 
 
 procedure TSimMEPCFrm.FormClose(Sender: TObject; var Action: TCloseAction);
+// -----------
+// Form closed
+// -----------
 begin
 
     // Save settings
@@ -442,7 +446,8 @@ begin
     EDRFile.Settings.SimEPC.TauDepression := edTauDepression.Value ;
     EDRFile.Settings.SimEPC.UnitsIndex := cbUnits.ItemIndex ;
 
-     if EDRFIle.Cdrfh.NumSamplesInFile > 0 then begin
+     if EDRFIle.Cdrfh.NumSamplesInFile > 0 then
+        begin
         Main.mnViewSig.Enabled := True ;
         Main.mnViewSig.checked := True ;
         Main.Analysis.Enabled := True ;
@@ -457,6 +462,10 @@ begin
 
      if EDRFIle.Cdrfh.NumSamplesInFile > 0 then Main.UpdateMDIWIndows ;
      Action := caFree ;
+
+     // Save form position
+     EDRFile.SaveFormPosition( Self ) ;
+
      end;
 
 

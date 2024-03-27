@@ -3,6 +3,7 @@ unit ImportRawUnit;
 // Raw binary file import setup dialog box
 // ---------------------------------------
 // 19.03.04 Updated to support WinWCP
+// 14.03.24 ... Form position saved to INI file
 
 interface
 
@@ -44,6 +45,7 @@ type
     procedure edNumChannelsPerScanKeyPress(Sender: TObject; var Key: Char);
     procedure rbFloatClick(Sender: TObject);
     procedure rbmsecsClick(Sender: TObject);
+    procedure FormHide(Sender: TObject);
   private
     { Private declarations }
     SampleADCLimit : Integer ;
@@ -59,6 +61,8 @@ var
 implementation
 
 {$R *.dfm}
+
+uses EDRFileUnit, MDIFORM;
 const
      ChNum = 0 ;
      ChName = 1 ;
@@ -66,6 +70,17 @@ const
      ChUnits = 3 ;
      FPformat = 0 ;
      Intformat = 1 ;
+
+procedure TImportRawFrm.FormHide(Sender: TObject);
+// ---------
+// Hide form
+// ---------
+begin
+    // Save form position
+    EDRFile.SaveFormPosition( Self ) ;
+
+end;
+
 
 procedure TImportRawFrm.FormShow(Sender: TObject);
 // ------------------------------------------

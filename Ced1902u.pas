@@ -66,7 +66,7 @@ implementation
 
 {$R *.DFM}
 
-uses mdiform, AmpModule ;
+uses mdiform, AmpModule , EDRFileUnit;
 const
      IP_GROUNDED = 1 ;
      IP_TRANSDUCER_SE = 2 ;
@@ -216,8 +216,13 @@ begin
      // Read back amplifier settings to make sure all settings are up to date
      GetCED1902Options ;
 
+    // Save form position to INI file
+    EDRFile.SaveFormPosition( Self ) ;
+
      Main.mnCED1902.Enabled := true ;
      Action := caFree ;
+
+
      end;
 
 
@@ -226,7 +231,7 @@ procedure TCED1902Frm.EdDCOffsetKeyPress(Sender: TObject; var Key: Char);
   Update CED 1902 DC Offset
   -------------------------}
 begin
-     if key = chr(13) then begin
+     if key = #13 then begin
         Amplifier.CED1902.DCOffset := Round( edDCOffset.Value ) ;
         // Update attached CED 1902 amplifier
         Amplifier.SetCED1902 ;

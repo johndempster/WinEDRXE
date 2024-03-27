@@ -1,9 +1,10 @@
 object VP500PanelFrm: TVP500PanelFrm
+  Tag = 24
   Left = 463
   Top = 179
-  Width = 522
-  Height = 478
   Caption = 'VP500 Control Panel'
+  ClientHeight = 439
+  ClientWidth = 516
   Color = clBtnFace
   Font.Charset = ANSI_CHARSET
   Font.Color = clWindowText
@@ -28,9 +29,9 @@ object VP500PanelFrm: TVP500PanelFrm
     Caption = ' Clamp Mode '
     TabOrder = 0
     object lbClampSpeed: TLabel
-      Left = 8
+      Left = 23
       Top = 44
-      Width = 51
+      Width = 36
       Height = 15
       Alignment = taRightJustify
       Caption = 'Speed'
@@ -46,7 +47,6 @@ object VP500PanelFrm: TVP500PanelFrm
       Font.Height = -15
       Font.Name = 'Arial'
       Font.Style = [fsBold]
-      ItemHeight = 18
       ParentFont = False
       TabOrder = 0
       OnChange = cbClampModeChange
@@ -66,7 +66,6 @@ object VP500PanelFrm: TVP500PanelFrm
       Font.Height = -15
       Font.Name = 'Arial'
       Font.Style = [fsBold]
-      ItemHeight = 18
       ItemIndex = 0
       ParentFont = False
       TabOrder = 1
@@ -96,7 +95,6 @@ object VP500PanelFrm: TVP500PanelFrm
       Font.Height = -15
       Font.Name = 'Arial'
       Font.Style = []
-      ItemHeight = 17
       ItemIndex = 0
       ParentFont = False
       TabOrder = 0
@@ -132,7 +130,6 @@ object VP500PanelFrm: TVP500PanelFrm
       Font.Height = -15
       Font.Name = 'Arial'
       Font.Style = [fsBold]
-      ItemHeight = 18
       ItemIndex = 0
       ParentFont = False
       TabOrder = 0
@@ -210,11 +207,11 @@ object VP500PanelFrm: TVP500PanelFrm
       Font.Name = 'Arial'
       Font.Style = []
       Text = ' 0 mV'
-      LoLimit = -200.000000000000000000
-      HiLimit = 200.000000000000000000
       Scale = 1.000000000000000000
       Units = 'mV'
       NumberFormat = '%.4g'
+      LoLimit = -200.000000000000000000
+      HiLimit = 200.000000000000000000
     end
     object bApplyHoldingIV: TButton
       Left = 8
@@ -252,11 +249,11 @@ object VP500PanelFrm: TVP500PanelFrm
       Font.Name = 'Arial'
       Font.Style = []
       Text = ' 0 mV'
-      LoLimit = -1.000000015047466E29
-      HiLimit = 200.000000000000000000
       Scale = 1.000000000000000000
       Units = 'mV'
       NumberFormat = '%.4g'
+      LoLimit = -1.000000015047466E29
+      HiLimit = 200.000000000000000000
     end
     object bApplyJunction: TButton
       Left = 8
@@ -343,11 +340,11 @@ object VP500PanelFrm: TVP500PanelFrm
         Font.Name = 'Arial'
         Font.Style = []
         Text = ' 0 %'
-        LoLimit = -1.000000015047466E29
-        HiLimit = 1.000000015047466E29
         Scale = 1.000000000000000000
         Units = '%'
         NumberFormat = '%.4g'
+        LoLimit = -1.000000015047466E29
+        HiLimit = 1.000000015047466E29
       end
     end
     object GroupBox8: TGroupBox
@@ -357,9 +354,9 @@ object VP500PanelFrm: TVP500PanelFrm
       Height = 83
       TabOrder = 1
       object Label1: TLabel
-        Left = 8
+        Left = 15
         Top = 8
-        Width = 47
+        Width = 40
         Height = 30
         Alignment = taRightJustify
         Caption = 'Series Res.'
@@ -372,9 +369,9 @@ object VP500PanelFrm: TVP500PanelFrm
         WordWrap = True
       end
       object Label3: TLabel
-        Left = 6
+        Left = 26
         Top = 47
-        Width = 51
+        Width = 31
         Height = 15
         Alignment = taRightJustify
         Caption = 'Delay'
@@ -398,11 +395,11 @@ object VP500PanelFrm: TVP500PanelFrm
         Font.Name = 'Arial'
         Font.Style = []
         Text = ' 0 %'
-        LoLimit = -1.000000015047466E29
-        HiLimit = 1.000000015047466E29
         Scale = 1.000000000000000000
         Units = '%'
         NumberFormat = '%.4g'
+        LoLimit = -1.000000015047466E29
+        HiLimit = 1.000000015047466E29
       end
       object cbTauPercentRs: TComboBox
         Left = 61
@@ -415,7 +412,6 @@ object VP500PanelFrm: TVP500PanelFrm
         Font.Height = -12
         Font.Name = 'Arial'
         Font.Style = []
-        ItemHeight = 15
         ItemIndex = 0
         ParentFont = False
         TabOrder = 1
@@ -491,9 +487,9 @@ object VP500PanelFrm: TVP500PanelFrm
         WordWrap = True
       end
       object Label7: TLabel
-        Left = 20
+        Left = 21
         Top = 40
-        Width = 54
+        Width = 53
         Height = 15
         Alignment = taRightJustify
         Caption = 'Tau (fast)'
@@ -518,11 +514,11 @@ object VP500PanelFrm: TVP500PanelFrm
         Font.Name = 'Arial'
         Font.Style = []
         Text = ' 0 pF'
-        LoLimit = -1.000000015047466E29
-        HiLimit = 1.000000015047466E29
         Scale = 1.000000000000000000
         Units = 'pF'
         NumberFormat = '%.4g'
+        LoLimit = -1.000000015047466E29
+        HiLimit = 1.000000015047466E29
       end
       object edTauFast: TValidatedEdit
         Left = 77
@@ -537,11 +533,11 @@ object VP500PanelFrm: TVP500PanelFrm
         Font.Name = 'Arial'
         Font.Style = []
         Text = ' 0 us'
-        LoLimit = -1.000000015047466E29
-        HiLimit = 1.000000015047466E29
         Scale = 1.000000000000000000
         Units = 'us'
         NumberFormat = '%.4g'
+        LoLimit = -1.000000015047466E29
+        HiLimit = 1.000000015047466E29
       end
       object bCFastNeutralise: TButton
         Left = 93
@@ -581,9 +577,9 @@ object VP500PanelFrm: TVP500PanelFrm
         WordWrap = True
       end
       object Label9: TLabel
-        Left = 13
+        Left = 14
         Top = 40
-        Width = 59
+        Width = 58
         Height = 15
         Alignment = taRightJustify
         Caption = 'Tau (slow)'
@@ -608,11 +604,11 @@ object VP500PanelFrm: TVP500PanelFrm
         Font.Name = 'Arial'
         Font.Style = []
         Text = ' 0 pF'
-        LoLimit = -1.000000015047466E29
-        HiLimit = 1.000000015047466E29
         Scale = 1.000000000000000000
         Units = 'pF'
         NumberFormat = '%.4g'
+        LoLimit = -1.000000015047466E29
+        HiLimit = 1.000000015047466E29
       end
       object edTauSlow: TValidatedEdit
         Left = 77
@@ -627,11 +623,11 @@ object VP500PanelFrm: TVP500PanelFrm
         Font.Name = 'Arial'
         Font.Style = []
         Text = ' 0 ms'
-        LoLimit = -1.000000015047466E29
-        HiLimit = 1.000000015047466E29
         Scale = 1.000000000000000000
         Units = 'ms'
         NumberFormat = '%.4g'
+        LoLimit = -1.000000015047466E29
+        HiLimit = 1.000000015047466E29
       end
       object bCSlowNeutralise: TButton
         Left = 93
@@ -671,9 +667,9 @@ object VP500PanelFrm: TVP500PanelFrm
         WordWrap = True
       end
       object Label11: TLabel
-        Left = 21
+        Left = 22
         Top = 40
-        Width = 52
+        Width = 51
         Height = 15
         Alignment = taRightJustify
         Caption = 'Tau (cell)'
@@ -698,11 +694,11 @@ object VP500PanelFrm: TVP500PanelFrm
         Font.Name = 'Arial'
         Font.Style = []
         Text = ' 0 pF'
-        LoLimit = -1.000000015047466E29
-        HiLimit = 1.000000015047466E29
         Scale = 1.000000000000000000
         Units = 'pF'
         NumberFormat = '%.4g'
+        LoLimit = -1.000000015047466E29
+        HiLimit = 1.000000015047466E29
       end
       object edTauCell: TValidatedEdit
         Left = 77
@@ -717,11 +713,11 @@ object VP500PanelFrm: TVP500PanelFrm
         Font.Name = 'Arial'
         Font.Style = []
         Text = ' 0 ms'
-        LoLimit = -1.000000015047466E29
-        HiLimit = 1.000000015047466E29
         Scale = 1.000000000000000000
         Units = 'ms'
         NumberFormat = '%.4g'
+        LoLimit = -1.000000015047466E29
+        HiLimit = 1.000000015047466E29
       end
       object bCCellNeutralise: TButton
         Left = 93
@@ -811,11 +807,11 @@ object VP500PanelFrm: TVP500PanelFrm
       Font.Name = 'Arial'
       Font.Style = []
       Text = ' 0 MOhm'
-      LoLimit = -1.000000015047466E29
-      HiLimit = 1.000000015047466E29
       Scale = 1.000000000000000000
       Units = 'MOhm'
       NumberFormat = '%.4g'
+      LoLimit = -1.000000015047466E29
+      HiLimit = 1.000000015047466E29
     end
     object bCalcSealResistance: TButton
       Left = 77
@@ -894,11 +890,11 @@ object VP500PanelFrm: TVP500PanelFrm
       Font.Name = 'Arial'
       Font.Style = []
       Text = ' 0 MOhm'
-      LoLimit = -1.000000015047466E29
-      HiLimit = 1.000000015047466E29
       Scale = 1.000000000000000000
       Units = 'MOhm'
       NumberFormat = '%.4g'
+      LoLimit = -1.000000015047466E29
+      HiLimit = 1.000000015047466E29
     end
     object edCm: TValidatedEdit
       Left = 45
@@ -911,11 +907,11 @@ object VP500PanelFrm: TVP500PanelFrm
       Font.Name = 'Arial'
       Font.Style = []
       Text = ' 0 pF'
-      LoLimit = -1.000000015047466E29
-      HiLimit = 1.000000015047466E29
       Scale = 1.000000000000000000
       Units = 'pF'
       NumberFormat = '%.4g'
+      LoLimit = -1.000000015047466E29
+      HiLimit = 1.000000015047466E29
     end
     object edRs: TValidatedEdit
       Left = 45
@@ -928,11 +924,11 @@ object VP500PanelFrm: TVP500PanelFrm
       Font.Name = 'Arial'
       Font.Style = []
       Text = ' 0 MOhm'
-      LoLimit = -1.000000015047466E29
-      HiLimit = 1.000000015047466E29
       Scale = 1.000000000000000000
       Units = 'MOhm'
       NumberFormat = '%.4g'
+      LoLimit = -1.000000015047466E29
+      HiLimit = 1.000000015047466E29
     end
     object bCalcCellParameters: TButton
       Left = 77
@@ -998,11 +994,11 @@ object VP500PanelFrm: TVP500PanelFrm
       Font.Style = []
       Text = ' 0.1 ms'
       Value = 100.000000000000000000
-      LoLimit = 10.000000000000000000
-      HiLimit = 1500.000000000000000000
       Scale = 0.001000000047497451
       Units = 'ms'
       NumberFormat = '%.4g'
+      LoLimit = 10.000000000000000000
+      HiLimit = 1500.000000000000000000
     end
   end
   object GroupBox17: TGroupBox

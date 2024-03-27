@@ -1,4 +1,5 @@
 object ImportASCIIFrm: TImportASCIIFrm
+  Tag = 8
   Left = 361
   Top = 194
   BorderStyle = bsDialog
@@ -12,6 +13,7 @@ object ImportASCIIFrm: TImportASCIIFrm
   Font.Name = 'Arial'
   Font.Style = []
   OldCreateOrder = False
+  OnHide = FormHide
   OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 14

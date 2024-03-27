@@ -109,6 +109,12 @@ unit EventDetector;
 //              below bottom of window on low resolution displays.
 //              Delete Event button disabled when no events in list
 //              F1/F2 buttons now only link to Insert/Delete Events button when Event Edit page displayed
+// 09.03.24 ... Out of memory errors when displays zoomed out too much fixed
+// 10.03.24 ... Vertical cursors can now be moved using left/right arrow keys
+//              (with focus moved to an edit control where arrow keys have no unwanted effects)
+// 14.03.24 ... Form position saved to INI file
+// 21.03.24 ... Key presses for controlling display cursor positions now sourced from edDisplayKeySource
+//              rather than form key preview
 
 interface
 
@@ -123,6 +129,7 @@ const
     WCPFileExtension = '.WCP' ;
     MaxExportSamples = 1048576 ;
     MaxEvents = 1000000 ;
+    MaxDisplayPoints = 10000000 ;
     mdThreshold = 0 ;
     mdRateOfRise = 1 ;
     mdPatternMatch = 3 ;
@@ -355,6 +362,7 @@ type
     edAmpSDScale: TValidatedEdit;
     cbDecayTo: TComboBox;
     Label24: TLabel;
+    edDisplayKeyPressSource: TEdit;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormResize(Sender: TObject);
@@ -443,6 +451,10 @@ type
     procedure cbBaselineChange(Sender: TObject);
     procedure cbEventAlignmentChange(Sender: TObject);
     procedure cbDecayToChange(Sender: TObject);
+    procedure FormActivate(Sender: TObject);
+    procedure FormDeactivate(Sender: TObject);
+    procedure edDisplayKeyPressSourceKeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
   private
     { Private declarations }
 
@@ -456,6 +468,7 @@ type
     ThresholdCursor : Integer ;
     DetZeroCursor : Integer ;
     DisplayCursor : Integer ;
+    DetDisplayCursor : Integer ;
     EditCursor : Integer ;
     EditC0Cursor : Integer ;
     EditC1Cursor : Integer ;
@@ -668,6 +681,14 @@ var
    ch,i : Integer ;
 begin
 
+     for i := 0 to Main.MDIChildCount-1 do
+         begin
+           if Self.Name = Main.MDIChildren[i].Name then Self.KeyPreview := True
+                                              else Self.KeyPreview := False ;
+
+         end;
+
+
      ClientWidth := Page.Left + Page.Width + 10 ;
      ClientHeight := Page.Top + Page.Height + 10 ;
 
@@ -823,6 +844,9 @@ begin
      { Display records }
      DisplayRecord ;
 
+     edDisplayKeyPressSource.SetFocus ;
+
+
      end;
 
 
@@ -890,19 +914,11 @@ begin
      { Continuous record display channel }
      scDisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
      scDisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue - 1 ;
-     scDisplay.MaxPoints := Round(edDetDisplayWidth.Value) ;
-     scDisplay.NumPoints := scDisplay.MaxPoints ;
-     scDisplay.NumChannels := EDRFile.CdrFH.NumChannels ;
-     scDisplay.xMin := 0 ;
-     scDisplay.xMax := scDisplay.NumPoints - 1  ;
-     scDisplay.DisableChannelVisibilityButton := True ;
-
-     if ADC <> Nil then FreeMem(ADC) ;
-     GetMem( ADC, scDisplay.MaxPoints*scDisplay.NumChannels*4 ) ;
-     scDisplay.SetDataBuf( ADC ) ;
+     edDetDisplayWidth.Value := scDisplay.MaxPoints*scDisplay.NumChannels*4 ;
 
      { Set display scaling information }
-     for ch := 0 to scDisplay.NumChannels-1 do begin
+     for ch := 0 to scDisplay.NumChannels-1 do
+         begin
          scDisplay.ChanUnits[ch] := EDRFile.Channel[ch].ADCUnits ;
          scDisplay.ChanName[ch] := EDRFile.Channel[ch].ADCName ;
          scDisplay.yMin[ch] := EDRFile.Channel[ch].yMin ;
@@ -943,11 +959,6 @@ begin
      scDetDisplay.xMax := scDetDisplay.NumPoints - 1  ;
      scDetDisplay.DisableChannelVisibilityButton := True ;
 
-     // Allocate detection buffer
-     if DetBuf <> Nil then FreeMem( DetBuf ) ;
-     GetMem( DetBuf, scDetDisplay.MaxPoints*2 ) ;
-     scDetDisplay.SetDataBuf( DetBuf ) ;
-
      { Set display scaling information }
      scDetDisplay.ChanUnits[0] := EDRFile.Channel[cbChannel.ItemIndex].ADCUnits ;
      scDetDisplay.ChanName[0] := 'Det. Criterion' ;
@@ -974,7 +985,7 @@ begin
      scDetDisplay.HorizontalCursors[DetZeroCursor] := 0 ;
 
      scDetDisplay.ClearVerticalCursors ;
-     DisplayCursor := scDetDisplay.AddVerticalCursor( -1, clGReen, '?y?t' ) ;
+     DetDisplayCursor := scDetDisplay.AddVerticalCursor( -1, clGReen, '?y?t' ) ;
 
      // Set up display on Edit Events panel
      // -----------------------------------
@@ -992,12 +1003,14 @@ begin
      scEditDisplay.xMax := scEditDisplay.NumPoints - 1  ;
      scEditDisplay.DisableChannelVisibilityButton := True ;
 
-     if EditBuf <> Nil then FreeMem( EditBuf ) ;
+{     if EditBuf <> Nil then FreeMem( EditBuf ) ;
+     outputdebugstring(pchar(format('memory required: %d',[scEditDisplay.MaxPoints*scEditDisplay.NumChannels*2])));
      GetMem( EditBuf, scEditDisplay.MaxPoints*scEditDisplay.NumChannels*2 ) ;
-     scEditDisplay.SetDataBuf( EditBuf ) ;
+     scEditDisplay.SetDataBuf( EditBuf ) ;}
 
      { Set display scaling information }
-     for ch := 0 to scEditDisplay.NumChannels-1 do begin
+     for ch := 0 to scEditDisplay.NumChannels-1 do
+         begin
          scEditDisplay.ChanUnits[ch] := EDRFile.Channel[ch].ADCUnits ;
          scEditDisplay.ChanName[ch] := EDRFile.Channel[ch].ADCName ;
          scEditDisplay.yMin[ch] := EDRFile.Channel[ch].yMin ;
@@ -1149,12 +1162,32 @@ procedure TEventDetFrm.DisplayRecord ;
   ---------------------------------------------}
 var
    InitialiseRunningMean : Boolean ;
+   MaxPointsInFile : Integer ;
 begin
 
-   if ADC = Nil then Exit ;
-   if DetBuf = Nil then Exit ;
 
+    // Signal display
+    MaxPointsInFile := EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels ;
+    scDisplay.MaxPoints := Min(Round(edDetDisplayWidth.Value),MaxPointsInFile) ;
+    edDetDisplayWidth.Value := scDisplay.MaxPoints ;
+
+    scDisplay.NumPoints := scDisplay.MaxPoints ;
+    scDisplay.xMin := 0 ;
+    scDisplay.xMax := scDisplay.NumPoints - 1  ;
+    if ADC <> Nil then FreeMem(ADC) ;
+    GetMem( ADC, scDisplay.MaxPoints*scDisplay.NumChannels*4 ) ;
+    scDisplay.SetDataBuf( ADC ) ;
    scDisplay.xOffset := sbDisplay.Position ;
+
+     // Detection criterion display
+     scDetDisplay.MaxPoints := scDisplay.MaxPoints ;
+     scDetDisplay.NumPoints := scDetDisplay.MaxPoints ;
+     scDetDisplay.xMin := 0 ;
+     scDetDisplay.xMax := scDisplay.NumPoints - 1  ;
+
+     if DetBuf <> Nil then FreeMem( DetBuf ) ;
+     GetMem( DetBuf, scDetDisplay.MaxPoints*2 ) ;
+     scDetDisplay.SetDataBuf( DetBuf ) ;
 
    if rbThreshold.Checked then
       begin
@@ -1630,6 +1663,18 @@ begin
     end ;
 
 
+procedure TEventDetFrm.FormActivate(Sender: TObject);
+// ------------------------------
+// Actions when form is activated
+// ------------------------------
+begin
+
+     // Enable key preview for form
+     Self.KeyPreview := True ;
+     outputdebugstring(pchar(Self.Name + ' active' ));
+
+end;
+
 procedure TEventDetFrm.FormClose(Sender: TObject;
   var Action: TCloseAction);
 { -------------------------
@@ -1656,6 +1701,9 @@ begin
 
      { Disable copy and print menus }
      Main.CopyAndPrintMenus( False, False ) ;
+
+     // Save form position
+     EDRFile.SaveFormPosition( Self ) ;
 
      Action := caFree ;
 
@@ -1930,16 +1978,34 @@ procedure TEventDetFrm.DisplayEditRecord ;
   ------------------------------------------------------------- }
 var
    i,iStart,iEnd,iEvent,Step,iLine : Integer ;
+   MaxPointsInFile : Integer ;
 begin
 
-   if EditBuf = Nil then Exit ;
+//   if EditBuf = Nil then Exit ;
+
+    MaxPointsInFile := EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels ;
+    scEditDisplay.MaxPoints := Min(Round(edEditDisplayWidth.Value),MaxPointsInFile) ;
+    edEditDisplayWidth.Value := scEditDisplay.MaxPoints ;
+
+    scEditDisplay.NumPoints := scEditDisplay.MaxPoints ;
+    scEditDisplay.xMin := 0 ;
+    scEditDisplay.xMax := scEditDisplay.NumPoints - 1  ;
+
+    scMarkDisplay.MaxPoints := scEditDisplay.MaxPoints ;
+    scMarkDisplay.NumPoints := scEditDisplay.MaxPoints ;
+    scMarkDisplay.xMin := 0 ;
+    scMarkDisplay.xMax := scEditDisplay.NumPoints - 1  ;
+
+    if EditBuf <> Nil then FreeMem( EditBuf ) ;
+    GetMem( EditBuf, scEditDisplay.MaxPoints*scEditDisplay.NumChannels*2 ) ;
+    scEditDisplay.SetDataBuf( EditBuf ) ;
 
    scEditDisplay.xOffset := sbEditDisplay.Position ;
 
    scEditDisplay.NumPoints := EDRFile.ReadBuffer( EDRFile.CdrFH,
-                                             sbEditDisplay.Position,
-                                             EditBuf^,
-                                             scEditDisplay.MaxPoints) ;
+                                                  sbEditDisplay.Position,
+                                                  EditBuf^,
+                                                  scEditDisplay.MaxPoints) ;
 
    if ckSubtractBaseline.Checked then
       begin
@@ -1948,8 +2014,6 @@ begin
                         sbEditDisplay.Position,
                         scEditDisplay.MaxPoints ) ;
       end ;
-
-   scEditDisplay.SetDataBuf( EditBuf ) ;
 
    // Find
    iStart :=  scEditDisplay.xOffset ;
@@ -2095,6 +2159,7 @@ procedure TEventDetFrm.scDetDisplayCursorChange(Sender: TObject);
 // Cursor on detection criterion display has changed
 // -------------------------------------------------
 begin
+
      edThreshold.Value := scDetDisplay.HorizontalCursors[ThresholdCursor] ;
      EDRFile.Settings.EventDetector.yThreshold := edThreshold.Value ;
 
@@ -2103,10 +2168,19 @@ begin
         scDetDisplay.HorizontalCursors[DetZeroCursor] := 0 ;
 
      // Align detection display cursor
-     if scDetDisplay.VerticalCursors[DisplayCursor]
-        <> scDisplay.VerticalCursors[DisplayCursor] then
-        scDisplay.VerticalCursors[DisplayCursor] :=
-          scDetDisplay.VerticalCursors[DisplayCursor] ;
+     if scDetDisplay.VerticalCursors[DetDisplayCursor]
+        <> scDisplay.VerticalCursors[DetDisplayCursor] then
+        scDisplay.VerticalCursors[DetDisplayCursor] := scDetDisplay.VerticalCursors[DetDisplayCursor] ;
+
+      // Move focus of form to a control which will be unaffected by <- -> arrow key pressed
+      // used to control display readout cursors
+      if Page.ActivePage = DetectEventsPage then
+         begin
+//         edDetDisplayWidth.SetFocus ;
+//         edDisplay.SetFocus ;
+         end;
+
+
 
      end;
 
@@ -2917,8 +2991,8 @@ begin
 
       // Enable/disable Insert Event and Delete Event buttons
       // depending upon whether cursor is over an event
-      if CursorAtSample = Events[sbEvent.Position-1] then begin
-
+      if CursorAtSample = Events[sbEvent.Position-1] then
+         begin
          bInsertEvent.Enabled := False ;
          end
       else begin
@@ -2934,6 +3008,12 @@ begin
          EDRFile.Channel[ch].yMin := scEditDisplay.yMin[ch] ;
          EDRFile.Channel[ch].yMax := scEditDisplay.yMax[ch] ;
          end ;
+
+      // Move focus of form to hidden control used to source  <- -> arrow key presses
+      // used to control display readout cursors. Note only set focus if form is active
+      // to avoid cursorchange events in inactive forms pulling focus back to recently
+      // inactivated forms
+      if Self.Active then edDisplayKeyPressSource.SetFocus ;
 
      end;
 
@@ -3652,6 +3732,12 @@ begin
          EDRFile.Channel[ch].yMax := scDisplay.yMax[ch] ;
          end ;
 
+      // Move focus of form to hidden control used to source  <- -> arrow key presses
+      // used to control display readout cursors. Note only set focus if form is active
+      // to avoid cursorchange events in inactive forms pulling focus back to recently
+      // inactivated forms
+      if Self.Active then edDisplayKeyPressSource.SetFocus ;
+
      end;
 
 
@@ -4041,7 +4127,6 @@ procedure TEventDetFrm.edEditDisplayWidthKeyPress(Sender: TObject;
 begin
      if key = #13 then begin
         EDRFile.Settings.EventDetector.AnalysisWindow := edEditDisplayWidth.Value ;
-        NewFile ;
         DisplayEvent ;
         end ;
      end;
@@ -4556,14 +4641,40 @@ procedure TEventDetFrm.FormKeyDown(Sender: TObject; var Key: Word;
 // -------------------------------
 begin
 
-//   Link F1, F2 function keys to Insert / Delete Event buttons
-//   only when Edit Events page selected
+     exit ;
+     if not Self.Active then Self.KeyPreview := False ;
 
-     if Page.ActivePage = EditEventsPage then
-        begin
-        Case Key of
+
+     if Page.ActivePage = DetectEventsPage then
+         begin
+         // Detect events page function keys
+         Case Key of
+             VK_LEFT : begin
+                       scDisplay.MoveActiveVerticalCursor(-1) ;
+                       scDetDisplay.MoveActiveVerticalCursor(-1) ;
+                       end;
+             VK_RIGHT : begin
+                        scDisplay.MoveActiveVerticalCursor(1) ;
+                        scDetDisplay.MoveActiveVerticalCursor(1) ;
+                        end;
+             end ;
+         end
+     else if Page.ActivePage = EditEventsPage then
+         begin
+          // Edit events page function keys
+          Case Key of
              VK_F2 : bDeleteEvent.Click ;
              VK_F1 : bInsertEvent.Click ;
+             VK_LEFT : scEditDisplay.MoveActiveVerticalCursor(-1) ;
+             VK_RIGHT : scEditDisplay.MoveActiveVerticalCursor(1) ;
+             end ;
+        end
+     else if Page.ActivePage = AveragePage then
+         begin
+          // Average events page function keys
+          Case Key of
+             VK_LEFT : scAverageDisplay.MoveActiveVerticalCursor(-1) ;
+             VK_RIGHT : scAverageDisplay.MoveActiveVerticalCursor(1) ;
              end ;
         end;
 
@@ -5155,6 +5266,11 @@ begin
          EDRFile.Channel[ch].yMin := scAverageDisplay.yMin[ch] ;
          EDRFile.Channel[ch].yMax := scAverageDisplay.yMax[ch] ;
          end ;
+
+      // Move focus of form to a control which will be unaffected by <- -> arrow key pressed
+      // used to control display readout cursors
+//      if Page.ActivePage = AveragePage then edAverageRange.SetFocus ;
+
      end;
 
 
@@ -5261,12 +5377,52 @@ procedure TEventDetFrm.edDetDisplayWidthKeyPress(Sender: TObject;
 // Update no. sample scans in display window
 // ---------------------------------------
 begin
-     if key = #13 then begin
-        NewFile ;
+     if key = #13 then
+        begin
         DisplayRecord ;
         end ;
      end;
 
+
+procedure TEventDetFrm.edDisplayKeyPressSourceKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+//
+// Source of key presses for controlling
+begin
+     if Page.ActivePage = DetectEventsPage then
+         begin
+         // Detect events page function keys
+         Case Key of
+             VK_LEFT : begin
+                       scDisplay.MoveActiveVerticalCursor(-1) ;
+                       scDetDisplay.MoveActiveVerticalCursor(-1) ;
+                       end;
+             VK_RIGHT : begin
+                        scDisplay.MoveActiveVerticalCursor(1) ;
+                        scDetDisplay.MoveActiveVerticalCursor(1) ;
+                        end;
+             end ;
+         end
+     else if Page.ActivePage = EditEventsPage then
+         begin
+          // Edit events page function keys
+          Case Key of
+             VK_F2 : bDeleteEvent.Click ;
+             VK_F1 : bInsertEvent.Click ;
+             VK_LEFT : scEditDisplay.MoveActiveVerticalCursor(-1) ;
+             VK_RIGHT : scEditDisplay.MoveActiveVerticalCursor(1) ;
+             end ;
+        end
+     else if Page.ActivePage = AveragePage then
+         begin
+          // Average events page function keys
+          Case Key of
+             VK_LEFT : scAverageDisplay.MoveActiveVerticalCursor(-1) ;
+             VK_RIGHT : scAverageDisplay.MoveActiveVerticalCursor(1) ;
+             end ;
+        end;
+
+end;
 
 procedure TEventDetFrm.bAverageFitCurveClick(Sender: TObject);
 { ------------------------------------------
@@ -5508,15 +5664,27 @@ begin
      SaveEventListRequested := False ;
      end;
 
+procedure TEventDetFrm.FormDeactivate(Sender: TObject);
+// ------------------------------
+// Actions when form is deactivated
+// ------------------------------
+begin
+
+     // Enable key preview for form
+     Self.KeyPreview := False ;
+          outputdebugstring(pchar(Self.Name + ' inactive' ));
+
+end;
+
 procedure TEventDetFrm.bTDisplayDoubleClick(Sender: TObject);
 // -------------------------------------------
 // Double size of detect events display window
 // -------------------------------------------
 begin
         edDetDisplayWidth.Value := edDetDisplayWidth.Value*2.0 ;
-        NewFile ;
         DisplayRecord ;
         end;
+
 
 procedure TEventDetFrm.bTDisplayHalfClick(Sender: TObject);
 // -------------------------------------------
@@ -5524,9 +5692,9 @@ procedure TEventDetFrm.bTDisplayHalfClick(Sender: TObject);
 // -------------------------------------------
 begin
         edDetDisplayWidth.Value := edDetDisplayWidth.Value*0.5 ;
-        NewFile ;
         DisplayRecord ;
         end;
+
 
 procedure TEventDetFrm.bEditDisplayWidthHalveClick(Sender: TObject);
 // ---------------------------------
@@ -5535,9 +5703,9 @@ procedure TEventDetFrm.bEditDisplayWidthHalveClick(Sender: TObject);
 begin
     edEditDisplayWidth.Value := edEditDisplayWidth.Value*0.5 ;
     EDRFile.Settings.EventDetector.AnalysisWindow := edEditDisplayWidth.Value ;
-    NewFile ;
     DisplayEvent ;
     end ;
+
 
 procedure TEventDetFrm.bDoubleEditDisplayWidthClick(Sender: TObject);
 // ---------------------------------
@@ -5546,9 +5714,10 @@ procedure TEventDetFrm.bDoubleEditDisplayWidthClick(Sender: TObject);
 begin
     edEditDisplayWidth.Value := edEditDisplayWidth.Value*2.0 ;
     EDRFile.Settings.EventDetector.AnalysisWindow := edEditDisplayWidth.Value ;
-    NewFile ;
+//    NewFile ;
     DisplayEvent ;
     end ;
+
 
 procedure TEventDetFrm.edNumBinsKeyPress(Sender: TObject; var Key: Char);
 // -------------------
@@ -5560,6 +5729,7 @@ begin
        edBinWidth.Value := (edBinsUpper.Value - edBinsLower.Value)/edNumBins.Value ;
        end;
     end;
+
 
 procedure TEventDetFrm.edBinWidthKeyPress(Sender: TObject; var Key: Char);
 // -----------------

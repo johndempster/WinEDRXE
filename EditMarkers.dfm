@@ -1,4 +1,5 @@
 object EditMarkersFrm: TEditMarkersFrm
+  Tag = 32
   Left = 270
   Top = 219
   BorderStyle = bsDialog
@@ -11,8 +12,10 @@ object EditMarkersFrm: TEditMarkersFrm
   Font.Height = -12
   Font.Name = 'Arial'
   Font.Style = []
+  FormStyle = fsMDIForm
   OldCreateOrder = False
   Position = poDefault
+  OnClose = FormClose
   OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 15

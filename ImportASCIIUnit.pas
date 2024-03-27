@@ -6,6 +6,7 @@ unit ImportASCIIUnit;
 // 19.02.04 ... Data exchanged using ImportFile public object
 //              Channel name/units can now be set
 // 16.07.05 ... Lines at beginning of file can now be skipped
+// 14.03.24 ... Form position saved to INI file
 
 interface
 
@@ -41,6 +42,7 @@ type
     procedure rbTimeDataInCol0Click(Sender: TObject);
     procedure rbTabClick(Sender: TObject);
     procedure rbmsecsClick(Sender: TObject);
+    procedure FormHide(Sender: TObject);
   private
     { Private declarations }
     procedure UpdateTimeUnits ;
@@ -58,6 +60,8 @@ implementation
 
 {$R *.dfm}
 
+uses MDIFORM;
+
 const
      ChNum = 0 ;
      ChName = 1 ;
@@ -67,6 +71,16 @@ const
     MSecScale = 1000.0 ;
     SecScale = 1.0 ;
     MinScale = 1.0/60.0 ;
+
+procedure TImportASCIIFrm.FormHide(Sender: TObject);
+// ---------
+// Hide form
+// ---------
+begin
+    // Save form position
+    EDRFile.SaveFormPosition( Self ) ;
+
+end;
 
 procedure TImportASCIIFrm.FormShow(Sender: TObject);
 // ---------------------------------------

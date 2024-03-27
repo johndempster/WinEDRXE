@@ -1,9 +1,10 @@
 object DBSPanelFrm: TDBSPanelFrm
+  Tag = 2
   Left = 624
   Top = 255
-  Width = 267
-  Height = 276
   Caption = 'DBS Control'
+  ClientHeight = 265
+  ClientWidth = 251
   Color = clBtnFace
   Font.Charset = DEFAULT_CHARSET
   Font.Color = clWindowText

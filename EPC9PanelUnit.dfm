@@ -1,4 +1,5 @@
 object EPC9PanelFrm: TEPC9PanelFrm
+  Tag = 5
   Left = 0
   Top = 0
   Caption = 'EPC-9/10 Patch Clamp'
@@ -22,8 +23,8 @@ object EPC9PanelFrm: TEPC9PanelFrm
   PixelsPerInch = 96
   TextHeight = 13
   object ControlsGrp: TGroupBox
-    Left = 4
-    Top = 2
+    Left = 0
+    Top = 0
     Width = 324
     Height = 391
     TabOrder = 0
@@ -164,10 +165,6 @@ object EPC9PanelFrm: TEPC9PanelFrm
       TabOrder = 2
       object CfastTab: TTabSheet
         Caption = 'Cfast'
-        ExplicitLeft = 0
-        ExplicitTop = 0
-        ExplicitWidth = 0
-        ExplicitHeight = 0
         object Label3: TLabel
           Left = 4
           Top = 3
@@ -273,10 +270,6 @@ object EPC9PanelFrm: TEPC9PanelFrm
       object CslowTab: TTabSheet
         Caption = 'Cslow'
         ImageIndex = 1
-        ExplicitLeft = 0
-        ExplicitTop = 0
-        ExplicitWidth = 0
-        ExplicitHeight = 0
         object Label7: TLabel
           Left = 4
           Top = 3
@@ -406,10 +399,6 @@ object EPC9PanelFrm: TEPC9PanelFrm
       object RSCompTab: TTabSheet
         Caption = 'Rs Compensation'
         ImageIndex = 2
-        ExplicitLeft = 0
-        ExplicitTop = 0
-        ExplicitWidth = 0
-        ExplicitHeight = 0
         object Label8: TLabel
           Left = 5
           Top = 3

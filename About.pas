@@ -1,4 +1,8 @@
 unit About;
+// =================================
+// Display information about program
+// =================================
+//  14.03.24 ... Form position saved to INI file
 
 interface
 
@@ -18,6 +22,7 @@ type
     EdModel: TEdit;
     procedure FormActivate(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
+    procedure bOKClick(Sender: TObject);
   private
     { Private declarations }
   public
@@ -33,6 +38,11 @@ implementation
 
 uses global, Mdiform , EDRFileUnit;
 
+procedure TAboutDlg.bOKClick(Sender: TObject);
+begin
+    Close ;
+end;
+
 procedure TAboutDlg.FormActivate(Sender: TObject);
 begin
      edSupplier.text := Main.SESLabIO.LabInterfaceName ;
@@ -43,7 +53,11 @@ end;
 procedure TAboutDlg.FormClose(Sender: TObject; var Action: TCloseAction);
 begin
      Action := caFree ;
-     end;
+
+    // Save form position
+    EDRFile.SaveFormPosition( Self ) ;
+
+end;
 
 end.
 

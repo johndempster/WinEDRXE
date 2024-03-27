@@ -10,6 +10,7 @@ unit Defset;
   21/8/12 .... Digital and analog outputs now updated with specific procedures (not bOKClicked)
                (avoids holding level being set to zero)
   27/8/12 .... Main.SESLabIO.DIGHoldingLevel now updated correctly
+  14.03.24 ... Form change to MDIChild and Form position saved to INI file
   }
 
 interface
@@ -92,7 +93,7 @@ implementation
 
 {$R *.DFM}
 
-uses mdiform  , AmpModule;
+uses mdiform  , AmpModule, EDRFileUnit;
 
 const
      CurrentClampUnits = 'pA' ;
@@ -237,9 +238,16 @@ begin
      end;
 
 procedure TDefSetFrm.FormClose(Sender: TObject; var Action: TCloseAction);
+// ------------------------------
+// Procedures when form is closed
+// ------------------------------
 begin
 
      Action := caFree ;
+
+    // Save form position to INI file
+    EDRFile.SaveFormPosition( Self ) ;
+
      end;
 
 

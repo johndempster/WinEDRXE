@@ -1,9 +1,10 @@
 object ImportRawFrm: TImportRawFrm
+  Tag = 9
   Left = 633
   Top = 158
-  Width = 470
-  Height = 323
   Caption = 'Raw Binary Import'
+  ClientHeight = 284
+  ClientWidth = 454
   Color = clBtnFace
   Font.Charset = ANSI_CHARSET
   Font.Color = clWindowText
@@ -12,6 +13,7 @@ object ImportRawFrm: TImportRawFrm
   Font.Style = []
   OldCreateOrder = False
   Position = poMainFormCenter
+  OnHide = FormHide
   OnShow = FormShow
   PixelsPerInch = 96
   TextHeight = 15
@@ -236,6 +238,11 @@ object ImportRawFrm: TImportRawFrm
       ParentFont = False
       ScrollBars = ssNone
       TabOrder = 0
+      ColWidths = (
+        50
+        50
+        50
+        50)
       RowHeights = (
         18
         18
@@ -264,7 +271,7 @@ object ImportRawFrm: TImportRawFrm
     object lbMaxADCValue: TLabel
       Left = 24
       Top = 61
-      Width = 54
+      Width = 53
       Height = 14
       Caption = 'Max. Value'
       Font.Charset = ANSI_CHARSET

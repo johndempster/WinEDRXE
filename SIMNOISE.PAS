@@ -12,6 +12,7 @@ unit Simnoise;
   24.6.03 .... No. horizontal/vertical grid lines changeable
   12.01.10 ... Simulation data file now correctly updated with ADCMaxValue
   13.08.12 ... Sampling interval can now be set in window
+  15.03.24 ... Form position saved to INI file
   }
 
 interface
@@ -353,6 +354,9 @@ begin
 
      Main.UpdateMDIWindows ;
      Action := caFree ;
+
+     // Save form position
+     EDRFile.SaveFormPosition( Self ) ;
 
      end;
 

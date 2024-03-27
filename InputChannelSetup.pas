@@ -555,6 +555,9 @@ begin
 
         //Main.NewFileUpdate ; Removed from WinWCP version
 
+     // Save form position to INI file
+     EDRFile.SaveFormPosition( Self ) ;
+
      Action := caFree ;
      end ;
 

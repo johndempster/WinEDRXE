@@ -1,4 +1,5 @@
 object InputChannelSetupFrm: TInputChannelSetupFrm
+  Tag = 31
   Left = 475
   Top = 118
   BorderStyle = bsDialog
@@ -238,10 +239,6 @@ object InputChannelSetupFrm: TInputChannelSetupFrm
     object AmplifiersPage: TTabSheet
       Caption = ' Amplifiers'
       ImageIndex = 2
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object AmplifiersTab: TTabControl
         Left = 0
         Top = 0

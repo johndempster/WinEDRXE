@@ -16,7 +16,8 @@ unit DigFilt;
            Filtered data now created as separate file Backup no longer created).
            Channels increased to 16
   14/08/12 Filtered signals can now be written to new channels
-  15/08/12 Extra low pass filter cut-off added   
+  15/08/12 Extra low pass filter cut-off added
+  24.03.24 ... Form change to MDIChild and position saved to INI file
 
   ========================================================== }
 
@@ -76,6 +77,7 @@ type
     procedure rbLowPassClick(Sender: TObject);
     procedure rbHighPassClick(Sender: TObject);
     procedure rbNotchFilterClick(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
   private
     { Private declarations }
     UseChannel : Array[0..EDRChannelLimit] of Boolean ;
@@ -180,8 +182,13 @@ begin
     else if rbHighPass.Checked then ButterworthHPFilter
     else NotchFilter ;
 
+    // Update display
+    Main.UpdateViewSig ;
+
     { Re-enable button }
     bOK.Enabled := True ;
+
+    Close ;
 
     end ;
 
@@ -1025,6 +1032,20 @@ begin
      end ;
 
 
+procedure TDigFilterDlg.FormClose(Sender: TObject; var Action: TCloseAction);
+// ------------------------------
+// Procedures when form is closed
+// ------------------------------
+begin
+
+     Action := caFree ;
+
+    // Save form position to INI file
+    EDRFile.SaveFormPosition( Self ) ;
+
+     end;
+
+
 procedure TDigFilterDlg.FormCloseQuery(Sender: TObject;
   var CanClose: Boolean);
 begin
@@ -1035,7 +1056,11 @@ begin
 procedure TDigFilterDlg.bCancelClick(Sender: TObject);
 begin
      Abort := True ;
+
+     if bOK.Enabled then Close ;
+
      end;
+
 
 procedure TDigFilterDlg.SetChannelCheckBox(
           ckInUse : TCheckBox ;          { Channel in use check box }

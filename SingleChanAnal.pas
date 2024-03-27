@@ -45,6 +45,7 @@ unit SingleChanAnal;
                Stability plots now only plot complete averaging blocks.
   16.12.14 ... Event + Amps added to Export Events options. Export event amplitude and standard deviation
                Avg vs Closed times and Avg vs dwell times plots added Summary/Stability plot pages
+  14.03.24 ... Form position saved to INI file
               }
 
 interface
@@ -281,6 +282,7 @@ type
     PopupMenu1: TPopupMenu;
     ckEnableCursorMeasurement: TCheckBox;
     rbEventAmplitudes: TRadioButton;
+    edDisplayKeyPressSource: TEdit;
     procedure FormShow(Sender: TObject);
     procedure sbDetDisplayChange(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
@@ -355,6 +357,8 @@ type
     procedure edAHRangeKeyPress(Sender: TObject; var Key: Char);
     procedure ckEnableCursorMeasurementClick(Sender: TObject);
     procedure edThresholdKeyPress(Sender: TObject; var Key: Char);
+    procedure edDisplayKeyPressSourceKeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
 
   private
 
@@ -757,8 +761,8 @@ begin
      DetCurs.IUnit := scDetDisplay.AddHorizontalCursor( ChanNum, clgray, False,'unit-c' ) ;
 
      scDetDisplay.ClearVerticalCursors ;
-     DetCurs.C0 := scDetDisplay.AddVerticalCursor( AllChannels, clBlue, 'c0' ) ;
-     DetCurs.C1 := scDetDisplay.AddVerticalCursor( AllChannels, clBlue, 'c1' ) ;
+     DetCurs.C0 := scDetDisplay.AddVerticalCursor( AllChannels, clGray, 'c0' ) ;
+     DetCurs.C1 := scDetDisplay.AddVerticalCursor( AllChannels, clGray, 'c1' ) ;
      scDetDisplay.LinkVerticalCursors(DetCurs.C0,DetCurs.C1);
 
      scDetDisplay.VerticalCursors[DetCurs.C0] := 0 ;
@@ -917,6 +921,10 @@ begin
      Screen.Cursor := crDefault ;
 
      Action := caFree ;
+
+     // Save form position to settings
+     EDRFile.SaveFormPosition( Self ) ;
+
      end;
 
 
@@ -928,6 +936,32 @@ begin
         UpdateCursors( scDetDisplay ) ;
         end ;
      end;
+
+procedure TSingleChanAnalFrm.edDisplayKeyPressSourceKeyDown(Sender: TObject;
+  var Key: Word; Shift: TShiftState);
+// -----------------------------
+// Cursor control key processing
+// -----------------------------
+begin
+
+     if Page.ActivePage = DetectTransitionsTab then
+         begin
+         // Detect events page function keys
+         Case Key of
+             VK_LEFT : scDetDisplay.MoveActiveVerticalCursor(-1) ;
+             VK_RIGHT : scDetDisplay.MoveActiveVerticalCursor(1) ;
+             end ;
+         end
+     else if Page.ActivePage = EditTransitionsTab then
+         begin
+          // Edit events page function keys
+          Case Key of
+             VK_LEFT : scEditDisplay.MoveActiveVerticalCursor(-1) ;
+             VK_RIGHT : scEditDisplay.MoveActiveVerticalCursor(1) ;
+             end ;
+        end ;
+
+end;
 
 procedure TSingleChanAnalFrm.InitialiseDetect ;
 //
@@ -2466,6 +2500,12 @@ begin
      { Update vertical display magnification so that changes are retained }
      EDRFile.Channel[ChanNum].yMin := scDetDisplay.YMin[ChanNum] ;
      EDRFile.Channel[ChanNum].yMax := scDetDisplay.YMax[ChanNum] ;
+
+      // Move focus of form to hidden control used to source  <- -> arrow key presses
+      // used to control display readout cursors. Note only set focus if form is active
+      // to avoid cursorchange events in inactive forms pulling focus back to recently
+      // inactivated forms
+      if Self.Active then edDisplayKeyPressSource.SetFocus ;
 
      end ;
 
@@ -4126,6 +4166,12 @@ begin
      s := s + format(' Dur.(a-a) = %.4g ms',
               [CursorMeasurements[NumCursorMeasurements].Duration]) ;
      lbCursors.Caption := s ;
+
+      // Move focus of form to hidden control used to source  <- -> arrow key presses
+      // used to control display readout cursors. Note only set focus if form is active
+      // to avoid cursorchange events in inactive forms pulling focus back to recently
+      // inactivated forms
+      if Self.Active then edDisplayKeyPressSource.SetFocus ;
 
      end;
 

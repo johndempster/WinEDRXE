@@ -19,6 +19,7 @@ type
     prProgress: TProgressBar;
     procedure FormShow(Sender: TObject);
     procedure bOKClick(Sender: TObject);
+    procedure FormClose(Sender: TObject; var Action: TCloseAction);
   private
     { Private declarations }
   public
@@ -32,7 +33,21 @@ implementation
 
 {$R *.DFM}
 
-uses EDRFileUnit ;
+uses EDRFileUnit , MDIFORM;
+
+procedure TInvertDlg.FormClose(Sender: TObject; var Action: TCloseAction);
+// ------------------------------
+// Procedures when form is closed
+// ------------------------------
+begin
+
+     Action := caFree ;
+
+    // Save form position to INI file
+    EDRFile.SaveFormPosition( Self ) ;
+
+end;
+
 
 procedure TInvertDlg.FormShow(Sender: TObject);
 //
@@ -106,6 +121,10 @@ begin
        Application.ProcessMessages ;
 
        end ;
+
+    Main.UpdateViewSig ;
+
+    Close ;
 
     end ;
 

@@ -94,6 +94,8 @@ unit Rec;
   22.05.23 .. Excessively long Timer.Interval period when large numbers of channels are being acquired fixed
               More than one write buffer can now be written to file during each timer tick.
               Fixes failure of writing to file to keep up when sampling slowly.
+  15.03.24 ... Form position saved to INI file
+  19.03.24 ... Patch clamp control panels load requests now made from timer to ensure seal form is on display BEFORE panel is displayed
   ==============================================================================}
 interface
 
@@ -447,6 +449,7 @@ type
   public
     { Public declarations }
     TimerBusy : boolean ;     // Timer scheduled operation in progress
+    LoadControlPanel : Boolean ; // TRUE = request patch clamp control panel to be displayed
 
     procedure StopADCandDAC ;
     procedure NewFile ;
@@ -518,22 +521,6 @@ begin
         Close ;
         Exit ;
         end ;
-
-     // Display Triton control panel if it is not open
-     case Main.SESLabIO.LabInterfaceType of
-          Triton : begin
-             if not Main.FormExists( 'TritonPanelFrm' ) then begin
-                Main.mnTriton.Enabled := True ;
-                Main.mnTriton.Click ;
-                end ;
-             end ;
-          HekaEPC9,HekaEPC10,HekaEPC10Plus,HekaEPC10USB : begin
-             if not Main.FormExists( 'EPC9PanelFrm' ) then begin
-                Main.mnEPC9Panel.Enabled := True ;
-                Main.mnEPC9Panel.Click ;
-                end ;
-             end ;
-          end;
 
      { Get locations of A/D, D/A and digital I/O buffers from lab. interface }
      Main.SESLabIO.GetADCBuffer( ADC ) ;
@@ -622,6 +609,7 @@ begin
 
      Timer.Enabled := True ;
      Initialised := True ;
+     LoadControlPanel := True ;    // Display Patch clamp control panel request flag
      end ;
 
 procedure TRecordFrm.DisplayAOHold(
@@ -929,8 +917,30 @@ begin
      if TimerBusy then Exit ;
      TimerBusy := True ;
 
-     //if CDRFH.NumSamplesInFile > 0 then bUpdateGain.Enabled := False
-     //                              else bUpdateGain.Enabled := True ;
+//
+//   Load virtual control panel if required
+//
+     if LoadControlPanel then
+        begin
+          case Main.SESLabIO.LabInterfaceType of
+               Triton : begin
+                       if not Main.FormExists( 'TritonPanelFrm' ) then
+                           begin
+                           Main.mnTriton.Enabled := True ;
+                           Main.mnTriton.Click ;
+                           end ;
+                       end ;
+               HekaEPC9,HekaEPC10,HekaEPC10Plus,HekaEPC10USB,HekaEPC9USB : begin
+                     if not Main.FormExists( 'EPC9PanelFrm' ) then
+                        begin
+                        Main.mnEPC9Panel.Enabled := True ;
+                        Main.mnEPC9Panel.Click ;
+                        end ;
+                     end ;
+          end;
+        LoadControlPanel := False ;
+        end ;
+
 
      if not Main.SESLabIO.ADCActive then
         begin
@@ -1514,11 +1524,12 @@ begin
            end ;
 
         // Open plotting window (if not already open)
-        if not Main.FormExists( 'RecPlotFrm' ) then begin
+        if not Main.FormExists( 'RecPlotFrm' ) then
+           begin
            RecPlotFrm := TRecPlotFrm.Create(Self) ;
-           RecPlotFrm.Width :=  Main.ClientWidth - RecordFrm.Left - RecordFrm.Width - 20 ;
-           RecPlotFrm.Left := RecordFrm.Left + RecordFrm.Width + 2 ;
-           RecPlotFrm.Top := 10 ;
+           EDRFile.SetFormPosition( RecPlotFrm, RecordFrm.Left + RecordFrm.Width + 2, Margin,
+                                    Main.ClientWidth - RecordFrm.Left - RecordFrm.Width - 20,
+                                    RecPlotFrm.Height ) ;
            end ;
 
 
@@ -2384,6 +2395,9 @@ begin
      Timer.Enabled := False ;
      Initialised := False ;
 
+     // Save form position
+     EDRFile.SaveFormPosition( Self ) ;
+
      end;
 
 
@@ -2391,6 +2405,7 @@ procedure TRecordFrm.FormCreate(Sender: TObject);
 begin
     DisplayBuf := Nil ;
     DisplayBufSize := 0 ;
+    LoadControlPanel := False ;    // Display Patch clamp control panel request flag
     end;
 
 procedure TRecordFrm.rbFreeRunClick(Sender: TObject);

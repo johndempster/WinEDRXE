@@ -7,6 +7,7 @@ unit VP500Panel;
 // 5.04.04
 // 4.08.04 Holding current now set correctly in pA
 //         Holding current/potentials remembered between mode switches
+// 14.03.24 Form position saved to INI file
 
 interface
 
@@ -138,7 +139,7 @@ var
 
 implementation
 
-uses Mdiform;
+uses Mdiform, EDRFileUnit;
 
 {$R *.dfm}
 
@@ -573,6 +574,9 @@ procedure TVP500PanelFrm.FormClose(Sender: TObject;
 // Tidy up when form is closed
 // ---------------------------
 begin
+
+    // Save form position to INI file
+    EDRFile.SaveFormPosition( Self ) ;
 
      Action := caFree ;
      end;

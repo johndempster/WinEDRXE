@@ -18,6 +18,7 @@ unit EditProtocolUnit;
 // 10.07.15 Open/SaveDialog.FileName now set to Main.VProtDirectory\*.xml file path to ensure dialog
 //          opens in that folder.
 // 24.11.21 Changed back to *.xml because files in folder were not being displayed
+// 14.03.24 Form position saved to INI file
 
 interface
 
@@ -784,6 +785,8 @@ begin
      StimulusParametersTableChanged := False ;
      DisableUpdates := False ;
 
+
+
      Resize ;
 
      end;
@@ -1121,6 +1124,9 @@ begin
 
 procedure TEditProtocolFrm.FormClose(Sender: TObject;
   var Action: TCloseAction);
+// ---------------------------
+// Procedures when form closed
+// ---------------------------
 begin
      if not Prot.Saved then begin
         if MessageDlg(
@@ -1131,6 +1137,9 @@ begin
            end ;
         end ;
      Action := caFree ;
+
+     EDRFile.SaveFormPosition( Self ) ;
+
      end;
 
      

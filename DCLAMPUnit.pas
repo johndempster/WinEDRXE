@@ -26,6 +26,7 @@ unit DCLAMPUnit;
 // 05.08.16       DCLAMP parameters now updated when form opened
 // 15.07.22       SaveSettings() and LoadSettings() now use TStringList to hold KEY=Value pairs
 // 24.07.23       SaveSettings() and LoadSettings() '=' removed from keys.
+// 14.03.24       Form position saved to INI file
 
 interface
 
@@ -917,7 +918,10 @@ begin
     // Close COM link to DCLAMP
     CloseDCLAMP ;
 
-    SAveSettingsFile( INIFileName ) ;
+    // Save form position to INI file
+    EDRFile.SaveFormPosition( Self ) ;
+
+    SaveSettingsFile( INIFileName ) ;
 
     Action := caFree ;
 

@@ -6,6 +6,7 @@ unit FilePropsUnit;
 // 14.06.10 More details and header text added to properties
 // 04.02.11 Scroll bars added text windows, dialog box widened
 // 16.05.18 V/Units in calibration table now shows actual scaling factor rather than X1 gain factor.
+// 14.03.24 Form position saved to INI file
 //
 
 interface
@@ -18,7 +19,7 @@ type
   TFilePropsDlg = class(TForm)
     bCancel: TButton;
     bOK: TButton;
-    PageControl1: TPageControl;
+    Page: TPageControl;
     TabProperties: TTabSheet;
     meProperties: TMemo;
     TabCalTable: TTabSheet;
@@ -36,6 +37,7 @@ type
     procedure bOKClick(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure bCancelClick(Sender: TObject);
+    procedure FormResize(Sender: TObject);
   private
     { Private declarations }
   public
@@ -102,21 +104,10 @@ begin
      meProperties.Lines.Add(format('File header size (bytes): %d',[EDRFile.cdrfh.NumBytesInHeader])) ;
      meProperties.Lines.Add(format('Sample value range: %d - %d',[-Round(EDRFile.Channel[0].ADCMaxValue)-1,Round(EDRFile.Channel[0].ADCMaxValue)])) ;
 
-
-     // Display file header
-     // Read ANSI text from first HeaderSize bytes of file header and load into Header StringList
-  {   FileSeek( fHDR.FileHandle, 0, 0 ) ;
-     pANSIBuf := AllocMem( MinBytesInHeader ) ;
-     FileRead(fHDR.FileHandle, pANSIBuf^, HeaderSize ) ;
-     pANSIBuf[HeaderSize-1] := #0 ;
-     ANSIHeader := ANSIString( pANSIBuf ) ;}
-{     Header.Text := String(ANSIHeader) ;
-
-     FileSeek( EDRFile.cdrfh.FileHandle, 0,0) ;
-     FillChar( Header, Sizeof(Header), 0) ;
-     FileRead( EDRFile.cdrfh.FileHandle, Header, SizeOf(Header) ) ;}
      meFileHeader.Lines.Clear ;
      meFileHeader.Lines.Text := EDRFile.HeaderText ;
+
+     Resize ;
 
      end;
 
@@ -156,9 +147,31 @@ begin
 
 procedure TFilePropsDlg.FormClose(Sender: TObject;
   var Action: TCloseAction);
+// ---------------------------
+// Procedures when form closed
+// ---------------------------
 begin
      Action := caFree ;
+
+    // Save form position to INI file
+    EDRFile.SaveFormPosition( Self ) ;
+
+
      end;
+
+procedure TFilePropsDlg.FormResize(Sender: TObject);
+// -----------------------------------
+// Set control sizes when form resized
+// -----------------------------------
+begin
+    bOK.Top := Self.ClientHeight - bOK.Height - 5 ;
+    bCancel.Top := bOK.Top ;
+    Page.Height := bOK.Top - Page.Top - 5 ;
+    meProperties.Height := TabProperties.ClientHeight - meProperties.Top - 5 ;
+    meFileHeader.Height := TabFileHeader.ClientHeight - meFileHeader.Top - 5 ;
+
+end;
+
 
 procedure TFilePropsDlg.bCancelClick(Sender: TObject);
 begin

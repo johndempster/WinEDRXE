@@ -1,9 +1,10 @@
 object SealTestFrm: TSealTestFrm
+  Tag = 15
   Left = 433
   Top = 186
   Caption = 'Pipette Seal Test / Signal Monitor'
   ClientHeight = 655
-  ClientWidth = 776
+  ClientWidth = 706
   Color = clBtnFace
   Font.Charset = ANSI_CHARSET
   Font.Color = clBlack
@@ -27,7 +28,7 @@ object SealTestFrm: TSealTestFrm
   object scDisplay: TScopeDisplay
     Left = 200
     Top = 6
-    Width = 425
+    Width = 498
     Height = 289
     OnCursorChange = scDisplayCursorChange
     CursorChangeInProgress = False

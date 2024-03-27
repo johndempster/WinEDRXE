@@ -1,4 +1,5 @@
 object RecPlotFrm: TRecPlotFrm
+  Tag = 14
   Left = 1023
   Top = 237
   Caption = 'Real Time Plot'
@@ -51,10 +52,10 @@ object RecPlotFrm: TRecPlotFrm
     PrinterFontName = 'Arial'
     PrinterLineWidth = 1
     PrinterMarkerSize = 5
-    PrinterLeftMargin = 12
-    PrinterRightMargin = 12
-    PrinterTopMargin = 12
-    PrinterBottomMargin = 12
+    PrinterLeftMargin = 10
+    PrinterRightMargin = 10
+    PrinterTopMargin = 10
+    PrinterBottomMargin = 10
     PrinterDisableColor = False
     MetafileWidth = 500
     MetafileHeight = 400

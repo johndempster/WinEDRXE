@@ -23,6 +23,9 @@ unit ViewSig;
                Fixed Zero level tick box added, fixes zero levels in place
   07.08.15 ... Min/Max compression of large array signal arrays now handled by ScopeDisplay.pas
   27.05.21 ... SaveToDataFile public procedure added. Saves displayed data to CSV file.
+  14.03.24 ... Form position saved to INI file
+/ 21.03.24 ... Key presses for controlling display cursor positions now sourced from edDisplayKeySource
+              rather than form key preview
   ========================================================}
 
 interface
@@ -68,6 +71,7 @@ type
     rbTDisplayUnitMins: TRadioButton;
     bCalcAverage: TButton;
     ckFixedZeroLevels: TCheckBox;
+    edDisplayKeyPressSource: TEdit;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormResize(Sender: TObject);
@@ -94,6 +98,9 @@ type
     procedure bCalcAverageClick(Sender: TObject);
     procedure ckFixedZeroLevelsClick(Sender: TObject);
     procedure FormCreate(Sender: TObject);
+    procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure edDisplayKeyPressSourceKeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
 
   private
     { Private declarations }
@@ -122,7 +129,7 @@ var
 
 implementation
 
-uses mdiform,shared,Printrec , Zero;
+uses mdiform,shared,Printrec , Zero, EventDetector;
 
 const
      MaxDisplayScans = 2000 ;
@@ -185,6 +192,10 @@ begin
 
     { Disable copy and print menus }
      Main.CopyAndPrintMenus( False, False ) ;
+
+     // Save form position to INI file
+     EDRFile.SaveFormPosition( Self ) ;
+
      Action := caFree ;
      end;
 
@@ -274,6 +285,20 @@ begin
      { Disable copy and print menus }
      Main.CopyAndPrintMenus( False, False ) ;
      end;
+
+
+procedure TViewSigFrm.FormKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+
+//     if not Self.Active then Self.KeyPreview := False ;
+     exit ;
+     case key of
+          VK_LEFT : scDisplay.MoveActiveVerticalCursor(-1) ;
+          VK_RIGHT : scDisplay.MoveActiveVerticalCursor(1) ;
+          end ;
+end;
+
 
 
 procedure  TViewSigFrm.ZoomOutAll ;
@@ -391,6 +416,19 @@ begin
 
      end ;
 
+
+procedure TViewSigFrm.edDisplayKeyPressSourceKeyDown(Sender: TObject;
+  var Key: Word; Shift: TShiftState);
+// ------------------
+// Handle key presses
+// ------------------
+begin
+     case key of
+          VK_LEFT : scDisplay.MoveActiveVerticalCursor(-1) ;
+          VK_RIGHT : scDisplay.MoveActiveVerticalCursor(1) ;
+          end ;
+
+end;
 
 procedure TViewSigFrm.edIdentChange(Sender: TObject);
 { -------------------------------------------
@@ -552,6 +590,12 @@ begin
       EDRFile.Channel[0].xMax := scDisplay.xMax ;
 
       TScopeDisplay(Sender).CursorChangeInProgress := False ;
+
+      // Move focus of form to hidden control used to source  <- -> arrow key presses
+      // used to control display readout cursors. Note only set focus if form is active
+      // to avoid cursorchange events in inactive forms pulling focus back to recently
+      // inactivated forms
+      if Self.Active then edDisplayKeyPressSource.SetFocus ;
 
       end;
 

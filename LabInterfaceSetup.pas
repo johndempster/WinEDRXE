@@ -4,6 +4,7 @@ unit LabInterfaceSetup;
 // -------------------------------------
 // 15.06.11 New form for laboratory interface setup only
 //          (previously handled in setupdlg form)
+// 14.03.24 Form position saved to INI file
 
 interface
 
@@ -44,7 +45,7 @@ var
 
 implementation
 
-uses MDIForm, AmpModule;
+uses MDIForm, AmpModule, EDRFileUnit;
 
 {$R *.dfm}
 
@@ -150,9 +151,18 @@ begin
 
 procedure TLabInterfaceSetupFrm.FormClose(Sender: TObject;
   var Action: TCloseAction);
+// ------------------------------
+// Procedures when form is closed
+// ------------------------------
 begin
+
+    // Save form position to INI file
+    EDRFile.SaveFormPosition( Self ) ;
+
     Action := caFree ;
+
     end;
+
 
 procedure TLabInterfaceSetupFrm.cbLabInterfaceChange(Sender: TObject);
 // ----------------------

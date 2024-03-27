@@ -1,9 +1,10 @@
 object LabInterfaceSetupFrm: TLabInterfaceSetupFrm
+  Tag = 30
   Left = 348
   Top = 312
-  Width = 416
-  Height = 223
   Caption = 'Laboratory Interface Setup'
+  ClientHeight = 184
+  ClientWidth = 400
   Color = clBtnFace
   Font.Charset = ANSI_CHARSET
   Font.Color = clWindowText
@@ -25,7 +26,6 @@ object LabInterfaceSetupFrm: TLabInterfaceSetupFrm
     Height = 23
     Hint = 'Laboratory interface card used for A/D and D/A conversion'
     Style = csDropDownList
-    ItemHeight = 15
     ParentShowHint = False
     ShowHint = True
     Sorted = True
@@ -63,7 +63,6 @@ object LabInterfaceSetupFrm: TLabInterfaceSetupFrm
       Width = 285
       Height = 23
       Hint = 'A/D Converter input mode'
-      ItemHeight = 15
       ParentShowHint = False
       ShowHint = True
       TabOrder = 0
@@ -75,7 +74,6 @@ object LabInterfaceSetupFrm: TLabInterfaceSetupFrm
       Top = 18
       Width = 101
       Height = 23
-      ItemHeight = 15
       TabOrder = 1
       Text = 'cbDeviceNumber'
       OnChange = cbDeviceNumberChange

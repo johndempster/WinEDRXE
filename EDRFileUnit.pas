@@ -70,13 +70,14 @@ unit EDRFileUnit;
   02.05.23 ... Replaces fileio.pas, global.pas, shared.pas
   09.05.23 ... EDR File V6.2 File header size now increased when no. channels > 16, 1-16 = 2048, 17-32 = 4096 , ...
   10.07.23 ... 'DETDECTO', Settings.EventDetector.TDecayTo added
+  14.03.24 ... Form position saved to INI file
   }
 
 interface
 
 uses
   System.SysUtils, System.Classes, System.UITypes, stdctrls, wintypes, graphics, maths, VCL.grids, math ,
-  Vcl.Dialogs, System.StrUtils, SESLabIO ;
+  Vcl.Dialogs, System.StrUtils, SESLabIO, VCL.Forms ;
 
 const
      FileVersion = 7.1 ;
@@ -596,7 +597,10 @@ TMarkerShape = ( SquareMarker, CircleMarker ) ;
    Vm : Single ;    // Cell membrane voltage (V)
    Im : Single ;    // Cell membrane current (A)
 
-
+    FPLeft : Array[0..49] of Integer ;  // Left edge
+    FPTop : Array[0..49] of Integer ;  // Top edge
+    FPWidth : Array[0..49] of Integer ;  // Width
+    FPHeight : Array[0..49] of Integer ;  // Height
 
     procedure SaveHeader( var fHDR : TCDRFileHeader ) ;
     procedure GetHeader( var fHDR : TCDRFileHeader ) ;
@@ -747,6 +751,17 @@ TMarkerShape = ( SquareMarker, CircleMarker ) ;
   function ExtractFloat ( CBuf : string ; Default : Single ) : extended ;
   function ExtractInt ( CBuf : string ) : longint ;
 
+  procedure SetFormPosition(
+            Form : TForm ;             // Form
+            Left : Integer ;           // Left edge of form
+            Top : Integer ;            // Top edge
+            Width : Integer ;          // Form width
+            Height : Integer           // Form height
+            ) ;
+  procedure SaveFormPosition(
+            Form : TForm ) ;
+
+
   end;
 
 var
@@ -758,7 +773,7 @@ implementation
 
 {$R *.dfm}
 
-uses Mdiform , AmpModule, VCL.Forms, Windows, System.IOUtils, VCL.Printers, ClipBrd ;
+uses Mdiform , AmpModule, Windows, System.IOUtils, VCL.Printers, ClipBrd , LOG;
 
 
 function TEDRFile.FileOverwriteCheck(
@@ -1003,7 +1018,7 @@ begin
      Header.Text := String(ANSIHeader) ;
 
      for i := 0 to Header.Count-1 do Header[i] := ReplaceText( Header[i], '==','=');
-     for i := 0 to Header.Count-1 do outputdebugstring(pchar(Header[i]));
+//     for i := 0 to Header.Count-1 do outputdebugstring(pchar(Header[i]));
 
      SaveHeader := False ;
 
@@ -1230,12 +1245,9 @@ begin
 
      // Load list from file
      Header.LoadFromFile( IniFileName ) ;
-     outputdebugstring(pchar(Header[0]));
-     outputdebugstring(pchar(format('Count=%d',[Header.Count])));
 
      // Remove accidental double zeroes
      for i := 0 to Header.Count-1 do Header[i] := ReplaceText( Header[i], '==','=' ) ;
-
 
      // Record duration
      Settings.RecordDuration := GetKeyValue( Header, 'RECDUR', Settings.RecordDuration ) ;
@@ -1331,8 +1343,6 @@ begin
       Settings.SealTest.ZapAmplitude := GetKeyValue( Header, 'STZAPA', Settings.SealTest.ZapAmplitude ) ;
       Settings.SealTest.ZapDuration := GetKeyValue( Header, 'STZAPD', Settings.SealTest.ZapDuration ) ;
       Settings.SealTest.GaFromPeak := GetKeyValue( Header, 'STGAP', Settings.SealTest.GaFromPeak ) ;
-
-
 
      { Width/height of clipboard bitmaps }
      Settings.BitmapWidth := GetKeyValue( Header, 'BMAPW', Settings.BitmapWidth ) ;
@@ -1454,11 +1464,14 @@ begin
      Settings.SimEPC.Depression := GetKeyValue( Header, 'EPCDEP', Settings.SimEPC.Depression) ;
      Settings.SimEPC.TauDepression := GetKeyValue( Header, 'EPCTAUDEP', Settings.SimEPC.TauDepression) ;
 
-     // Load main form size and position
-     Main.Width := GetKeyValue( Header, 'FORMWIDTH', Main.Width ) ;
-     Main.Height := GetKeyValue( Header, 'FORMHEIGHT', Main.Height ) ;
-     Main.Top := GetKeyValue( Header, 'FORMTOP', Main.Top ) ;
-     Main.Left := GetKeyValue( Header, 'FORMLEFT', Main.Left  ) ;
+     // Load last used form positions
+     for i := 0 to High(FPLeft) do
+         begin
+         FPLeft[i] := GetKeyValue( Header, format('FPTOP%d',[i]), FPLeft[i] ) ;
+         FPTop[i] := GetKeyValue( Header, format('FPLEFT%d',[i]), FPTop[i]) ;
+         FPWidth[i]  := GetKeyValue( Header, format('FPRIGHT%d',[i]), FPWidth[i] ) ;
+         FPHeight[i] := GetKeyValue( Header, format('FPBOTTOM%d',[i]), FPHeight[i] ) ;
+         end;
 
      Header.Free ;
 
@@ -1471,9 +1484,8 @@ procedure TEDRFile.SaveInitializationFile( const IniFileName : string ) ;
   --------------------------------------------}
 var
    Header : TStringList ;
-   ch : Integer ;
+   ch,i : Integer ;
 begin
-
 
      // Create file header Name=Value string list
      Header := TStringList.Create ;
@@ -1687,11 +1699,14 @@ begin
      AddKeyValue( Header, 'EPCDEP', Settings.SimEPC.Depression) ;
      AddKeyValue( Header, 'EPCTAUDEP', Settings.SimEPC.TauDepression) ;
 
-     // Save main form size and position
-     AddKeyValue( Header, 'FORMTOP',Main.Top ) ;
-     AddKeyValue( Header, 'FORMLEFT',Main.Left ) ;
-     AddKeyValue( Header, 'FORMWIDTH',Main.Width ) ;
-     AddKeyValue( Header, 'FORMHEIGHT',Main.Height ) ;
+     // Save form positions
+     for i := 0 to High(FPLeft) do
+         begin
+         AddKeyValue( Header, format('FPTOP%d',[i]), FPLeft[i] ) ;
+         AddKeyValue( Header, format('FPLEFT%d',[i]), FPTop[i]) ;
+         AddKeyValue( Header, format('FPRIGHT%d',[i]), FPWidth[i] ) ;
+         AddKeyValue( Header, format('FPBOTTOM%d',[i]), FPHeight[i] ) ;
+         end;
 
      // Save Name=Value list to INI file
      Header.SaveToFile( IniFileName ) ;
@@ -1809,7 +1824,7 @@ procedure TEDRFile.DataModuleCreate(Sender: TObject);
 // Initialise settings when module created
 // ---------------------------------------
 var
-    ch : Integer ;
+    ch,i : Integer ;
 begin
 
       { Create channel names list }
@@ -2103,6 +2118,14 @@ begin
      { Set the file names and handles for all header blocks to null }
      CdrFH.FileHandle := -1 ;
      CdrFH.FileName := '' ;
+
+     // Clear form positions
+     for i := 0 to High(FPLeft) do begin
+         FPLeft[i] := 0 ;
+         FPTop[i] := 0 ;
+         FPWidth[i] := 0 ;
+         FPHeight[i] := 0 ;
+         end;
 
      Main.SetMenus ;
 
@@ -3062,6 +3085,100 @@ begin
      { Return number of values extracted }
      Result := nValues ;
      end ;
+
+
+procedure TEDRFile.SetFormPosition(
+          Form : TForm ;             // Form
+          Left : Integer ;           // Left edge of form
+          Top : Integer ;            // Top edge
+          Width : Integer ;          // Form width
+          Height : Integer           // Form height
+          ) ;
+// -----------------
+// Set form position
+// -----------------
+var
+    MaxWidth,MaxHeight : Integer ;
+begin
+
+     if (Form.Tag < 0) or (Form.Tag > High(FPLeft)) then Exit ;
+
+     // If no saved position, use position supplied
+     if FPWidth[Form.Tag] = 0 then
+        begin
+        FPLeft[Form.Tag] := Left ;
+        FPTop[Form.Tag] := Top ;
+        FPWidth[Form.Tag] := Width ;
+        FPHeight[Form.Tag] := Height ;
+        end;
+
+     // Keep within bounds of main window
+
+      if Form.Name = 'Main' then
+         begin
+         MaxWidth := Screen.Width ;
+         MaxHeight := Screen.Height ;
+         end
+      else
+         begin
+         MaxWidth := Main.ClientWidth ;
+         MaxHeight := Main.ClientHeight ;
+         end;
+
+     // Keep left edge visible
+     if FPLeft[Form.Tag] < 0 then
+        begin
+        FPLeft[Form.Tag] := Left ;
+        end;
+
+     // Keep top edge visible
+     if FPTop[Form.Tag] < 0 then
+        begin
+        FPTop[Form.Tag] := Top ;
+        end;
+
+     // Keep right edge visible
+     if (FPLeft[Form.Tag] + FPWidth[Form.Tag]) >= MaxWidth then
+        begin
+        FPWidth[Form.Tag] := Max(MaxWidth - FPLeft[Form.Tag] - 1,10) ;
+        end;
+
+     // Keep bottom egde visible
+     if (FPTop[Form.Tag] + FPHeight[Form.Tag]) >= MaxHeight then
+        begin
+        FPHeight[Form.Tag] := Max(MaxHeight - FPTop[Form.Tag] - 1,10) ;
+        end;
+
+    outputdebugstring( pchar(
+    format('LOad %s %d %d, %d, %d, %d',[Form.Name,Form.Tag,FPLeft[Form.Tag],FPTop[Form.Tag],FPWidth[Form.Tag],FPHeight[Form.Tag]])));
+
+     // Update form position
+     Form.Left := FPLeft[Form.Tag]  ;
+     Form.Top := FPTop[Form.Tag] ;
+     Form.Width := FPWidth[Form.Tag] ;
+     Form.Height := FPHeight[Form.Tag] ;
+
+     end ;
+
+procedure TEDRFile.SaveFormPosition(
+          Form : TForm               // Form
+          ) ;
+// ------------------
+// Save form position
+// ------------------
+begin
+
+    if (Form.Tag < 0) or (Form.Tag > High(FPLeft)) then Exit ;
+
+    FPLeft[Form.Tag] := Form.Left ;
+    FPTop[Form.Tag] := Form.Top ;
+    FPWidth[Form.Tag] := Form.Width ;
+    FPHeight[Form.Tag] := Form.Height ;
+
+    outputdebugstring( pchar(
+    format('Save %s %d %d, %d, %d, %d',[Form.Name,Form.Tag,FPLeft[Form.Tag],FPTop[Form.Tag],FPWidth[Form.Tag],FPHeight[Form.Tag]])));
+
+    end ;
 
 
 procedure TEDRFile.FileCloseSafe( var FileHandle : Integer ) ;
