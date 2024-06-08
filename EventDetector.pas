@@ -115,6 +115,8 @@ unit EventDetector;
 // 14.03.24 ... Form position saved to INI file
 // 21.03.24 ... Key presses for controlling display cursor positions now sourced from edDisplayKeySource
 //              rather than form key preview
+// 08.06.24 ... Access vioation with multichannel files introduced V4.1.o fixed
+//              Display windows limited to 1000000 points
 
 interface
 
@@ -684,10 +686,9 @@ begin
      for i := 0 to Main.MDIChildCount-1 do
          begin
            if Self.Name = Main.MDIChildren[i].Name then Self.KeyPreview := True
-                                              else Self.KeyPreview := False ;
+                                                   else Self.KeyPreview := False ;
 
          end;
-
 
      ClientWidth := Page.Left + Page.Width + 10 ;
      ClientHeight := Page.Top + Page.Height + 10 ;
@@ -917,6 +918,7 @@ begin
      edDetDisplayWidth.Value := scDisplay.MaxPoints*scDisplay.NumChannels*4 ;
 
      { Set display scaling information }
+     scDisplay.NumChannels := EDRFile.CDRFH.NumChannels ;
      for ch := 0 to scDisplay.NumChannels-1 do
          begin
          scDisplay.ChanUnits[ch] := EDRFile.Channel[ch].ADCUnits ;
@@ -1096,7 +1098,7 @@ begin
 
      // Create averages buffer
      if AvgBuf <> Nil then FreeMem(AvgBuf) ;
-     NPAvgBuf := scAverageDisplay.MaxPoints*scAverageDisplay.NumChannels ;
+     NPAvgBuf := scAverageDisplay.MaxPoints*EDRFile.CdrFH.NumChannels*8 ;
      GetMem( AvgBuf, NPAvgBuf*2 ) ;
      // Clear average buffer
      for i := 0 to NPAvgBuf-1 do AvgBuf^[i] := 0 ;
@@ -1160,24 +1162,26 @@ procedure TEventDetFrm.DisplayRecord ;
 { ---------------------------------------------
   Display currently selected block of data file
   ---------------------------------------------}
+const
+    cMaxPointsLimit = 1000000 ;
 var
    InitialiseRunningMean : Boolean ;
    MaxPointsInFile : Integer ;
 begin
 
-
     // Signal display
     MaxPointsInFile := EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels ;
     scDisplay.MaxPoints := Min(Round(edDetDisplayWidth.Value),MaxPointsInFile) ;
+    scDisplay.MaxPoints := Min(scDisplay.MaxPoints,cMaxPointsLimit) ;
     edDetDisplayWidth.Value := scDisplay.MaxPoints ;
 
     scDisplay.NumPoints := scDisplay.MaxPoints ;
     scDisplay.xMin := 0 ;
     scDisplay.xMax := scDisplay.NumPoints - 1  ;
     if ADC <> Nil then FreeMem(ADC) ;
-    GetMem( ADC, scDisplay.MaxPoints*scDisplay.NumChannels*4 ) ;
+    GetMem( ADC, scDisplay.MaxPoints*EDRFIle.Cdrfh.NumChannels*2 ) ;
     scDisplay.SetDataBuf( ADC ) ;
-   scDisplay.xOffset := sbDisplay.Position ;
+    scDisplay.xOffset := sbDisplay.Position ;
 
      // Detection criterion display
      scDetDisplay.MaxPoints := scDisplay.MaxPoints ;
@@ -1228,7 +1232,7 @@ function  TEventDetFrm.RateofRise(
           StartAtSample : Integer ;        // Sample to start at
           NumPoints : Integer ;            // Number of A/D sample points
           YBuf : PSmallIntArray ;          // Signal data buffer
-          YDet :  PSmallIntArray          // Rate of change data buffer (out)
+          YDet : PSmallIntArray          // Rate of change data buffer (out)
           ) : Integer ;
 { ---------------------------------
   Calculate rate of rise of signal
@@ -1976,7 +1980,10 @@ procedure TEventDetFrm.DisplayEditRecord ;
 { -------------------------------------------------------------
   Display currently selected block of data file on edit display
   ------------------------------------------------------------- }
+const
+  cMaxPointsLimit = 1000000 ;
 var
+
    i,iStart,iEnd,iEvent,Step,iLine : Integer ;
    MaxPointsInFile : Integer ;
 begin
@@ -1985,6 +1992,7 @@ begin
 
     MaxPointsInFile := EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels ;
     scEditDisplay.MaxPoints := Min(Round(edEditDisplayWidth.Value),MaxPointsInFile) ;
+    scEditDisplay.MaxPoints := Min(scEditDisplay.MaxPoints,cMaxPointsLimit) ;
     edEditDisplayWidth.Value := scEditDisplay.MaxPoints ;
 
     scEditDisplay.NumPoints := scEditDisplay.MaxPoints ;
@@ -1997,7 +2005,7 @@ begin
     scMarkDisplay.xMax := scEditDisplay.NumPoints - 1  ;
 
     if EditBuf <> Nil then FreeMem( EditBuf ) ;
-    GetMem( EditBuf, scEditDisplay.MaxPoints*scEditDisplay.NumChannels*2 ) ;
+    GetMem( EditBuf, scEditDisplay.MaxPoints*EDRFile.Cdrfh.NumChannels*2 ) ;
     scEditDisplay.SetDataBuf( EditBuf ) ;
 
    scEditDisplay.xOffset := sbEditDisplay.Position ;

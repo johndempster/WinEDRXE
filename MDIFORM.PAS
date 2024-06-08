@@ -430,6 +430,8 @@ unit Mdiform;
                    Order than MDI child forms closed changed to high->low to avoid access violations when more than 2 forms closed
                    Left/Right arrow cursor control keys now work to move display readout/analysis cursors
                    Mutex Dempster.WinEDR now used to prevent more than one instance of WinEDR.exe program running.
+   V4.1.1 08.06.24 Event detector Access vioation with multichannel files introduced V4.1.o fixed
+                   Display windows limited to 1000000 points
 
 
   =======================================================================}
@@ -656,9 +658,8 @@ var
    FileName : String ;
 begin
 
-     EDRFile.Version := 'V4.1.0' ;
+     EDRFile.Version := 'V4.1.1' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + EDRFile.Version ;
-
 
      { Name of last used data file returned in fH.FileName }
 
@@ -1702,7 +1703,7 @@ begin
 
 {     if InvertDlg.ModalResult = mrOK then UpdateViewSig}
 
-     if FormExists('EventDetFrm') then
+     if FormExists('InvertDlg') then
         begin
         if InvertDlg.WindowState = wsMinimized then InvertDlg.WindowState := wsNormal ;
         InvertDlg.BringToFront ;
