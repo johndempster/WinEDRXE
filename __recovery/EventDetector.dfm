@@ -48,10 +48,6 @@ object EventDetFrm: TEventDetFrm
     OnChange = PageChange
     object DetectEventsPage: TTabSheet
       Caption = 'Detect Events'
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       DesignSize = (
         929
         700)
@@ -897,7 +893,7 @@ object EventDetFrm: TEventDetFrm
           Value = 10000.000000000000000000
           Scale = 1.000000000000000000
           Units = 'ms'
-          NumberFormat = '%.5g'
+          NumberFormat = '%.8g'
           LoLimit = 10.000000000000000000
           HiLimit = 1.000000015047466E29
         end
@@ -1723,10 +1719,6 @@ object EventDetFrm: TEventDetFrm
     object XYPlotPage: TTabSheet
       Caption = 'X-Y Plot'
       ImageIndex = 2
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       DesignSize = (
         929
         700)
@@ -2036,10 +2028,6 @@ object EventDetFrm: TEventDetFrm
     object HistPage: TTabSheet
       Caption = 'Histogram'
       ImageIndex = 3
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       DesignSize = (
         929
         700)
@@ -2436,10 +2424,6 @@ object EventDetFrm: TEventDetFrm
     object AveragePage: TTabSheet
       Caption = 'Average'
       ImageIndex = 4
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       DesignSize = (
         929
         700)
