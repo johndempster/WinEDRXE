@@ -432,7 +432,9 @@ unit Mdiform;
                    Mutex Dempster.WinEDR now used to prevent more than one instance of WinEDR.exe program running.
    V4.1.1 08.06.24 Event detector Access vioation with multichannel files introduced V4.1.o fixed
                    Display windows limited to 1000000 points
-
+   V4.1.2 16.06.24 Event detector: Fixed baseline option no longer required. Peak(rel) Peak(abs) added
+                   Zero levels can be set using opop-up dialog as in ViewFrm
+                   .setfocus moved to display MouseUp event to avoid repeatedly drawing focus away from controls when display cursor moves
 
   =======================================================================}
 
@@ -658,7 +660,7 @@ var
    FileName : String ;
 begin
 
-     EDRFile.Version := 'V4.1.1' ;
+     EDRFile.Version := 'V4.1.2' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + EDRFile.Version ;
 
      { Name of last used data file returned in fH.FileName }

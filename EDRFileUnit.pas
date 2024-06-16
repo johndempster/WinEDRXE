@@ -314,6 +314,8 @@ TEventDetector = record
                AvgFrequencyInterval : Single ;
                EnableBaselineTracking : Boolean ;
                AmpSDScale : Single ;
+               EditC0Cursor : Integer ;
+               EditC1Cursor : Integer ;
                end ;
 
 TPageSettings = record
@@ -895,6 +897,8 @@ begin
      AddKeyValue( Header, 'DETREW', Settings.EventDetector.RisingEdgeWindow ) ;
      AddKeyValue( Header, 'DETEBT', Settings.EventDetector.EnableBaselineTracking ) ;
      AddKeyValue( Header, 'DETAMPSDSCALE', Settings.EventDetector.AmpSDScale ) ;
+     AddKeyValue( Header, 'DETEDITC0', Settings.EventDetector.EditC0Cursor ) ;
+     AddKeyValue( Header, 'DETEDITC1', Settings.EventDetector.EditC1Cursor ) ;
 
      AddKeyValue( Header, 'VARRS', Settings.Variance.RecordSize ) ;
      AddKeyValue( Header, 'VAROV', Settings.Variance.RecordOverlap ) ;
@@ -1108,6 +1112,9 @@ begin
      Settings.EventDetector.RisingEdgeWindow := GetKeyValue( Header, 'DETREW', Settings.EventDetector.RisingEdgeWindow ) ;
      Settings.EventDetector.EnableBaselineTracking := GetKeyValue( Header, 'DETEBT', Settings.EventDetector.EnableBaselineTracking ) ;
      Settings.EventDetector.AmpSDScale := GetKeyValue( Header, 'DETAMPSDSCALE', Settings.EventDetector.AmpSDScale ) ;
+     Settings.EventDetector.EditC0Cursor := GetKeyValue( Header, 'DETEDITC0', Settings.EventDetector.EditC0Cursor ) ;
+     Settings.EventDetector.EditC1Cursor := GetKeyValue( Header, 'DETEDITC1', Settings.EventDetector.EditC1Cursor ) ;
+
 
      // Variance analysis
      Settings.Variance.RecordSize := GetKeyValue( Header, 'VARRS', Settings.Variance.RecordSize ) ;
@@ -1909,6 +1916,8 @@ begin
      Settings.EventDetector.EnableBaselineTracking := True ;
      Settings.EventDetector.Alignment := 0 ;
      Settings.EventDetector.AmpSDScale := 4.0 ;
+     Settings.EventDetector.EditC0Cursor := 0 ;
+     Settings.EventDetector.EditC1Cursor := 0 ;
 
      Settings.DwellTimes.ChanNum := 0 ;
      Settings.DwellTimes.RecordSize := 512 ;

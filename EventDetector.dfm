@@ -42,7 +42,7 @@ object EventDetFrm: TEventDetFrm
     Top = 8
     Width = 937
     Height = 730
-    ActivePage = EditEventsPage
+    ActivePage = DetectEventsPage
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 0
     OnChange = PageChange
@@ -56,6 +56,7 @@ object EventDetFrm: TEventDetFrm
         Top = 3
         Width = 399
         Height = 107
+        OnMouseUp = scDisplayMouseUp
         OnCursorChange = scDisplayCursorChange
         CursorChangeInProgress = False
         NumChannels = 1
@@ -140,8 +141,11 @@ object EventDetFrm: TEventDetFrm
         Top = 656
         Width = 705
         Height = 17
+        Hint = 'Display window slider'
         Anchors = [akLeft, akRight, akBottom]
         PageSize = 0
+        ParentShowHint = False
+        ShowHint = True
         TabOrder = 0
         OnChange = sbDisplayChange
       end
@@ -168,11 +172,11 @@ object EventDetFrm: TEventDetFrm
           Height = 20
           OnKeyPress = edDetDisplayWidthKeyPress
           AutoSize = False
-          Text = ' 0.1667 s'
-          Value = 10.001980781555180000
+          Text = '   1.67 s'
+          Value = 100.199798583984400000
           Scale = 0.016666699200868610
           Units = 's'
-          NumberFormat = '%.4g'
+          NumberFormat = '%6.2f'
           LoLimit = 10.000000000000000000
           HiLimit = 1.000000015047466E29
         end
@@ -402,7 +406,7 @@ object EventDetFrm: TEventDetFrm
               OnClick = rbThresholdClick
             end
             object rbThreshold: TRadioButton
-              Left = 3
+              Left = 8
               Top = 14
               Width = 97
               Height = 17
@@ -549,6 +553,8 @@ object EventDetFrm: TEventDetFrm
               Left = 0
               Top = 0
               Caption = 'Threshold'
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object GroupBox7: TGroupBox
                 Left = 4
                 Top = 4
@@ -614,6 +620,8 @@ object EventDetFrm: TEventDetFrm
               Left = 0
               Top = 0
               Caption = 'RateOfRise'
+              ExplicitWidth = 0
+              ExplicitHeight = 0
               object GroupBox11: TGroupBox
                 Left = 4
                 Top = 0
@@ -776,15 +784,18 @@ object EventDetFrm: TEventDetFrm
     object EditEventsPage: TTabSheet
       Caption = 'Review/Edit Events'
       ImageIndex = 1
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       DesignSize = (
         929
         700)
       object scMarkDisplay: TScopeDisplay
-        Left = 224
+        Left = 219
         Top = 118
         Width = 409
         Height = 107
-        OnCursorChange = scDetDisplayCursorChange
         CursorChangeInProgress = False
         NumChannels = 1
         NumPoints = 1024
@@ -881,19 +892,19 @@ object EventDetFrm: TEventDetFrm
           Caption = 'Width / Pre-detection'
         end
         object edEditDisplayWidth: TValidatedEdit
-          Left = 140
+          Left = 137
           Top = 2
           Width = 77
           Height = 20
-          Hint = 'No. of A/D sample points in display window'
+          Hint = 'No. of sample points in display window'
           OnKeyPress = edEditDisplayWidthKeyPress
           AutoSize = False
           ShowHint = True
-          Text = ' 10000 ms'
+          Text = ' 10000.0 ms'
           Value = 10000.000000000000000000
           Scale = 1.000000000000000000
           Units = 'ms'
-          NumberFormat = '%.8g'
+          NumberFormat = '%7.1f'
           LoLimit = 10.000000000000000000
           HiLimit = 1.000000015047466E29
         end
@@ -905,6 +916,7 @@ object EventDetFrm: TEventDetFrm
           Hint = '% of samples before detection point'
           OnKeyPress = edPreTriggerKeyPress
           AutoSize = False
+          ShowHint = True
           Text = ' 20 %'
           Value = 0.200000002980232200
           Scale = 100.000000000000000000
@@ -963,8 +975,10 @@ object EventDetFrm: TEventDetFrm
           Top = 16
           Width = 153
           Height = 20
+          Hint = 'Event No. / No. of events detected'
           OnKeyPress = edEventKeyPress
           AutoSize = False
+          ShowHint = True
           Text = ' 0 / 1.00000001504746622E30 '
           HiValue = 1.000000015047466E30
           HiLimit = 1.000000015047466E30
@@ -972,13 +986,16 @@ object EventDetFrm: TEventDetFrm
           NumberFormat = '%.0f / %.0f'
         end
         object sbEvent: TScrollBar
-          Left = 48
-          Top = 38
+          Left = 44
+          Top = 37
           Width = 153
           Height = 17
+          Hint = 'Event selection slider'
           Min = 1
           PageSize = 0
+          ParentShowHint = False
           Position = 1
+          ShowHint = True
           TabOrder = 1
           OnChange = sbEventChange
         end
@@ -1236,9 +1253,9 @@ object EventDetFrm: TEventDetFrm
             Top = 386
             Width = 177
             Height = 95
-            Caption = ' T(X%) decay time'
+            Caption = ' T(X) decay time'
             TabOrder = 2
-            object Label4: TLabel
+            object lbDecayTo: TLabel
               Left = 36
               Top = 67
               Width = 50
@@ -1340,7 +1357,7 @@ object EventDetFrm: TEventDetFrm
               TabOrder = 2
               OnChange = cbDecayToChange
               Items.Strings = (
-                '% Peak'
+                '% Decay'
                 'Level')
             end
           end
@@ -1349,7 +1366,7 @@ object EventDetFrm: TEventDetFrm
             Top = 286
             Width = 177
             Height = 94
-            Caption = ' Zero level  '
+            Caption = ' Signal Baseline '
             TabOrder = 3
             object Label3: TLabel
               Left = 11
@@ -1402,8 +1419,10 @@ object EventDetFrm: TEventDetFrm
               Top = 65
               Width = 33
               Height = 20
+              Hint = 'No. of sample poinst averaged to compute baseline level'
               OnKeyPress = edZeroNumAvgKeyPress
               AutoSize = False
+              ShowHint = True
               Text = ' 10 '
               Value = 10.000000000000000000
               Scale = 1.000000000000000000
@@ -1416,8 +1435,12 @@ object EventDetFrm: TEventDetFrm
               Top = 65
               Width = 33
               Height = 20
+              Hint = 
+                'No. of samples points between end of baseline average and event ' +
+                'detection point'
               OnKeyPress = edZeroGapKeyPress
               AutoSize = False
+              ShowHint = True
               Text = ' 0 '
               Value = 0.100000001490116100
               Scale = 1.000000000000000000
@@ -1430,7 +1453,7 @@ object EventDetFrm: TEventDetFrm
               Top = 18
               Width = 161
               Height = 23
-              Hint = 'Zero level position'
+              Hint = 'Pre-event location of signal baseline reference level'
               ParentShowHint = False
               ShowHint = True
               TabOrder = 3
@@ -1501,8 +1524,11 @@ object EventDetFrm: TEventDetFrm
         Top = 550
         Width = 698
         Height = 17
+        Hint = 'Display window slider'
         Anchors = [akLeft, akRight, akBottom]
         PageSize = 0
+        ParentShowHint = False
+        ShowHint = True
         TabOrder = 1
         OnChange = sbEditDisplayChange
       end
@@ -1719,6 +1745,10 @@ object EventDetFrm: TEventDetFrm
     object XYPlotPage: TTabSheet
       Caption = 'X-Y Plot'
       ImageIndex = 2
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       DesignSize = (
         929
         700)
@@ -2028,6 +2058,10 @@ object EventDetFrm: TEventDetFrm
     object HistPage: TTabSheet
       Caption = 'Histogram'
       ImageIndex = 3
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       DesignSize = (
         929
         700)
@@ -2424,12 +2458,16 @@ object EventDetFrm: TEventDetFrm
     object AveragePage: TTabSheet
       Caption = 'Average'
       ImageIndex = 4
+      ExplicitLeft = 0
+      ExplicitTop = 0
+      ExplicitWidth = 0
+      ExplicitHeight = 0
       DesignSize = (
         929
         700)
       object scAverageDisplay: TScopeDisplay
-        Left = 224
-        Top = 8
+        Left = 219
+        Top = 3
         Width = 409
         Height = 397
         OnMouseUp = scAverageDisplayMouseUp
@@ -2586,8 +2624,8 @@ object EventDetFrm: TEventDetFrm
           end
         end
         object bDoAverage: TButton
-          Left = 8
-          Top = 14
+          Left = 13
+          Top = 13
           Width = 193
           Height = 21
           Hint = 'Plot a new histogram'

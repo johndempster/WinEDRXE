@@ -359,6 +359,10 @@ type
     procedure edThresholdKeyPress(Sender: TObject; var Key: Char);
     procedure edDisplayKeyPressSourceKeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
+    procedure scEditDisplayMouseUp(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure scDetDisplayMouseUp(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
 
   private
 
@@ -2501,14 +2505,20 @@ begin
      EDRFile.Channel[ChanNum].yMin := scDetDisplay.YMin[ChanNum] ;
      EDRFile.Channel[ChanNum].yMax := scDetDisplay.YMax[ChanNum] ;
 
+
+     end ;
+
+
+procedure TSingleChanAnalFrm.scDetDisplayMouseUp(Sender: TObject;
+  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+begin
       // Move focus of form to hidden control used to source  <- -> arrow key presses
       // used to control display readout cursors. Note only set focus if form is active
       // to avoid cursorchange events in inactive forms pulling focus back to recently
       // inactivated forms
       if Self.Active then edDisplayKeyPressSource.SetFocus ;
 
-     end ;
-
+end;
 
 procedure TSingleChanAnalFrm.PageChange(Sender: TObject);
 { ----------------------------------------------
@@ -4167,14 +4177,20 @@ begin
               [CursorMeasurements[NumCursorMeasurements].Duration]) ;
      lbCursors.Caption := s ;
 
+
+     end;
+
+
+procedure TSingleChanAnalFrm.scEditDisplayMouseUp(Sender: TObject;
+  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+begin
       // Move focus of form to hidden control used to source  <- -> arrow key presses
       // used to control display readout cursors. Note only set focus if form is active
       // to avoid cursorchange events in inactive forms pulling focus back to recently
       // inactivated forms
       if Self.Active then edDisplayKeyPressSource.SetFocus ;
 
-     end;
-
+end;
 
 procedure TSingleChanAnalFrm.ChangeDisplayGrid ;
 { --------------------------------------------
