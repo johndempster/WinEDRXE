@@ -42,7 +42,7 @@ object EventDetFrm: TEventDetFrm
     Top = 8
     Width = 937
     Height = 730
-    ActivePage = EditEventsPage
+    ActivePage = DetectEventsPage
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 0
     OnChange = PageChange
@@ -226,7 +226,7 @@ object EventDetFrm: TEventDetFrm
         TabOrder = 2
         object bDetect: TButton
           Left = 9
-          Top = 13
+          Top = 11
           Width = 145
           Height = 23
           Hint = 'Start scanning for events'
