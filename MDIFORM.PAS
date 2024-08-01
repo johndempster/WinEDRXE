@@ -437,6 +437,7 @@ unit Mdiform;
                    .setfocus moved to display MouseUp event to avoid repeatedly drawing focus away from controls when display cursor moves
    V4.1.3 19.06.24 Event Detector: a0-a1 cursor positions now maintained relative to detection point when event display duration changed
                    a0-a1 cursors now initialised to start of edit record to trigger point + dead time
+   V4.1.4 01.08.24 ExportFrm: Igor Export: Unable to create file error fixed
 
   =======================================================================}
 
@@ -662,7 +663,7 @@ var
    FileName : String ;
 begin
 
-     EDRFile.Version := 'V4.1.3' ;
+     EDRFile.Version := 'V4.1.4' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + EDRFile.Version ;
 
      { Name of last used data file returned in fH.FileName }

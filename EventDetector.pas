@@ -121,6 +121,7 @@ unit EventDetector;
 //              Zero level can be set using opop-up dialog as in ViewFrm
 // 14.06.24 ... .setfocus moved to display MouseUp event to avoid repeatedly drawing focus away from controls when display cursor moves
 // 19.06.24 ... a0-a1 cursor positions now maintained relative to detection point when event display duration changed
+//              a0-a1 cursors now initialised to start of edit record to trigger point + dead time
 
 interface
 
@@ -1996,6 +1997,13 @@ begin
     sbEvent.Position := 1 ;
 
     scDetDisplay.ClearLines ;
+
+    // Set initial values for peak analysis a0-a1 cursor positions
+    scEditDisplay.VerticalCursors[EditC0Cursor] := scEditDisplay.MaxPoints * 0.01 ;
+    scEditDisplay.VerticalCursors[EditC1Cursor] := (edPreTrigger.Value*scEditDisplay.MaxPoints) + (edDeadTime.Value/scEditDisplay.TScale) ;
+    scEditDisplay.VerticalCursors[EditC1Cursor] := Min( scEditDisplay.VerticalCursors[EditC1Cursor], scEditDisplay.MaxPoints*0.99 ) ;
+    EDRFile.Settings.EventDetector.EditC0Cursor := Round(scEditDisplay.VerticalCursors[EditC0Cursor]) ;
+    EDRFile.Settings.EventDetector.EditC1Cursor := Round(scEditDisplay.VerticalCursors[EditC1Cursor]) ;
 
     end ;
 

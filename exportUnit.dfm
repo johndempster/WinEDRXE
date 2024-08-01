@@ -12,14 +12,12 @@ object ExportFrm: TExportFrm
   Font.Name = 'Arial'
   Font.Style = []
   FormStyle = fsMDIChild
-  OldCreateOrder = True
   Position = poDefault
   Visible = True
   OnClose = FormClose
   OnCloseQuery = FormCloseQuery
   OnResize = FormResize
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 14
   object gpFileList: TGroupBox
     Left = 8
@@ -147,7 +145,7 @@ object ExportFrm: TExportFrm
         Width = 119
         Height = 20
         AutoSize = False
-        Text = ' 1 - 1.00000001504746624E30  '
+        Text = ' 1 - 1.00000001504746622E30  '
         LoValue = 1.000000000000000000
         HiValue = 1.000000015047466E30
         LoLimit = 1.000000000000000000
@@ -480,6 +478,7 @@ object ExportFrm: TExportFrm
     Top = 388
   end
   object OpenDialog: TOpenDialog
+    Options = [ofReadOnly, ofHideReadOnly, ofShareAware, ofEnableSizing]
     Left = 176
     Top = 384
   end

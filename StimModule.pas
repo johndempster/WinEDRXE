@@ -1271,7 +1271,7 @@ begin
 
         { Add file name (no extension or path) to list }
         if FileFound = 0 then cbList.items.Add(EDRFile.ExtractFileNameOnly(SearchRec.Name))
-                        else FindClose(SearchRec.FindHandle) ;
+                        else FindClose(SearchRec) ;
         First := False ;
         Until FileFound <> 0 ;
 
@@ -1499,7 +1499,7 @@ begin
         First := False ;
         Until FileFound <> 0 ;
 
-     FindClose(SearchRec.FindHandle) ;
+     FindClose(SearchRec) ;
 
      FreeMem( Prot ) ;
      if ExtVBuf <> Nil then FreeMem(ExtVBuf) ;

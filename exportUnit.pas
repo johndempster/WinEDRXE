@@ -30,7 +30,9 @@ unit exportUnit;
   09.06.15 ... Replaces export.pas module in WinEDR.
   25.08.15 ... Long export file names no longer split across two lines
                No. of samples in exported EDR files now correct.
-// 14.03.24 ... Form position saved to INI file
+  14.03.24 ... Form position saved to INI file
+  01.08.24 ... Igor Export: Unable to create file error fixed
+               CreateExportFileName now returns StartAt & EndAt
   }
 interface
 
@@ -104,7 +106,12 @@ type
     AbortExport : Boolean ;     // Abort export flag
 
     procedure SetChannel( CheckBox : TCheckBox ; ch : Integer ) ;
-    function CreateExportFileName(FileName : string ) : String ;
+    function CreateExportFileName(
+             FileName : string ;                 // Source file
+             var StartAt : Integer ;             // Return starting sample point
+             var EndAt : Integer                 // Return end sample point
+             ) : String ;                        // Return Export file name
+
     procedure ExportToFile( FileName : string ) ;
     procedure ExportToIGORFile( FileName : string ) ;
     procedure ExportToMATFile( FileName : string ) ;
@@ -269,17 +276,8 @@ var
    ExportType : TADCDataFileType ;
 begin
 
-     if rbAllRecords.Checked then begin
-        StartAt := 0 ;
-        EndAt := (EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels) -1 ;
-        end
-     else begin
-        StartAt := Round(edRange.LoValue/EDRFIle.Cdrfh.dt) ;
-        EndAt := Min(Round(edRange.HiValue/EDRFIle.Cdrfh.dt),(EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels) -1) ;
-        end ;
-
      // Add record range to file name
-     ExportFileName := CreateExportFileName(FileName) ;
+     ExportFileName := CreateExportFileName(FileName,StartAt,EndAt) ;
 
      // If destination file already exists, allow user to abort
      if FileExists( ExportFileName ) then begin
@@ -368,9 +366,9 @@ begin
 
 procedure TExportFrm.ExportToIGORFile(
           FileName : string );       // Name of file to export ;
-// -------------------------------------------------
+// ---------------------------------
 // Export data to IGOR IBW file(s)
-// -------------------------------------------------
+// ---------------------------------
 const
    NumScansPerBuf = 256 ;
 var
@@ -385,29 +383,20 @@ var
    Done : Boolean ;
 begin
 
-     if rbAllRecords.Checked then begin
-        StartAt := 0 ;
-        EndAt := (EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels) -1 ;
-        end
-     else begin
-        StartAt := Round(edRange.LoValue/EDRFIle.Cdrfh.dt) ;
-        EndAt := Min(Round(edRange.HiValue/EDRFIle.Cdrfh.dt),(EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels) -1) ;
-        end ;
-
      // If destination file already exists, allow user to abort
-     if FileExists( ExportFileName ) then begin
+     if FileExists( ExportFileName ) then
+        begin
         if MessageDlg( ExportFileName + ' exists! Overwrite?!',
            mtConfirmation, [mbYes, mbNo], 0) <> mrYes then Exit ;
-         end ;
+        end ;
 
-     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do if UseChannel(ch) then begin
+     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do if UseChannel(ch) then
+         begin
 
          // Create export file name
-         ExportFileName := CreateExportFileName(FileName) ;
-         ExportFileName := ANSIReplaceText( ExportFileName,
-                                            '.ibw',
-                                            format( '[%s].ibw',[EDRFile.Channel[ch].ADCName])) ;
-         ExportFile.CreateDataFile( FileName, ftIBW ) ;
+         ExportFileName := CreateExportFileName(FileName,StartAt,EndAt) ;
+         ExportFileName := ANSIReplaceText( ExportFileName,'.ibw',format( '.%s.ibw',[EDRFile.Channel[ch].ADCName])) ;
+         ExportFile.CreateDataFile( ExportFileName, ftIBW ) ;
 
          // Set file parameters
          ExportFile.NumChannelsPerScan := 1 ;
@@ -433,7 +422,8 @@ begin
          NumScansToCopy := EndAt - StartAt + 1 ;
          OutScan := 0 ;
          Done := False ;
-         While not Done do begin
+         While not Done do
+            begin
 
             // Read from buffer
             NumScansToRead := Min(NumScansToCopy,NumScansPerBuf) ;
@@ -442,7 +432,8 @@ begin
 
             // Copy required channel
             j := EDRFile.Channel[ch].ChannelOffset ;
-            for i := 0 to NumScansRead-1 do begin
+            for i := 0 to NumScansRead-1 do
+                begin
                 OutBuf[i] := InBuf[j] ;
                 j := j + EDRFIle.Cdrfh.NumChannels ;
                 end ;
@@ -452,9 +443,7 @@ begin
             OutScan := OutScan + NumScansRead ;
 
             // Report progress
-            Main.StatusBar.SimpleText := format(
-            ' EXPORT: Exporting time points %d/%d to %s ',
-            [InScan,EndAt,FileName]) ;
+            Main.StatusBar.SimpleText := format('EXPORT: Exporting time points %d/%d to %s ',[InScan,EndAt,ExportFileName]) ;
 
             InScan := InScan + NumScansRead ;
             NumScansToCopy := NumScansToCopy - NumScansRead ;
@@ -466,9 +455,7 @@ begin
          ExportFile.CloseDataFile ;
 
          // Final Report
-         Main.StatusBar.SimpleText := format(
-         ' EXPORT: %d time points from %s to %s ',
-         [EndAt-StartAt+1,FileName,ExportFileName]) ;
+         Main.StatusBar.SimpleText := format('EXPORT: %d time points from %s to %s ',[EndAt-StartAt+1,FileName,ExportFileName]) ;
          EDRFile.WriteToLogFile( Main.StatusBar.SimpleText ) ;
 
          end ;
@@ -496,23 +483,15 @@ var
    NumScans,NumScansRead,NumScansToRead,NumScansToExport : Integer ;
 begin
 
-     if rbAllRecords.Checked then begin
-        StartAt := 0 ;
-        EndAt := (EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels) -1 ;
-        end
-     else begin
-        StartAt := Round(edRange.LoValue/EDRFIle.Cdrfh.dt) ;
-        EndAt := Min(Round(edRange.HiValue/EDRFIle.Cdrfh.dt),(EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels) -1) ;
-        end ;
-
      // If destination file already exists, allow user to abort
-     if FileExists( ExportFileName ) then begin
+     if FileExists( ExportFileName ) then
+        begin
         if MessageDlg( ExportFileName + ' exists! Overwrite?!',
            mtConfirmation, [mbYes, mbNo], 0) <> mrYes then Exit ;
          end ;
 
      // Add record range to file name
-     FileName := CreateExportFileName(ExportFileName) ;
+     ExportFileName := CreateExportFileName(FileName,StartAt,EndAt) ;
 
      // Create buffers
      NumScansToExport := EndAt - StartAt + 1 ;
@@ -522,13 +501,14 @@ begin
 
      // Open MAT file
      Writer := TMATFileWriter.Create();
-     Writer.OpenMATFile( FileName ) ;
+     Writer.OpenMATFile( ExportFileName ) ;
      Writer.WriteFileHeader;
 
      Try
 
      // Write time vector
-     for i := 0 to NumScansToExport-1 do begin
+     for i := 0 to NumScansToExport-1 do
+         begin
          TBuf^[i] := i*EDRFIle.Cdrfh.dt ;
          end ;
 
@@ -536,12 +516,15 @@ begin
      NumScansToRead := NumScansToExport ;
      NumChannelsExported := 0 ;
      NumScansRead := 0 ;
-     while NumScansToRead > 0 do begin
+     while NumScansToRead > 0 do
+           begin
            NumScans := EDRFile.ReadBuffer( EDRFile.Cdrfh, StartAt, InBuf^,Min(NumScansToRead,NumScansPerBuf) ) ;
            NumChannelsExported := 0 ;
-           for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do if UseChannel(ch) then begin
+           for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do if UseChannel(ch) then
+               begin
                j := NumChannelsExported*NumScansToExport + NumScansRead ;
-               for i := 0 to NumScans-1 do begin
+               for i := 0 to NumScans-1 do
+                   begin
                    YBuf^[j] := (InBuf^[(i*EDRFIle.Cdrfh.NumChannels)+EDRFile.Channel[ch].ChannelOffset]
                                             - EDRFile.Channel[ch].ADCZero)*EDRFile.Channel[ch].ADCSCale ;
                    Inc(j) ;
@@ -561,9 +544,8 @@ begin
      Writer.WriteDoubleMatrixValues( YBuf^, NumScansRead,NumChannelsExported) ;
 
      // Final Report
-     Main.StatusBar.SimpleText := format(
-     ' EXPORT: %.5g - %.5g time points exported from %s to %s ',
-     [StartAt*EDRFIle.Cdrfh.dt,EndAt*EDRFIle.Cdrfh.dt,FileName,ExportFileName]) ;
+     Main.StatusBar.SimpleText := format( 'EXPORT: %.5g - %.5g time points exported from %s to %s ',
+                                          [StartAt*EDRFIle.Cdrfh.dt,EndAt*EDRFIle.Cdrfh.dt,FileName,ExportFileName]) ;
      EDRFile.WriteToLogFile( Main.StatusBar.SimpleText ) ;
 
      Finally
@@ -595,12 +577,13 @@ procedure TExportFrm.bChangeNameClick(Sender: TObject);
 begin
 
      OpenDialog.DefaultExt := '.edr' ;
-     OpenDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofPathMustExist,ofAllowMultiSelect] ;
-     OpenDialog.Filter := ' Files (*' + OpenDialog.DefaultExt + ')|*' +
-                            OpenDialog.DefaultExt + '|' ;
+     OpenDialog.options := [ofOverwritePrompt,ofHideReadOnly,ofShareAware,ofPathMustExist,ofAllowMultiSelect] ;
+//   Note. ofShareAware option necessary to permit selection of currently open EDR data file
+     OpenDialog.Filter := ' Files (*' + OpenDialog.DefaultExt + ')|*' + OpenDialog.DefaultExt + '|' ;
 
      OpenDialog.Title := 'Select Files to Export ' ;
-     if EDRFile.DataDirectory <> '' then begin
+     if EDRFile.DataDirectory <> '' then
+        begin
         SetCurrentDir(EDRFile.DataDirectory);
         OpenDialog.InitialDir := EDRFile.DataDirectory ;
         end;
@@ -614,23 +597,25 @@ begin
 
 
 function TExportFrm.CreateExportFileName(
-         FileName : string
-         ) : String ;
+         FileName : string ;                 // Source file
+         var StartAt : Integer ;             // Return starting sample point
+         var EndAt : Integer                 // Return end sample point
+         ) : String ;                        // Return Export file name
 // ---------------------------------------------------
 // Update control settings when export format changed
 // ---------------------------------------------------
 var
-    StartAt,EndAt,ch : Integer ;
+    ch : Integer ;
     s : string ;
 begin
 
-     ChangeFileExt( FileName, '.tmp' ) ;
-
-     if rbAllRecords.Checked then begin
+     if rbAllRecords.Checked then
+        begin
         StartAt := 0 ;
         EndAt := (EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels) -1 ;
         end
-     else begin
+     else
+        begin
         StartAt := Round(edRange.LoValue/EDRFIle.Cdrfh.dt) ;
         EndAt := Min(Round(edRange.HiValue/EDRFIle.Cdrfh.dt),(EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels) -1) ;
         s := s + format( '%.6g-%.6gs',[edRange.LoValue,edRange.HiValue]) ;
@@ -640,14 +625,14 @@ begin
      FileName := ChangeFileExt( FileName, '.tmp' ) ;
 
      // Add record range
-     FileName := ANSIReplaceText( FileName,
-                                  '.tmp',
-                                 format( '%.6g-%.6gs',[StartAt*EDRFIle.Cdrfh.dt,EndAt*EDRFIle.Cdrfh.dt]) ) ;
+     FileName := ANSIReplaceText( FileName,'.tmp',format( '.%.6g-%.6gs.tmp',[StartAt*EDRFIle.Cdrfh.dt,EndAt*EDRFIle.Cdrfh.dt]) ) ;
 
      // Add channels for ASCII text export
-     if TADCDataFileType(cbExportFormat.Items.objects[cbExportFormat.ItemIndex])=ftASC then begin
+     if TADCDataFileType(cbExportFormat.Items.objects[cbExportFormat.ItemIndex])=ftASC then
+        begin
         s := '[' ;
-        for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do if UseChannel(ch) then begin
+        for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do if UseChannel(ch) then
+            begin
             s := s + EDRFile.Channel[ch].ADCName + ',' ;
             end;
         s := LeftStr(s,Length(s)-1)+'].tmp' ;
@@ -695,7 +680,7 @@ begin
         FileClose(EDRFIle.Cdrfh.FileHandle) ;
         EDRFIle.Cdrfh.FileHandle := -1 ;
 
-        if not AbortExport then Break ;
+        if AbortExport then Break ;
 
         end;
 
@@ -704,6 +689,8 @@ begin
     EDRFile.SaveFormPosition( Self ) ;
 
     bOK.Enabled := True ;
+
+    Close ;
 
     end ;
 
