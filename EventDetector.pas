@@ -122,6 +122,10 @@ unit EventDetector;
 // 14.06.24 ... .setfocus moved to display MouseUp event to avoid repeatedly drawing focus away from controls when display cursor moves
 // 19.06.24 ... a0-a1 cursor positions now maintained relative to detection point when event display duration changed
 //              a0-a1 cursors now initialised to start of edit record to trigger point + dead time
+// 07.09.24 ... Interval filtering limit containing zero now handled correctly
+//              Filtering on Peak(abs) now works correctly
+//              F1 F2 keys now add/remove events without user having to click on edit display. F1/F2 keys monitored in form KeyPreview
+//              Display cursor movement keys monitored in hidden edDisplaykeypressSource eitr box.
 
 interface
 
@@ -4542,6 +4546,7 @@ procedure TEventDetFrm.bApplyClick(Sender: TObject);
 var
      iEvent : Integer ;                     // Event no.
      Event : TEventAnalysis ;               // Event waveform anaysis results
+     WaveformBaseline : Single ;
      i : Integer ;                          // Counter
      Results : Array[0..MaxVar] of Single ; // Event analysis results
      Val : Single ;                         //
@@ -4552,11 +4557,17 @@ begin
 
      iEvent := 0 ;
      NumDeleted := 0 ;
-     while iEvent < NumEvents do begin
+     while iEvent < NumEvents do
+           begin
 
-         // Analyse event waveform
+          // Analyse event waveform
          AnalyseEvent( iEvent, Event ) ;
-         Results[vPeak] := Event.Peak ;
+
+         WaveformBaseline := EDRFile.Channel[cbChannel.ItemIndex].ADCScale*
+                              (Event.YBaseline - EDRFile.Channel[cbChannel.ItemIndex].ADCZero) ;
+
+         Results[vPeakRel] := Event.Peak ;
+         Results[vPeakAbs] := Event.Peak + WaveformBaseline ;
          Results[vArea] := Event.Area ;
          Results[vTRise] := Event.TRise ;
          Results[vTDecay] := Event.TDecay ;
@@ -4565,7 +4576,7 @@ begin
 
          if iEvent > 0 then
             Results[vInterval] := (Events[iEvent] - Events[iEvent-1])*EDRFile.cdrfh.dt
-         else Results[vInterval] := 0.0 ;
+         else Results[vInterval] := -1E30 ;
 
          Results[vEventNum] := iEvent ;
          Results[vTime] := Events[iEvent]*EDRFile.cdrfh.dt ;
@@ -4573,14 +4584,13 @@ begin
         // Determine if event meets the rejection criteria
         if rbAND.Checked then RemoveEvent := True
                          else RemoveEvent := False ;
-        for i := 0 to High(Filters) do if Filters[i].Use then begin
+        for i := 0 to High(Filters) do if Filters[i].Use then
+            begin
 
             // Criterion match
             Val := Results[Filters[i].Variable] ;
-            if (Val >= Filters[i].LoLimit) and
-               (Val <= Filters[i].HiLimit) then
-               Match := True
-            else Match := False ;
+            if (Val >= Filters[i].LoLimit) and (Val <= Filters[i].HiLimit) then Match := True
+                                                                           else Match := False ;
 
             // Combine with results of previous criteria
             if rbAND.Checked then RemoveEvent := RemoveEvent AND Match
@@ -4596,9 +4606,7 @@ begin
            end
         else Inc(iEvent) ;
 
-        Main.StatusBar.SimpleText :=  format(
-        ' Filtering Events %d/%d (%d events deleted)',
-        [iEvent+1,NumEvents,NumDeleted] ) ;
+        Main.StatusBar.SimpleText :=  format(' Filtering Events %d/%d (%d events deleted)',[iEvent+1,NumEvents,NumDeleted] ) ;
 
         EventAnalysisFileUpdateRequired := True ;
         BaselineSplinesAvailable := False ;
@@ -4773,42 +4781,16 @@ procedure TEventDetFrm.FormKeyDown(Sender: TObject; var Key: Word;
 // -------------------------------
 begin
 
-     exit ;
      if not Self.Active then Self.KeyPreview := False ;
 
-
-     if Page.ActivePage = DetectEventsPage then
-         begin
-         // Detect events page function keys
-         Case Key of
-             VK_LEFT : begin
-                       scDisplay.MoveActiveVerticalCursor(-1) ;
-                       scDetDisplay.MoveActiveVerticalCursor(-1) ;
-                       end;
-             VK_RIGHT : begin
-                        scDisplay.MoveActiveVerticalCursor(1) ;
-                        scDetDisplay.MoveActiveVerticalCursor(1) ;
-                        end;
-             end ;
-         end
-     else if Page.ActivePage = EditEventsPage then
+     if Page.ActivePage = EditEventsPage then
          begin
           // Edit events page function keys
           Case Key of
              VK_F2 : bDeleteEvent.Click ;
              VK_F1 : bInsertEvent.Click ;
-             VK_LEFT : scEditDisplay.MoveActiveVerticalCursor(-1) ;
-             VK_RIGHT : scEditDisplay.MoveActiveVerticalCursor(1) ;
              end ;
-        end
-     else if Page.ActivePage = AveragePage then
-         begin
-          // Average events page function keys
-          Case Key of
-             VK_LEFT : scAverageDisplay.MoveActiveVerticalCursor(-1) ;
-             VK_RIGHT : scAverageDisplay.MoveActiveVerticalCursor(1) ;
-             end ;
-        end;
+        end ;
 
      end;
 
@@ -5597,8 +5579,8 @@ begin
          begin
           // Edit events page function keys
           Case Key of
-             VK_F2 : bDeleteEvent.Click ;
-             VK_F1 : bInsertEvent.Click ;
+//             VK_F2 : bDeleteEvent.Click ;
+//             VK_F1 : bInsertEvent.Click ;
              VK_LEFT : scEditDisplay.MoveActiveVerticalCursor(-1) ;
              VK_RIGHT : scEditDisplay.MoveActiveVerticalCursor(1) ;
              end ;

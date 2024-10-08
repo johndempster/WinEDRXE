@@ -438,6 +438,8 @@ unit Mdiform;
    V4.1.3 19.06.24 Event Detector: a0-a1 cursor positions now maintained relative to detection point when event display duration changed
                    a0-a1 cursors now initialised to start of edit record to trigger point + dead time
    V4.1.4 01.08.24 ExportFrm: Igor Export: Unable to create file error fixed
+   V4.1.5 08.10.24 EventDetector: Bugs in event filtering on Event Duration and Peak amplitude fixed.
+                   F2 key now deletes events without first clicking on event display window.
 
   =======================================================================}
 
@@ -663,7 +665,7 @@ var
    FileName : String ;
 begin
 
-     EDRFile.Version := 'V4.1.4' ;
+     EDRFile.Version := 'V4.1.5' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + EDRFile.Version ;
 
      { Name of last used data file returned in fH.FileName }
