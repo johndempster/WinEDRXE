@@ -19,6 +19,7 @@ unit EditProtocolUnit;
 //          opens in that folder.
 // 24.11.21 Changed back to *.xml because files in folder were not being displayed
 // 14.03.24 Form position saved to INI file
+// 04.02.25 Extra digits precision added to parameter table to allow micro second time durations
 
 interface
 
@@ -1281,15 +1282,18 @@ begin
 
     iRow := -1 ;
     bLoadFile.Visible := False ;
-    for i := 0 to High(ParList) do if ParList[i].Index >= 0 then begin
+    for i := 0 to High(ParList) do if ParList[i].Index >= 0 then
+        begin
         Inc(IRow) ;
         Table.cells[0,iRow] := ParNames[ParList[i].Index] ;
-        if ParList[i].Scale <> 0.0 then begin
-           Table.cells[1,iRow] := format('%.2f %s',
+        if ParList[i].Scale <> 0.0 then
+           begin
+           Table.cells[1,iRow] := format('%.5g %s',
                                   [Prot.Stimulus[iStimElement].Parameters[ParList[i].Index].Value
                                   *ParList[i].Scale,ParList[i].Units]);
            end
-        else begin
+        else
+           begin
            Table.cells[1,iRow] := Prot.Stimulus[iStimElement].Parameters[ParList[i].Index].Text ;
            end ;
         Prot.Stimulus[iStimElement].Parameters[ParList[i].Index].Exists := True ;
@@ -1504,12 +1508,12 @@ begin
          // Get amplitude range
          GetAmplitudeRange( AONum, YMin, YMax ) ;
          // Max. amplitude
-         s := format('%.4g %s ',[YMax,Prot.AOChannelUnits[AONum]]) ;
+         s := format('%.5g %s ',[YMax,Prot.AOChannelUnits[AONum]]) ;
          pbDisplay.canvas.TextOut( AOPlot[AONum].Left - pbDisplay.canvas.TextWidth(s),
                                    AOPlot[AONum].Top,
                                    s ) ;
          // Min. amplitude
-         s := format('%.4g %s ',[YMin,Prot.AOChannelUnits[AONum]]) ;
+         s := format('%.5g %s ',[YMin,Prot.AOChannelUnits[AONum]]) ;
          pbDisplay.canvas.TextOut( AOPlot[AONum].Left - pbDisplay.canvas.TextWidth(s),
                                    AOPlot[AONum].Bottom - pbDisplay.canvas.TextHeight(s) -1,
                                    s ) ;
@@ -1970,7 +1974,7 @@ begin
 
     RecTable.RowCount := 1 ;
     RecTable.cells[0,RecTable.RowCount-1] := 'Stimulus repeat period ' ;
-    RecTable.cells[1,RecTable.RowCount-1] := format('%.2f %s',
+    RecTable.cells[1,RecTable.RowCount-1] := format('%.5g %s',
                                              [Prot.StimulusPeriod*TScale,TUnits]);
 
     RecTable.RowCount := RecTable.RowCount + 1 ;

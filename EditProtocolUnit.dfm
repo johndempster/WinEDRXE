@@ -12,7 +12,6 @@ object EditProtocolFrm: TEditProtocolFrm
   Font.Name = 'MS Sans Serif'
   Font.Style = []
   FormStyle = fsMDIChild
-  OldCreateOrder = False
   Position = poDefault
   Visible = True
   OnActivate = FormActivate
@@ -20,7 +19,6 @@ object EditProtocolFrm: TEditProtocolFrm
   OnCreate = FormCreate
   OnResize = FormResize
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 13
   object Page: TPageControl
     Left = 172
@@ -10669,7 +10667,7 @@ object EditProtocolFrm: TEditProtocolFrm
           Text = ' 0 ms'
           Scale = 1000.000000000000000000
           Units = 'ms'
-          NumberFormat = '%.4g'
+          NumberFormat = '%.5g'
           LoLimit = -1.000000015047466E30
           HiLimit = 1.000000015047466E30
         end
