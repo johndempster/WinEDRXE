@@ -33,6 +33,7 @@ unit exportUnit;
   14.03.24 ... Form position saved to INI file
   01.08.24 ... Igor Export: Unable to create file error fixed
                CreateExportFileName now returns StartAt & EndAt
+  07.04.25 ... User set zero levels no longer subtracted from data (except fotr ASCII text file exports)
   }
 interface
 
@@ -319,7 +320,8 @@ begin
      NumScansToCopy := EndAt - StartAt + 1 ;
      OutScan := 0 ;
      Done := False ;
-     While not Done do begin
+     While not Done do
+         begin
 
          // Read from buffer
          NumScansToRead := Min( NumScansToCopy,NumScansPerBuf ) ;
@@ -328,10 +330,13 @@ begin
 
          // Copy required channels
          j := 0 ;
-         for i := 0 to NumScansRead-1 do begin
-             for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do if UseChannel(ch) then begin
-                 OutBuf[j] := InBuf[i*EDRFIle.Cdrfh.NumChannels+EDRFile.Channel[ch].ChannelOffset]
-                              - Round(EDRFile.Channel[ch].ADCZero) ;
+         for i := 0 to NumScansRead-1 do
+             begin
+             for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do if UseChannel(ch) then
+                 begin
+                 OutBuf[j] := InBuf[i*EDRFIle.Cdrfh.NumChannels+EDRFile.Channel[ch].ChannelOffset] ;
+                 // SUbtract zero level if ASCII text output
+                 if ExportType = ftASC then OutBuf[j] := OutBuf[j] - Round(EDRFile.Channel[ch].ADCZero) ;
                  Inc(j) ;
                  end ;
              end ;

@@ -441,6 +441,8 @@ unit Mdiform;
    V4.1.5 08.10.24 EventDetector: Bugs in event filtering on Event Duration and Peak amplitude fixed.
                    F2 key now deletes events without first clicking on event display window.
    V4.1.6 05.02.25 Protocol editor: Number format extended so it can display 0.001 ms pulse durations.
+   V4.1.7 07.04.25 Exportunit.pas User set zero levels no longer subtracted from data (except fotr ASCII text file exports)
+                   SEalTest.pas Save To LOg now correctly writes Cell resistance values to log file
 
   =======================================================================}
 
@@ -666,7 +668,7 @@ var
    FileName : String ;
 begin
 
-     EDRFile.Version := 'V4.1.6' ;
+     EDRFile.Version := 'V4.1.7' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + EDRFile.Version ;
 
      { Name of last used data file returned in fH.FileName }

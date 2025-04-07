@@ -13,7 +13,6 @@ object SealTestFrm: TSealTestFrm
   Font.Style = [fsBold]
   FormStyle = fsMDIChild
   KeyPreview = True
-  OldCreateOrder = True
   Position = poScreenCenter
   Visible = True
   OnActivate = FormActivate
@@ -23,7 +22,6 @@ object SealTestFrm: TSealTestFrm
   OnKeyDown = FormKeyDown
   OnResize = FormResize
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 15
   object scDisplay: TScopeDisplay
     Left = 200
@@ -369,7 +367,7 @@ object SealTestFrm: TSealTestFrm
       Top = 12
       Width = 149
       Height = 105
-      ActivePage = PipetteTab
+      ActivePage = CellGTab
       Font.Charset = DEFAULT_CHARSET
       Font.Color = clBlack
       Font.Height = -12
@@ -412,7 +410,7 @@ object SealTestFrm: TSealTestFrm
           HiLimit = 1.000000015047466E29
         end
       end
-      object CellTab: TTabSheet
+      object CellGTab: TTabSheet
         Caption = 'Cell (G)'
         object Label15: TLabel
           Left = 12

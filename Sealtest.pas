@@ -112,6 +112,7 @@ unit Sealtest;
   30.10.23 .. Auto scale option now toggled by F6 key
   15.03.24 ... Form position saved to INI file
   19.03.24 ... Patch clamp control panels load requests now made from timer to ensure seal form is on display BEFORE panel is displayed
+  10.03.25 .. Save To LOg now correctly writes Cell resistance values to log file
 
 
   ==================================================}
@@ -179,7 +180,7 @@ type
     PipetteTab: TTabSheet;
     Label9: TLabel;
     edResistance: TValidatedEdit;
-    CellTab: TTabSheet;
+    CellGTab: TTabSheet;
     Label15: TLabel;
     Label17: TLabel;
     Label16: TLabel;
@@ -1747,7 +1748,9 @@ procedure TSealTestFrm.bSaveToLogClick(Sender: TObject);
 // --------------------------------
 begin
 
-     if CellParametersPage.ActivePage = CellTab then begin
+     if CellParametersPage.ActivePage = CellGTab then
+        begin
+        // Cell conductance page
         EDRFile.WriteToLogFile( format( 'Gaccess= %.5g %s',
                      [edGAccess.Value*edGAccess.Scale,edGAccess.Units])) ;
         EDRFile.WriteToLogFile( format( 'Gmembrane= %.5g %s',
@@ -1755,10 +1758,23 @@ begin
         EDRFile.WriteToLogFile( format( 'Cmembrane= %.5g %s',
                      [edCMembrane.Value*edCMembrane.Scale,edCMembrane.Units])) ;
         end
-     else begin
-        EDRFile.WriteToLogFile( format( 'Pipette Resistance= %.5g %s',
+     else if CellParametersPage.ActivePage = CellRTab then
+        begin
+        // Cell resistance page
+        EDRFile.WriteToLogFile( format( 'Raccess= %.5g %s',
+                     [edRAccess.Value*edRAccess.Scale,edRAccess.Units])) ;
+        EDRFile.WriteToLogFile( format( 'Rmembrane= %.5g %s',
+                     [edRMembrane.Value*edRMembrane.Scale,edRMembrane.Units])) ;
+        EDRFile.WriteToLogFile( format( 'Cmembrane= %.5g %s',
+                     [edCMembrane1.Value*edCMembrane1.Scale,edCMembrane1.Units])) ;
+        end
+     else
+        begin
+        // Pipette resistance page
+         EDRFile.WriteToLogFile( format( 'Pipette Resistance= %.5g %s',
                      [edResistance.Value*edResistance.Scale,edResistance.Units])) ;
-        end ;
+        end;
+
      end;
 
 
