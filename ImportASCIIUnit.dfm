@@ -12,10 +12,8 @@ object ImportASCIIFrm: TImportASCIIFrm
   Font.Height = -11
   Font.Name = 'Arial'
   Font.Style = []
-  OldCreateOrder = False
   OnHide = FormHide
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 14
   object bCancel: TButton
     Left = 56

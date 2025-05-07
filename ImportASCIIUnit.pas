@@ -134,7 +134,7 @@ begin
      AssignFile( F, FileName ) ;
      Reset(F);
      meText.Clear ;
-     While (not EOF(F)) and (meText.Lines.Count < 10) do begin
+     While (not EOF(F)) and (meText.Lines.Count < 2000) do begin
          Readln(F, s);
          meText.Lines.Add( s ) ;
          end ;
