@@ -444,6 +444,8 @@ unit Mdiform;
    V4.1.7 07.04.25 Exportunit.pas User set zero levels no longer subtracted from data (except fotr ASCII text file exports)
                    SEalTest.pas Save To LOg now correctly writes Cell resistance values to log file
    V4.1.8 07.05.25 EDRFileUnit: File overwrite check now uses correct EDR file extension
+   V4.1.9 15.05.25 ADCDataFile control: ASCII file import now much faster
+                   ASCIIImportFRm & RawImportFrm now displayed at top/left of main form
 
   =======================================================================}
 
@@ -455,7 +457,8 @@ uses
   PrintRec, Rec, SealTest, ViewSig,
   About, Log, defset, ced1902u, simmepc, SingleChanAnal,
   simnoise, simchan, NoiseAnal, digfilt, SESLabIO, ComCtrls,
-  ADCDataFile, math, strutils, recplotunit, UITYpes, Vcl.HtmlHelpViewer, shlobj, epc9panelunit, tritonpanelunit  ;
+  ADCDataFile, math, strutils, recplotunit, UITYpes, Vcl.HtmlHelpViewer, shlobj, epc9panelunit, tritonpanelunit,
+  Vcl.ExtCtrls  ;
 
 const
     AllForms = True ;
@@ -555,6 +558,7 @@ type
     mnResetMulticlamp: TMenuItem;
     mnDClamp: TMenuItem;
     mnSaveDataToFile: TMenuItem;
+    Timer: TTimer;
     procedure mnOpenClick(Sender: TObject);
     procedure mnZoomInClick(Sender: TObject);
     procedure Exit1Click(Sender: TObject);
@@ -669,7 +673,7 @@ var
    FileName : String ;
 begin
 
-     EDRFile.Version := 'V4.1.8' ;
+     EDRFile.Version := 'V4.1.9' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + EDRFile.Version ;
 
      { Name of last used data file returned in fH.FileName }
@@ -1987,14 +1991,17 @@ begin
         // ASCII format data files
         ImportASCIIFrm.ImportFile := ImportFile ;
         ImportASCIIFrm.FileName := FileName ;
-        EDRFile.SetFormPosition( ImportASCIIFrm, Main.Left + 20,Main.Top + 60, ImportASCIIFrm.Width, ImportASCIIFrm.Height ) ;
+        ImportASCIIFrm.Left := Main.Left + 20 ;
+        ImportASCIIFrm.Top := Main.Top + 60 ;
         if ImportASCIIFrm.ShowModal <> mrOK Then Exit ;
         if not Main.ImportFile.OpenDataFile( FileName, FileType ) then Exit ;
         end
      else if FileType = ftRaw then begin
         // Raw binary data files
         // Set form position
-        EDRFile.SetFormPosition( ImportRawFrm, Main.Left + 20,Main.Top + 60, ImportRawFrm.Width, ImportRawFrm.Height ) ;
+//        EDRFile.SetFormPosition( ImportRawFrm, Main.Left + 20,Main.Top + 60, ImportRawFrm.Width, ImportRawFrm.Height ) ;
+        ImportRawFrm.Left := Main.Left + 20 ;
+        ImportRawFrm.Top := Main.Top + 60 ;
         ImportRawFrm.ImportFile := ImportFile ;
         if ImportRawFrm.ShowModal <> mrOK Then Exit ;
         if not Main.ImportFile.OpenDataFile( FileName, FileType ) then Exit ;

@@ -71,6 +71,8 @@ unit EDRFileUnit;
   09.05.23 ... EDR File V6.2 File header size now increased when no. channels > 16, 1-16 = 2048, 17-32 = 4096 , ...
   10.07.23 ... 'DETDECTO', Settings.EventDetector.TDecayTo added
   14.03.24 ... Form position saved to INI file
+  08.05.25 ... Access violation when ADCName and ADCUnits = '' trapped
+  15.05.25 ... FileOverWriteCheck() Now uses Main.SaveDialog
   }
 
 interface
@@ -538,7 +540,6 @@ TSettings = record
 TMarkerShape = ( SquareMarker, CircleMarker ) ;
 
   TEDRFile = class(TDataModule)
-    SaveDialog: TSaveDialog;
     procedure DataModuleCreate(Sender: TObject);
     procedure DataModuleDestroy(Sender: TObject);
   private
@@ -794,19 +795,17 @@ begin
      if FileExists(FileName) then
           begin
           { If it exists, let user change it's name }
-          SaveDialog.options := [ofHideReadOnly,ofPathMustExist] ;
-          SaveDialog.DefaultExt := DataFileExtension ;
-          SaveDialog.FileName := ExtractFileName( FileName ) ;
-          SaveDialog.Filter := format( ' EDR Files (*%s)|*%s',
-                                    [DataFileExtension,DataFileExtension]) ;
-         SaveDialog.Title := ExtractFileName(FileName)
-                                   + ' already exists! Change Name? ';
+          Main.SaveDialog.options := [ofHideReadOnly,ofPathMustExist] ;
+          Main.SaveDialog.DefaultExt := DataFileExtension ;
+          Main.SaveDialog.FileName := ExtractFileName( FileName ) ;
+          Main.SaveDialog.Filter := format( ' EDR Files (*%s)|*%s',[DataFileExtension,DataFileExtension]) ;
+          Main.SaveDialog.Title := ExtractFileName(FileName) + ' already exists! Change Name? ';
 
           if Main.SaveDialog.execute then begin
              { Save data directory }
-            DataDirectory := ExtractFilePath( SaveDialog.FileName ) ;
+            DataDirectory := ExtractFilePath( Main.SaveDialog.FileName ) ;
              { Use new file name entered by user }
-             FileName := SaveDialog.FileName ;
+             FileName := Main.SaveDialog.FileName ;
              { User has clicked OK, tell calling routine to go ahead }
              Result := OK ;
              end
@@ -1138,14 +1137,22 @@ begin
 
          Channel[ch].ChannelOffset := GetKeyValue( Header, format('YO%d',[ch]), Channel[ch].ChannelOffset) ;
 
+         // Channel units
          Channel[ch].ADCUnits := '??' ;
          Channel[ch].ADCUnits := GetKeyValue( Header, format('YU%d',[ch]) , Channel[ch].ADCUnits ) ;
          { Fix to avoid strings with #0 in them }
-         if Channel[ch].ADCUnits[1] = chr(0) then Channel[ch].ADCUnits := '??' ;
+         if Length(Channel[ch].ADCUnits) > 0 then
+          if Channel[ch].ADCUnits[1] = #0 then Channel[ch].ADCUnits := '??'
+         else Channel[ch].ADCUnits := '??' ;
+
+         // Channel name
          Channel[ch].ADCName := 'Ch' + IntToStr(ch) ;
          Channel[ch].ADCName := GetKeyValue( Header, format('YN%d',[ch]), Channel[ch].ADCName ) ;
          { Fix to avoid strings with #0 in them }
-         if Channel[ch].ADCName[1] = chr(0) then Channel[ch].ADCName := '??' ;
+         if Length(Channel[ch].ADCName) > 0 then
+          if Channel[ch].ADCName[1] = #0 then Channel[ch].ADCUnits := 'Ch' + IntToStr(ch)
+         else Channel[ch].ADCUnits := 'Ch' + IntToStr(ch) ;
+
          Channel[ch].ADCCalibrationFactor := GetKeyValue( Header, format('YCF%d',[ch]), Channel[ch].ADCCalibrationFactor) ;
 
          Channel[ch].ADCAmplifierGain := GetKeyValue( Header, format('YAG%d',[ch]), Channel[ch].ADCAmplifierGain) ;

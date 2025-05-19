@@ -43,6 +43,7 @@ type
     procedure rbTabClick(Sender: TObject);
     procedure rbmsecsClick(Sender: TObject);
     procedure FormHide(Sender: TObject);
+    procedure FormResize(Sender: TObject);
   private
     { Private declarations }
     procedure UpdateTimeUnits ;
@@ -82,6 +83,11 @@ begin
 
 end;
 
+procedure TImportASCIIFrm.FormResize(Sender: TObject);
+begin
+    meText.Width := Self.ClientWidth - meText.Left - 8 ;
+end;
+
 procedure TImportASCIIFrm.FormShow(Sender: TObject);
 // ---------------------------------------
 // Initialise controls when form displayed
@@ -92,6 +98,10 @@ var
     F: TextFile;
     s : String ;
 begin
+
+     // Ensure form shows all controls
+     Self.ClientWidth := meText.Left + meText.Width + 8 ;
+     Self.ClientHeight := bOK.Top + bOK.Height + 20 ;
 
      // Set time units
      if ImportFile.ASCIITimeUnits = 'ms' then rbmsecs.Checked := True
@@ -111,6 +121,8 @@ begin
      lbScanInterval.Visible := edScanInterval.Visible ;
 
      edScanInterval.Value := ImportFile.ScanInterval ;
+     if edScanInterval.Value <= 0.0 then edScanInterval.Value := 0.001 ;
+
 
      { Set channel calibration table }
      ChannelTable.cells[ChNum,0] := 'Ch.' ;

@@ -38,18 +38,18 @@ object EventDetFrm: TEventDetFrm
   object Page: TPageControl
     Left = 8
     Top = 8
-    Width = 929
+    Width = 925
     Height = 730
     ActivePage = EditEventsPage
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 0
     OnChange = PageChange
-    ExplicitWidth = 925
+    ExplicitWidth = 921
     ExplicitHeight = 729
     object DetectEventsPage: TTabSheet
       Caption = 'Detect Events'
       DesignSize = (
-        921
+        917
         700)
       object scDisplay: TScopeDisplay
         Left = 221
@@ -139,7 +139,7 @@ object EventDetFrm: TEventDetFrm
       object sbDisplay: TScrollBar
         Left = 221
         Top = 656
-        Width = 697
+        Width = 693
         Height = 17
         Hint = 'Display window slider'
         Anchors = [akLeft, akRight, akBottom]
@@ -148,15 +148,17 @@ object EventDetFrm: TEventDetFrm
         ShowHint = True
         TabOrder = 0
         OnChange = sbDisplayChange
+        ExplicitWidth = 697
       end
       object DetDisplayPanel: TPanel
-        Left = 773
+        Left = 769
         Top = 674
         Width = 145
         Height = 23
         Anchors = [akRight, akBottom]
         BevelOuter = bvNone
         TabOrder = 1
+        ExplicitLeft = 773
         object Label18: TLabel
           Left = 9
           Top = 2
@@ -781,7 +783,7 @@ object EventDetFrm: TEventDetFrm
       Caption = 'Review/Edit Events'
       ImageIndex = 1
       DesignSize = (
-        921
+        917
         700)
       object scMarkDisplay: TScopeDisplay
         Left = 219
@@ -868,14 +870,14 @@ object EventDetFrm: TEventDetFrm
         FontSize = 8
       end
       object EditDisplayWidthPanel: TPanel
-        Left = 628
+        Left = 624
         Top = 571
         Width = 281
         Height = 25
         Anchors = [akRight, akBottom]
         BevelOuter = bvNone
         TabOrder = 3
-        ExplicitLeft = 624
+        ExplicitLeft = 620
         ExplicitTop = 570
         object lbEditDisplayPoints: TLabel
           Left = 4
@@ -1517,7 +1519,7 @@ object EventDetFrm: TEventDetFrm
       object sbEditDisplay: TScrollBar
         Left = 219
         Top = 550
-        Width = 690
+        Width = 686
         Height = 17
         Hint = 'Display window slider'
         Anchors = [akLeft, akRight, akBottom]
@@ -1527,18 +1529,18 @@ object EventDetFrm: TEventDetFrm
         TabOrder = 1
         OnChange = sbEditDisplayChange
         ExplicitTop = 549
-        ExplicitWidth = 686
+        ExplicitWidth = 682
       end
       object EventFilterGrp: TGroupBox
         Left = 219
         Top = 594
-        Width = 690
+        Width = 686
         Height = 105
         Anchors = [akLeft, akRight, akBottom]
         Caption = ' Event Filter '
         TabOrder = 2
         ExplicitTop = 593
-        ExplicitWidth = 686
+        ExplicitWidth = 682
         object GroupBox4: TGroupBox
           Left = 312
           Top = 12
@@ -1745,7 +1747,7 @@ object EventDetFrm: TEventDetFrm
       Caption = 'X-Y Plot'
       ImageIndex = 2
       DesignSize = (
-        921
+        917
         700)
       object plPlot: TXYPlotDisplay
         Left = 224
@@ -2054,7 +2056,7 @@ object EventDetFrm: TEventDetFrm
       Caption = 'Histogram'
       ImageIndex = 3
       DesignSize = (
-        921
+        917
         700)
       object plHist: TXYPlotDisplay
         Left = 219
@@ -2099,7 +2101,7 @@ object EventDetFrm: TEventDetFrm
       object HistResultsGrp: TGroupBox
         Left = 219
         Top = 490
-        Width = 685
+        Width = 681
         Height = 207
         Anchors = [akLeft, akRight, akBottom]
         Caption = ' Curve fitting '
@@ -2110,6 +2112,7 @@ object EventDetFrm: TEventDetFrm
         Font.Style = []
         ParentFont = False
         TabOrder = 0
+        ExplicitWidth = 685
         object lbHistResults: THTMLLabel
           Left = 160
           Top = 21
@@ -2450,7 +2453,7 @@ object EventDetFrm: TEventDetFrm
       Caption = 'Average'
       ImageIndex = 4
       DesignSize = (
-        921
+        917
         700)
       object scAverageDisplay: TScopeDisplay
         Left = 219
@@ -2680,7 +2683,7 @@ object EventDetFrm: TEventDetFrm
       object AverageResultsGrp: TGroupBox
         Left = 224
         Top = 486
-        Width = 685
+        Width = 681
         Height = 211
         Anchors = [akLeft, akRight, akBottom]
         Caption = ' Curve fitting '
@@ -2691,6 +2694,7 @@ object EventDetFrm: TEventDetFrm
         Font.Style = []
         ParentFont = False
         TabOrder = 1
+        ExplicitWidth = 685
         object lbAvgFitResults: THTMLLabel
           Left = 160
           Top = 23

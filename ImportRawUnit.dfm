@@ -3,19 +3,17 @@ object ImportRawFrm: TImportRawFrm
   Left = 633
   Top = 158
   Caption = 'Raw Binary Import'
-  ClientHeight = 284
-  ClientWidth = 454
+  ClientHeight = 301
+  ClientWidth = 465
   Color = clBtnFace
   Font.Charset = ANSI_CHARSET
   Font.Color = clWindowText
   Font.Height = -12
   Font.Name = 'Arial'
   Font.Style = []
-  OldCreateOrder = False
-  Position = poMainFormCenter
+  Position = poDefault
   OnHide = FormHide
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 15
   object GroupBox2: TGroupBox
     Left = 8
@@ -213,7 +211,7 @@ object ImportRawFrm: TImportRawFrm
     ParentFont = False
     TabOrder = 2
   end
-  object GroupBox1: TGroupBox
+  object gpChannels: TGroupBox
     Left = 240
     Top = 7
     Width = 217

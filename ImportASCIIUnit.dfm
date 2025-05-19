@@ -2,10 +2,9 @@ object ImportASCIIFrm: TImportASCIIFrm
   Tag = 8
   Left = 361
   Top = 194
-  BorderStyle = bsDialog
   Caption = 'ASCII Import'
-  ClientHeight = 360
-  ClientWidth = 406
+  ClientHeight = 376
+  ClientWidth = 419
   Color = clBtnFace
   Font.Charset = ANSI_CHARSET
   Font.Color = clWindowText
@@ -13,6 +12,7 @@ object ImportASCIIFrm: TImportASCIIFrm
   Font.Name = 'Arial'
   Font.Style = []
   OnHide = FormHide
+  OnResize = FormResize
   OnShow = FormShow
   TextHeight = 14
   object bCancel: TButton
@@ -181,7 +181,7 @@ object ImportASCIIFrm: TImportASCIIFrm
         Left = 8
         Top = 8
         Width = 121
-        Height = 25
+        Height = 20
         Caption = 'Time Data in Col. 0'
         Checked = True
         Font.Charset = ANSI_CHARSET
@@ -196,9 +196,9 @@ object ImportASCIIFrm: TImportASCIIFrm
       end
       object rbUserDefined: TRadioButton
         Left = 8
-        Top = 24
+        Top = 26
         Width = 97
-        Height = 25
+        Height = 20
         Caption = 'User Defined'
         Font.Charset = ANSI_CHARSET
         Font.Color = clWindowText
@@ -215,8 +215,10 @@ object ImportASCIIFrm: TImportASCIIFrm
         Width = 65
         Height = 20
         AutoSize = False
-        Text = ' 0 '
+        Text = ' 0.001 s'
+        Value = 0.001000000047497451
         Scale = 1.000000000000000000
+        Units = 's'
         NumberFormat = '%.4g'
         LoLimit = -1.000000015047466E29
         HiLimit = 1.000000015047466E29

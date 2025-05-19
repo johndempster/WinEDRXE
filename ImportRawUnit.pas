@@ -20,7 +20,7 @@ type
     edNumChannelsPerScan: TValidatedEdit;
     bOK: TButton;
     bCancel: TButton;
-    GroupBox1: TGroupBox;
+    gpChannels: TGroupBox;
     ChannelTable: TStringGrid;
     GroupBox3: TGroupBox;
     rbFloat: TRadioButton;
@@ -90,6 +90,10 @@ var
      Row : Integer ;
      ch : Integer ;
 begin
+
+     // Ensure form shows all controls
+     Self.ClientWidth := gpChannels.Left + gpChannels.Width + 8 ;
+     Self.ClientHeight := bOK.Top + bOK.Height + 20 ;
 
     edNumFileHeaderBytes.Value := ImportFile.NumFileHeaderBytes ;
     edNumChannelsPerScan.Value := ImportFile.NumChannelsPerScan ;

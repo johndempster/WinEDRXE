@@ -126,6 +126,8 @@ unit EventDetector;
 //              Filtering on Peak(abs) now works correctly
 //              F1 F2 keys now add/remove events without user having to click on edit display. F1/F2 keys monitored in form KeyPreview
 //              Display cursor movement keys monitored in hidden edDisplaykeypressSource eitr box.
+// 16.05.25 ... Running mean no longer initialised by DisplayReord() when new buffer of data loaded during event detection
+//              Prevents occasionional misdetection of events
 
 interface
 
@@ -624,7 +626,7 @@ function CalculateVariablesInInterval(
   public
     { Public declarations }
     procedure NewFile ;
-    procedure DisplayRecord ;
+    procedure DisplayRecord( InitialiseRunningMean : Boolean ) ;
     function IsClipboardDataAvailable : Boolean ;
     procedure CopyDataToClipboard ;
     procedure SaveDataToFile ;
@@ -861,7 +863,7 @@ begin
      ReSize ;
 
      { Display records }
-     DisplayRecord ;
+     DisplayRecord( True ) ;
 
      edDisplayKeyPressSource.SetFocus ;
 
@@ -1179,14 +1181,14 @@ begin
      end ;
 
 
-procedure TEventDetFrm.DisplayRecord ;
+procedure TEventDetFrm.DisplayRecord( InitialiseRunningMean : Boolean ) ;
 { ---------------------------------------------
   Display currently selected block of data file
   ---------------------------------------------}
 const
     cMaxPointsLimit = 1000000 ;
 var
-   InitialiseRunningMean : Boolean ;
+//   InitialiseRunningMean : Boolean ;
    MaxPointsInFile : Integer ;
 begin
 
@@ -1801,7 +1803,7 @@ procedure TEventDetFrm.sbDisplayChange(Sender: TObject);
 // Event detection display changed
 // -------------------------------
 begin
-    DisplayRecord ;
+    DisplayRecord( True ) ;
     end;
 
 
@@ -1814,7 +1816,7 @@ var
     DeadSamples : Integer ;
     i,OverThresholdCount,TimeThreshold,ThresholdLevel, Polarity : Integer ;
     Done,NewBufferNeeded, UpdateStatusBar : Boolean ;
-
+    InitialiseRunningMean : Boolean ;
 begin
 
      { Let user clear event list }
@@ -1880,6 +1882,7 @@ begin
     // ------------------
     i := 0 ;
     iEnd := 0 ;
+    InitialiseRunningMean := True ;
     while not Done do begin
 
         if NewBufferNeeded then begin
@@ -1888,7 +1891,8 @@ begin
            sbDisplay.Position := iSample ;
 
            // Display record and load ADC and DetBuf buffers
-           DisplayRecord ;
+           DisplayRecord( InitialiseRunningMean ) ;
+           InitialiseRunningMean := False ;
 
            // Start/end of ADC buffer indices
            iEnd := scDisplay.MaxPoints - 1 ;
@@ -2252,7 +2256,7 @@ begin
      if Page.ActivePage = DetectEventsPage then
         begin
         // Update Detect events page
-        DisplayRecord ;
+        DisplayRecord( True ) ;
         end
      else if Page.ActivePage = EditEventsPage then
         begin
@@ -3964,7 +3968,7 @@ begin
         EDRFile.Settings.EventDetector.DetectionMode := mdPatternMatch ;
         end ;
 
-     DisplayRecord ;
+     DisplayRecord( True ) ;
 
      end ;
 
@@ -3984,7 +3988,7 @@ procedure TEventDetFrm.edTauRiseKeyPress(Sender: TObject; var Key: Char);
 // Set time constant of rising phase of detection template
 // -------------------------------------------------------
 begin
-     if key = #13 then DisplayRecord ;
+     if key = #13 then DisplayRecord( True ) ;
      end;
 
 
@@ -4813,7 +4817,7 @@ procedure TEventDetFrm.edDeadTimeKeyPress(Sender: TObject; var Key: Char);
 begin
      if Key = #13 then begin
         EDRFile.Settings.EventDetector.DeadTime := edDeadTime.Value ;
-        DisplayRecord ;
+        DisplayRecord( True ) ;
         end ;
 
      end;
@@ -4827,7 +4831,7 @@ procedure TEventDetFrm.edBaselineAveragingIntervalKeyPress(Sender: TObject;
 begin
      if Key = #13 then begin
         EDRFile.Settings.EventDetector.BaselineAveragingInterval := edBaselineAveragingInterval.Value ;
-        DisplayRecord ;
+        DisplayRecord( True ) ;
         end ;
      end;
 
@@ -5511,7 +5515,7 @@ procedure TEventDetFrm.ckEnableBaselineTrackingClick(Sender: TObject);
 // -------------------------------------------------------------------
 begin
      EDRFile.Settings.EventDetector.EnableBaselineTracking := ckEnableBaselineTracking.Checked ;
-     DisplayRecord ;
+     DisplayRecord( True ) ;
 end;
 
 
@@ -5550,7 +5554,7 @@ procedure TEventDetFrm.edDetDisplayWidthKeyPress(Sender: TObject;
 begin
      if key = #13 then
         begin
-        DisplayRecord ;
+        DisplayRecord( True );
         end ;
      end;
 
@@ -5916,7 +5920,7 @@ procedure TEventDetFrm.bTDisplayDoubleClick(Sender: TObject);
 // -------------------------------------------
 begin
         edDetDisplayWidth.Value := edDetDisplayWidth.Value*2.0 ;
-        DisplayRecord ;
+        DisplayRecord( True ) ;
         end;
 
 
@@ -5926,7 +5930,7 @@ procedure TEventDetFrm.bTDisplayHalfClick(Sender: TObject);
 // -------------------------------------------
 begin
         edDetDisplayWidth.Value := edDetDisplayWidth.Value*0.5 ;
-        DisplayRecord ;
+        DisplayRecord( True ) ;
         end;
 
 
