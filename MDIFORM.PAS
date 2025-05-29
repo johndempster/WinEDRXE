@@ -446,7 +446,7 @@ unit Mdiform;
    V4.1.8 07.05.25 EDRFileUnit: File overwrite check now uses correct EDR file extension
    V4.1.9 15.05.25 ADCDataFile control: ASCII file import now much faster
                    ASCIIImportFRm & RawImportFrm now displayed at top/left of main form
-
+   V4.2.0 29.05.25 SingChanAnal: NAN and INF fitted parameters now cause GoodFit + False
   =======================================================================}
 
 interface
@@ -673,7 +673,7 @@ var
    FileName : String ;
 begin
 
-     EDRFile.Version := 'V4.1.9' ;
+     EDRFile.Version := 'V4.2.0' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + EDRFile.Version ;
 
      { Name of last used data file returned in fH.FileName }

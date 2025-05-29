@@ -46,6 +46,9 @@ unit SingleChanAnal;
   16.12.14 ... Event + Amps added to Export Events options. Export event amplitude and standard deviation
                Avg vs Closed times and Avg vs dwell times plots added Summary/Stability plot pages
   14.03.24 ... Form position saved to INI file
+  29.05.25 ... NAN and INF fitted parameters now cause GoodFit to be set to False to
+               prevent NAN and INF values crashing XYPlotDisplay (also trapped in XYPlotDisplay)
+               Event file closed and re-opened after detection to ensure it is saved after a program crash.
               }
 
 interface
@@ -1053,7 +1056,8 @@ begin
      bDetect.Enabled := False ;
 
      { Let user clear event list }
-     if EventFile.NumEvents > 0 then begin
+     if EventFile.NumEvents > 0 then
+        begin
         if MessageDlg('Clear existing events in list',mtConfirmation,
            [mbYes,mbNo], 0 ) = mrYes then begin
            CloseEventFile( EventFile ) ;
@@ -1234,6 +1238,11 @@ begin
 
          end ;
 
+
+      // Close and re-open event file to ensure it is preserved if program crashes
+      CloseEventFile( EventFile ) ;
+      OpenEventFile( EventFile ) ;
+
      { Restore controls to idle state }
      bAbortDetection.Enabled := False ;
      sbDetDisplay.Enabled := True ;
@@ -1324,7 +1333,7 @@ begin
      erDwellTResults.Width := DwellTResultsGrp.Width - erDwellTResults.Left - 10 ;
 
      { Display cursor labels }
-     lbDwellTC0.Top := DwellTResultsGrp.Top - lbDwellTC0.Height - 2 ;
+     lbDwellTC0.Top := DwellTResultsGrp.Top - Round(lbDwellTC0.Height*1.5) ;
      lbDwellTC1.Top := lbDwellTC0.Top ;
      { Height of histogram display area }
      plDwellTHist.Height := Max( lbDwellTC1.Top - plDwellTHist.Top - 2,2) ;
@@ -1353,8 +1362,7 @@ begin
      AmpHistResultsGrp.Width := AmpHistTab.ClientWidth - AmpHistResultsGrp.Left - 5 ;
      erAmpResults.Width := AmpHistResultsGrp.Width - erAmpResults.Left - 10 ;
 
-     plAmpHist.Height := Max( AmpHistResultsGrp.Top
-                              - lbAmpHistC0.Height - 20,2) ;
+     plAmpHist.Height := Max( AmpHistResultsGrp.Top - Round(lbAmpHistC0.Height*1.5) - 20,2) ;
      plAmpHist.Width := Max(AmpHistResultsGrp.Width,2) ;
 
      lbAmpHistC0.Top := plAmpHist.Top + plAmpHist.Height + 2;
@@ -2117,14 +2125,13 @@ begin
         plDwellTHist.ClearAllLines ;
 
         { Select type of equation to be fitted }
-        DwellTFunc.Setup( TEqnType(cbDwellTEqn.Items.Objects[cbDwellTEqn.ItemIndex]),
-                          EDRFile.Settings.TUnits,
-                          '%')  ;
+        DwellTFunc.Setup( TEqnType(cbDwellTEqn.Items.Objects[cbDwellTEqn.ItemIndex]),EDRFile.Settings.TUnits,'%')  ;
         if DwellTFunc.Equation = None then OK := False ;
 
         { Copy data into fitting array }
         nFit := 0 ;
-        if OK then begin
+        if OK then
+           begin
            { Lower and upper x data limit set by display cursors }
            iStart := plDwellTHist.FindNearestIndex( 0, DwellTCurs.C0 ) ;
            iEnd :=   plDwellTHist.FindNearestIndex( 0, DwellTCurs.C1 ) ;
@@ -2145,7 +2152,8 @@ begin
               end ;
            end ;
 
-        if OK then begin
+        if OK then
+           begin
            { Let user create/modify initial parameter settings and/or
              fix parameters at constant values }
            SetFitParsFrm.MathFunc := DwellTFunc ;
@@ -2158,7 +2166,8 @@ begin
            end ;
 
         { Fit curve using non-linear regression }
-        if OK then begin
+        if OK then
+           begin
            { Prevent FitCurve from changing parameter settings }
            DwellTFunc := SetFitParsFrm.MathFunc ;
            DwellTFunc.ParametersSet := True ;
@@ -2166,7 +2175,7 @@ begin
            DwellTFunc.UseBinWidths := True ;
            DwellTFunc.FitCurve( FitData^, nFit ) ;
            OK := DwellTFunc.GoodFit ;
-           if not OK then ShowMessage( 'Curve fit failed to converge!' ) ;
+           if not OK then ShowMessage( 'Curve fit failed to converge or invalid fitted parameters!' ) ;
            end ;
 
         { Plot equation on graph }
@@ -2647,12 +2656,11 @@ begin
         end ;
 
      { Set Fitting/area cursor labels }
-     plDwellTHist.GetBin( 0, plDwellTHist.FindNearestIndex(0,DwellTCurs.C0),
-                          Lo, Mid, Hi, y ) ;
+     plDwellTHist.GetBin( 0, plDwellTHist.FindNearestIndex(0,DwellTCurs.C0), Lo, Mid, Hi, y ) ;
      lbDwellTC0.Visible := True ;
      lbDwellTC0.Left := plDwellTHist.Left + plDwellTHist.XToCanvasCoord( Mid ) ;
-     plDwellTHist.GetBin( 0, plDwellTHist.FindNearestIndex(0,DwellTCurs.C1),
-                          Lo, Mid, Hi, y ) ;
+
+     plDwellTHist.GetBin( 0, plDwellTHist.FindNearestIndex(0,DwellTCurs.C1), Lo, Mid, Hi, y ) ;
      lbDwellTC1.Visible := True ;
      lbDwellTC1.Left := plDwellTHist.Left + plDwellTHist.XToCanvasCoord( Mid ) ;
 
@@ -2661,7 +2669,8 @@ begin
      iEnd :=   plDwellTHist.FindNearestIndex( 0, DwellTCurs.C1 ) ;
      XYSum := 0.0 ;
      YSum := 0.0 ;
-     for i := Min(iStart,iEnd) to Max(iStart,iEnd) do begin
+     for i := Min(iStart,iEnd) to Max(iStart,iEnd) do
+         begin
          XYSum := XYSum + (DwellTHist.Bins[i].y*DwellTHist.Bins[i].Mid) ;
          YSum := YSum + DwellTHist.Bins[i].y ;
          end ;
@@ -2670,24 +2679,20 @@ begin
 
      lbDwellTArea.visible := true ;
      shline.visible := true ;
-     lbDwellTArea.caption := format(' Mean= %.3g %s /Events= %d ',
-                                [XMean*TScale,TUnits,
-                                Round(YSum)] ) ;
+     lbDwellTArea.caption := format(' Mean= %.3g %s /Events= %d ',[XMean*TScale,TUnits, Round(YSum)] ) ;
+
+     { Place horizontal line between fit/analysis cursors }
+     shDwellTLine.Top := lbDwellTC0.Top + (lbDwellTC0.Height div 2) ;
+     shDwellTLine.Left := Min(lbDwellTC0.Left,lbDwellTC1.Left) + lbDwellTC0.Width ;
+     shDwellTLine.Width := Max(lbDwellTC0.Left,lbDwellTC1.Left) - shDwellTLine.Left - lbDwellTC0.Width ;
+     shDwellTLine.Visible := True ;
 
      { Display mean signal level and histogram % between cursors }
      Mid := (lbDwellTC0.Left + lbDwellTC1.Left) div 2 ;
-     lbDwellTArea.Left := ((lbDwellTC0.Left + lbDwellTC1.Left) div 2)
-                          - (lbDwellTArea.Width div 2) ;
-     lbDwellTArea.Top := lbDwellTC0.Top ;
+     lbDwellTArea.Left := ((lbDwellTC0.Left + lbDwellTC1.Left) div 2) - (lbDwellTArea.Width div 2) ;
+     lbDwellTArea.Top := shDwellTLine.Top + 2 ;
      lbDwellTArea.Visible := True ;
 
-     { Place horizontal line between fit/analysis cursors }
-     shDwellTLine.Top := lbDwellTArea.Top + (lbDwellTArea.Height div 2) ;
-     shDwellTLine.Left := Min(lbDwellTC0.Left,lbDwellTC1.Left)
-                    + lbDwellTC0.Width ;
-     shDwellTLine.Width := Max(lbDwellTC0.Left,lbDwellTC1.Left)
-                     - shDwellTLine.Left - lbDwellTC0.Width ;
-     shDwellTLine.Visible := True ;
 
      end ;
 
@@ -4919,26 +4924,21 @@ begin
 
      lbAmpHistArea.visible := true ;
      shAmpHistLine.visible := true ;
-     lbAmpHistArea.caption := format(' Mean= %.3g %s /Area= %.3g %% ',
-                             [XMean,
-                             EDRFile.Channel[ChanNum].ADCUnits,
-                              YSum] ) ;
+     lbAmpHistArea.caption := format( ' Mean= %.3g %s /Area= %.3g %% ',
+                                      [XMean,EDRFile.Channel[ChanNum].ADCUnits,YSum] ) ;
+
+
+     { Place horizontal line between fit/analysis cursors }
+     shAmpHistLine.Top := lbAmpHistC0.Top + (lbAmpHistC0.Height div 2) ;
+     shAmpHistLine.Left := Min(lbAmpHistC0.Left,lbAmpHistC1.Left) + lbAmpHistC0.Width ;
+     shAmpHistLine.Width := Max(lbAmpHistC0.Left,lbAmpHistC1.Left) - shAmpHistLine.Left - lbAmpHistC0.Width ;
+     shAmpHistLine.Visible := True ;
 
      { Display mean signal level and histogram % between cursors }
      Mid := (lbAmpHistC0.Left + lbAmpHistC1.Left) div 2 ;
-     lbAmpHistArea.Left := Min(((lbAmpHistC0.Left + lbAmpHistC1.Left) div 2)
-                                    - (lbAmpHistArea.Width div 2),
-                                    AmpHistTab.Width - lbAmpHistArea.Width);
-     lbAmpHistArea.Top := lbAmpHistC0.Top ;
+     lbAmpHistArea.Left := Min(((lbAmpHistC0.Left + lbAmpHistC1.Left) div 2) - (lbAmpHistArea.Width div 2), AmpHistTab.Width - lbAmpHistArea.Width);
+     lbAmpHistArea.Top := shAmpHistLine.Top + 2 ;
      lbAmpHistArea.Visible := True ;
-
-     { Place horizontal line between fit/analysis cursors }
-     shAmpHistLine.Top := lbAmpHistArea.Top + (lbAmpHistArea.Height div 2) ;
-     shAmpHistLine.Left := Min(lbAmpHistC0.Left,lbAmpHistC1.Left)
-                           + lbAmpHistC0.Width ;
-     shAmpHistLine.Width := Max(lbAmpHistC0.Left,lbAmpHistC1.Left)
-                            - shAmpHistLine.Left - lbAmpHistC0.Width ;
-     shAmpHistLine.Visible := True ;
 
      // Ensure that unit-c cursor remains fixed
      //if plAmpHist.VerticalCursors[AmpCurs.IUnit] <> EDRFile.Settings.DwellTimes.UnitCurrent then
@@ -5050,28 +5050,31 @@ begin
 
         { Copy data into fitting array }
         nFit := 0 ;
-        if OK then begin
+        if OK then
+           begin
 
            { Lower and upper x data limit set by display cursors }
            iStart := plAmpHist.FindNearestIndex( 0, AmpCurs.C0 ) ;
            iEnd :=   plAmpHist.FindNearestIndex( 0, AmpCurs.C1 ) ;
-           for iBins := Min(iStart,iEnd) to Max(iStart,iEnd) do begin
+           for iBins := Min(iStart,iEnd) to Max(iStart,iEnd) do
+               begin
                FitData^.x[nFit] := AmpHist.Bins[iBins].Mid ;
                FitData^.y[nFit] := AmpHist.Bins[iBins].y ;
                Inc(nFit) ;
                end ;
 
            { Abort curve fit, if not enough data points }
-           if nFit < AmpFunc.NumParameters then begin
+           if nFit < AmpFunc.NumParameters then
+              begin
               ShowMessage( format('%d points is insufficient for fit',[nFit]) ) ;
               AmpFunc.Setup( None, ' ',' ' ) ;
               OK := False ;
               end ;
            end ;
 
-        if OK then begin
-           { Let user create/modify initial parameter settings and/or
-             fix parameters at constant values }
+        if OK then
+           begin
+           { Let user create/modify initial parameter settings and/or fix parameters at constant values }
            SetFitParsFrm.MathFunc := AmpFunc ;
            SetFitParsFrm.XYData := FitData ;
            SetFitParsFrm.NumPoints := nFit ;
@@ -5082,17 +5085,20 @@ begin
            end ;
 
         { Fit curve using non-linear regression }
-        if OK then begin
+        if OK then
+           begin
            AmpFunc := SetFitParsFrm.MathFunc ;
            { Prevent FitCurve from changing parameter settings }
            AmpFunc.ParametersSet := True ;
            AmpFunc.UseBinWidths := False ;
            AmpFunc.FitCurve( FitData^, nFit ) ;
            OK := AmpFunc.GoodFit ;
+           if not OK then ShowMessage( 'Curve fit failed to converge or invalid fitted parameters!' ) ;
            end ;
 
         { Plot equation on graph }
-        if OK and (AmpFunc.Equation <> None) then begin
+        if OK and (AmpFunc.Equation <> None) then
+           begin
 
            x := plAmpHist.xAxisMin ;
            dx := (plAmpHist.xAxisMax - plAmpHist.xAxisMin) / NumFitPoints ;
@@ -5116,14 +5122,16 @@ begin
                end ;
 
            { Plot each individual gaussian component }
-           if NumComp > 1 then begin
+           if NumComp > 1 then
+              begin
               LineNum := FittedLine ;
               for Comp := 0 to NumComp-1 do begin
                   AmpFunc.Parameters[Comp*3+2] := ParTemp[Comp*3+2] ;
                   Inc(LineNum) ;
                   x := plAmpHist.xAxisMin ;
                   dx := (plAmpHist.xAxisMax - plAmpHist.xAxisMin) / NumFitPoints ;
-                  for i := 0 to AmpHist.NumBins-1 do begin
+                  for i := 0 to AmpHist.NumBins-1 do
+                      begin
                       plAmpHist.AddPoint( LineNum, x, AmpFunc.Value(x) ) ;
                       x := x + dx ;
                       end ;
@@ -5132,7 +5140,8 @@ begin
               end ;
 
            { Restore parameters }
-           for Comp := 0 to NumComp-1 do begin
+           for Comp := 0 to NumComp-1 do
+               begin
                AmpFunc.Parameters[Comp*3] := ParTemp[Comp*3] ;
                AmpFunc.Parameters[Comp*3+1] := ParTemp[Comp*3+1] ;
                AmpFunc.Parameters[Comp*3+2] := ParTemp[Comp*3+2] ;
@@ -5142,7 +5151,8 @@ begin
 
         { Display results }
         AmpResults.Clear ;
-        if OK then begin
+        if OK then
+          begin
 
           case AmpFunc.Equation of
               Gaussian : AmpResults.Add(
@@ -5154,7 +5164,8 @@ begin
               end ;
 
            { Best fit parameters and standard error }
-           for i := 0 to AmpFunc.NumParameters-1 do begin
+           for i := 0 to AmpFunc.NumParameters-1 do
+               begin
 
                { Convert gaussian peak parameter to gaussian area }
                if ((i+1) mod 3) = 0 then begin
@@ -5170,29 +5181,21 @@ begin
 
                if not AmpFunc.FixedParameters[i] then
                   AmpResults.Add( format(' %s = %.4g ^~ %.4g (sd) %s',
-                                       [ParName,
-                                        Scale*AmpFunc.Parameters[i],
-                                        Scale*AmpFunc.ParameterSDs[i],
-                                        AmpFunc.ParUnits[i]] ) )
+                                       [ParName,Scale*AmpFunc.Parameters[i],Scale*AmpFunc.ParameterSDs[i],AmpFunc.ParUnits[i]] ) )
                else
                   { Fixed parameter }
                   AmpResults.Add( format(' %s = %.4g (fixed) %s',
-                                       [ParName,
-                                        AmpFunc.Parameters[i],
-                                        AmpFunc.ParUnits[i]] ) ) ;
+                                       [ParName,AmpFunc.Parameters[i],AmpFunc.ParUnits[i]] ) ) ;
                end ;
 
            { Residual standard deviation }
-           AmpResults.Add( format(' Residual S.D. = %.4g %s',
-                                [AmpFunc.ResidualSD,'%'] ) ) ;
+           AmpResults.Add( format(' Residual S.D. = %.4g %s',[AmpFunc.ResidualSD,'%'] ) ) ;
 
            { Statistical degrees of freedom }
-           AmpResults.Add( format(' Degrees of freedom = %d ',
-                                [AmpFunc.DegreesOfFreedom]) );
+           AmpResults.Add( format(' Degrees of freedom = %d ',[AmpFunc.DegreesOfFreedom]) );
 
            { No. of iterations }
-           AmpResults.Add( format(' No. of iterations = %d ',
-                                [AmpFunc.Iterations]) ) ;
+           AmpResults.Add( format(' No. of iterations = %d ',[AmpFunc.Iterations]) ) ;
 
            AmpFunc.CopyResultsToRichEdit( AmpResults, erAmpResults ) ;
            end ;
