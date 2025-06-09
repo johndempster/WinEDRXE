@@ -96,6 +96,9 @@ unit Rec;
               Fixes failure of writing to file to keep up when sampling slowly.
   15.03.24 ... Form position saved to INI file
   19.03.24 ... Patch clamp control panels load requests now made from timer to ensure seal form is on display BEFORE panel is displayed
+  09.06.25 ... Fixed duration sweeps now possible in Free Run recording mode and each sweep can be saved to a separate data file
+               If no data is open, a data file is now automatically opened when Record is pressed.
+
   ==============================================================================}
 interface
 
@@ -298,6 +301,7 @@ type
     ckStartStimOnRecord: TCheckBox;
     rbContinuousRecording: TRadioButton;
     rbRecordingDuration: TRadioButton;
+    ckNewFilePerSweep: TCheckBox;
     procedure TimerTimer(Sender: TObject);
     procedure bRecordClick(Sender: TObject);
     procedure FormResize(Sender: TObject);
@@ -361,11 +365,13 @@ type
     procedure ckStartStimOnRecordClick(Sender: TObject);
     procedure rbContinuousRecordingClick(Sender: TObject);
     procedure rbRecordingDurationClick(Sender: TObject);
+    procedure ckNewFilePerSweepClick(Sender: TObject);
   private
     { Private declarations }
     NewAmplifierGain : Boolean ;
 
     //FileName : String ;           // Data file in use for recording
+    SweepFileName : string ;
 
     WriteBufs : TWriteBufs ;      // Circular A/D data buffer control record
 
@@ -400,6 +406,8 @@ type
     TLastReadout : Integer ;
     nTicks : Cardinal ;
     ii : Integer ;
+
+
     function CheckNewDataFileNeeded : Boolean ;
     procedure ShowAmplifierGains ;
     procedure StartADC ;
@@ -575,6 +583,7 @@ begin
      // Set continuous recording flags
      rbContinuousRecording.Checked := EDRFile.Settings.ContinuousRecording ;
      rbRecordingDuration.Checked := not EDRFile.Settings.ContinuousRecording ;
+     ckNewFilePerSweep.Checked := EDRFile.Settings.NewFilePerSweep ;
 
      TimerBusy := False ;
 
@@ -1057,6 +1066,8 @@ begin
            (EDRFIle.Cdrfh.NumSamplesInFile >= WriteBufs.NumSamplesInFileRequired) and
            (not EDRFile.Settings.ContinuousRecording) then
            begin
+           // Save file header data to file
+           EDRFile.SaveHeader( EDRFIle.CdrFH ) ;
            { Restart recording if more records to be done }
            Dec(WriteBufs.NumRecordsToAcquire) ;
            if WriteBufs.NumRecordsToAcquire > 0 then bRecord.Click
@@ -2177,11 +2188,17 @@ var
   ch : Integer ;
 begin
 
-     //
+     // Create a new file if none open
+
      if EDRFIle.Cdrfh.FileHandle < 0 then
         begin
-        ShowMessage('RECORD: No data file! Select File/New to create a data file') ;
-        Exit ;
+        EDRFile.CdrFH.FileName := Main.CreateIndexedFileName( EDRFile.Settings.RecentFiles[0] ) ;
+        EDRFile.CdrFH.FileName := ChangeFileExt( EDRFile.CdrFH.FileName, DataFileExtension ) ;
+        if not EDRFile.CreateNewDataFile( EDRFile.CdrFH ) then
+           begin
+           ShowMessage('RECORD: Unable to create data file!') ;
+           Exit ;
+           end;
         end ;
 
      // Open and new data file (with + appended) if channel scaling settings changed
@@ -2206,7 +2223,8 @@ begin
 
      { Update number of recording sweeps to be done }
      // Set no. of records to acquire if this first sweep of ext. triggered sweeps
-     if (WriteBufs.NumRecordsToAcquire = 0) and rbExtTrigger.Checked then begin
+     if (WriteBufs.NumRecordsToAcquire = 0) {and rbExtTrigger.Checked} then
+        begin
         EDRFile.Settings.NumTriggerSweeps := Round(edNumTriggerSweeps.Value) ;
         WriteBufs.NumRecordsToAcquire := EDRFile.Settings.NumTriggerSweeps ;
         end ;
@@ -2218,20 +2236,18 @@ begin
                                                  /EDRFile.Settings.ADCSamplingInterval ) ;
 
      { Sweep count if in Free Run or Ext. Trigger mode }
-     if rbExtTrigger.Checked then begin
+     if not rbContinuousRecording.Checked then
+        begin
         SweepStatus := format( 'Sweep %d/%d : ',
-                                  [EDRFile.Settings.NumTriggerSweeps-WriteBufs.NumRecordsToAcquire+1,
-                                   EDRFile.Settings.NumTriggerSweeps]
-                                    ) ;
+                               [EDRFile.Settings.NumTriggerSweeps-WriteBufs.NumRecordsToAcquire+1,EDRFile.Settings.NumTriggerSweeps]) ;
         end
      else SweepStatus := '' ;
 
      WriteBufs.TAcquired := 0.0 ;
      Main.StatusBar.SimpleText := SweepStatus + RecordingStatus + StimulusStatus ;
 
-     EDRFile.WriteToLogFile( SweepStatus + format(
-                    ' Started at %.4g s',[(EDRFIle.Cdrfh.NumSamplesInFile*EDRFIle.Cdrfh.dt)/
-                                           EDRFIle.Cdrfh.NumChannels])  ) ;
+     EDRFile.WriteToLogFile( SweepStatus + format(' Started at %.4g s',
+                             [(EDRFIle.Cdrfh.NumSamplesInFile*EDRFIle.Cdrfh.dt)/EDRFIle.Cdrfh.NumChannels])  ) ;
 
      FileSeek(EDRFIle.Cdrfh.FileHandle,0,2) ;
 
@@ -2241,7 +2257,8 @@ begin
      EDRFIle.Cdrfh.ADCVoltageRange := Main.SESLabIO.ADCVoltageRange ;
      EDRFIle.Cdrfh.ADCMaxValue := Main.SESLabIO.ADCMaxValue ;
      EDRFIle.Cdrfh.NumChannels := Main.SESLabIO.ADCNumChannels ;
-     for ch := 0 to Main.SESLabIO.ADCNumChannels-1 do begin
+     for ch := 0 to Main.SESLabIO.ADCNumChannels-1 do
+        begin
         EDRFile.Channel[ch].ADCName := Main.SESLabIO.ADCChannelName[ch] ;
         EDRFile.Channel[ch].ADCUnits := Main.SESLabIO.ADCChannelUnits[ch] ;
         EDRFile.Channel[ch].yMin := Main.SESLabIO.ADCChannelYMin[ch] ;
@@ -2261,8 +2278,7 @@ begin
      // Stop A/D recording (to force a re-start)
      RestartADC ;
 
-     RecordingStatus := format( 'Recording: 0/%.1f s (0 Kb) ',
-                                [EDRFile.Settings.RecordDuration]) ;
+     RecordingStatus := format( 'Recording: 0/%.1f s (0 Kb) ',[EDRFile.Settings.RecordDuration]) ;
 
      // Start stimulus if start on record is requested
      if ckStartStimOnRecord.Checked then bStartStimulus.Click ;
@@ -2291,14 +2307,18 @@ begin
      if Abs((EDRFIle.Cdrfh.dt/Main.SESLabIO.ADCSamplingInterval)-1.0) > 1E-4 then NewFileNeeded := True ;
      if EDRFIle.Cdrfh.ADCVoltageRange <> Main.SESLabIO.ADCVoltageRange then NewFileNeeded := True ;
 
-     for ch := 0 to Main.SESLabIO.ADCNumChannels-1 do begin
+     for ch := 0 to Main.SESLabIO.ADCNumChannels-1 do
+         begin
          if EDRFile.Channel[ch].ADCName <> Main.SESLabIO.ADCChannelName[ch] then NewFileNeeded := True ;
          if EDRFile.Channel[ch].ADCUnits <> Main.SESLabIO.ADCChannelUnits[ch] then NewFileNeeded := True ;
          if Abs((EDRFile.Channel[ch].ADCCalibrationFactor/Main.SESLabIO.ADCChannelVoltsPerUnit[ch])-1.0) > 1E-4 then NewFileNeeded := True ;
          if Abs((EDRFile.Channel[ch].ADCAmplifierGain/Main.SESLabIO.ADCChannelGain[ch])-1.0) > 1E-4 then NewFileNeeded := True ;
         end ;
 
-     if NewFileNeeded then begin
+     if (not rbContinuousRecording.Checked) and ckNewFilePerSweep.Checked then NewFileNeeded := True ;
+
+     if NewFileNeeded then
+        begin
         // Extract stem of file name
         Stem := ANSIReplaceText( EDRFIle.Cdrfh.FileName, '.edr', '.' ) ;
         n := Pos( '.', Stem ) ;
@@ -2578,6 +2598,15 @@ begin
      EDRFile.Settings.Fluorescence.InUse := ckFluorescence.Checked ;
      Main.SESLabIO.ADCStop ;
      end;
+
+
+procedure TRecordFrm.ckNewFilePerSweepClick(Sender: TObject);
+// -----------------------------------
+// New File Per Sweep tick box changed
+// -----------------------------------
+begin
+      EDRFile.Settings.NewFilePerSweep := ckNewFilePerSweep.Checked ;
+end;
 
 
 procedure TRecordFrm.scDisplayCursorChange(Sender: TObject);

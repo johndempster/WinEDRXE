@@ -473,6 +473,7 @@ TSettings = record
           NumTriggerSweeps : Integer ;
           NumChannels : Integer ;
           ContinuousRecording: Boolean ;
+          NewFilePerSweep : Boolean ;
           RecordDuration : Single ;
           ADCSamplingInterval : Single ;
           ADCVoltageRangeIndex : Integer ;
@@ -1269,6 +1270,9 @@ begin
      // Continuous Recording flag (overrides Settings.RecordDuration setting)
      Settings.ContinuousRecording := GetKeyValue( Header, 'RECCONT', Settings.ContinuousRecording ) ;
 
+     // Open a new data file for each sweep
+     Settings.NewFilePerSweep := GetKeyValue( Header, 'NEWFILEPERSWEEP', Settings.NewFilePerSweep) ;
+
      { Get default no. channels }
      Settings.NumChannels := GetKeyValue( Header, 'NC', Settings.NumChannels ) ;
      Settings.NumChannels := Max( 1,Settings.NumChannels ) ;
@@ -1511,6 +1515,8 @@ begin
 
      AddKeyValue( Header, 'STARTSTIMREC', Settings.StartStimulusOnRecord ) ;
 
+     AddKeyValue( Header, 'NEWFILEPERSWEEP', Settings.NewFilePerSweep) ;
+
      { Last raw data file used }
      //AddKeyValue( Header, 'FILE', CdrFH.FileName ) ;
      AddKeyValue( Header, '16BIT', Settings.Resolution16Bit ) ;
@@ -1712,6 +1718,8 @@ begin
      AddKeyValue( Header, 'EPCPOOL', Settings.SimEPC.ReleasablePool) ;
      AddKeyValue( Header, 'EPCDEP', Settings.SimEPC.Depression) ;
      AddKeyValue( Header, 'EPCTAUDEP', Settings.SimEPC.TauDepression) ;
+
+
 
      // Save form positions
      for i := 0 to High(FPLeft) do
@@ -1931,6 +1939,7 @@ begin
      Settings.DwellTimes.Threshold := 0.5 ;
 
      Settings.ContinuousRecording := True ;
+     Settings.NewFilePerSweep := False ;
      Settings.NumTriggerSweeps := 1 ;
      Settings.RecordDuration := 10. ;
      Settings.DisplayDuration := 10.0 ;

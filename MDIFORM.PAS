@@ -447,6 +447,9 @@ unit Mdiform;
    V4.1.9 15.05.25 ADCDataFile control: ASCII file import now much faster
                    ASCIIImportFRm & RawImportFrm now displayed at top/left of main form
    V4.2.0 29.05.25 SingChanAnal: NAN and INF fitted parameters now cause GoodFit + False
+   V4.2.1 09.06.25 rec.pas: Fixed duration sweeps now possible in Free Run recording mode and each sweep can be saved to a separate data file
+                   If no data is open, a data file is now automatically opened when Record is pressed.
+
   =======================================================================}
 
 interface
@@ -622,7 +625,7 @@ type
     { Private declarations }
 
     function ImportFromDataFile : Boolean ;
-    function CreateIndexedFileName( FileName : String ) : String ;
+
     procedure AppendEDRFile( FileName : string ) ;
     procedure UpdateRecentFilesList ;
 
@@ -631,6 +634,7 @@ type
     { Public declarations }
     //SetupChanged : Boolean ;
 
+    function CreateIndexedFileName( FileName : String ) : String ;
     procedure SetCopyMenu( EnableCopyData, EnableCopyImage : boolean ) ;
     procedure UpdateWindows ;
     procedure SetMenus ;
@@ -673,7 +677,7 @@ var
    FileName : String ;
 begin
 
-     EDRFile.Version := 'V4.2.0' ;
+     EDRFile.Version := 'V4.2.1' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + EDRFile.Version ;
 
      { Name of last used data file returned in fH.FileName }
