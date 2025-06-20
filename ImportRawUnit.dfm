@@ -3,8 +3,8 @@ object ImportRawFrm: TImportRawFrm
   Left = 633
   Top = 158
   Caption = 'Raw Binary Import'
-  ClientHeight = 301
-  ClientWidth = 465
+  ClientHeight = 300
+  ClientWidth = 550
   Color = clBtnFace
   Font.Charset = ANSI_CHARSET
   Font.Color = clWindowText
@@ -43,13 +43,6 @@ object ImportRawFrm: TImportRawFrm
       Alignment = taRightJustify
       Caption = 'No. of signal channels'
     end
-    object Label2: TLabel
-      Left = 64
-      Top = 64
-      Width = 95
-      Height = 15
-      Caption = 'Read in blocks of'
-    end
     object edNumFileHeaderBytes: TValidatedEdit
       Left = 144
       Top = 16
@@ -81,7 +74,7 @@ object ImportRawFrm: TImportRawFrm
     end
     object GroupBox4: TGroupBox
       Left = 32
-      Top = 176
+      Top = 136
       Width = 185
       Height = 65
       Font.Charset = DEFAULT_CHARSET
@@ -134,7 +127,7 @@ object ImportRawFrm: TImportRawFrm
         ParentFont = False
         TabOrder = 1
         TabStop = True
-        OnClick = rbmsecsClick
+        OnClick = rbSecsClick
       end
       object rbMins: TRadioButton
         Left = 120
@@ -149,7 +142,7 @@ object ImportRawFrm: TImportRawFrm
         Font.Style = [fsBold]
         ParentFont = False
         TabOrder = 2
-        OnClick = rbmsecsClick
+        OnClick = rbMinsClick
       end
       object edScanInterval: TValidatedEdit
         Left = 112
@@ -165,19 +158,6 @@ object ImportRawFrm: TImportRawFrm
         LoLimit = -1.000000015047466E30
         HiLimit = 1.000000015047466E30
       end
-    end
-    object edNumScansPerRecord: TValidatedEdit
-      Left = 168
-      Top = 64
-      Width = 49
-      Height = 23
-      Hint = 'No. of samples / channel / record '
-      ShowHint = True
-      Text = ' 0 '
-      Scale = 1.000000000000000000
-      NumberFormat = '%.0f'
-      LoLimit = -1.000000015047466E29
-      HiLimit = 1.000000015047466E29
     end
   end
   object bOK: TButton
@@ -214,15 +194,15 @@ object ImportRawFrm: TImportRawFrm
   object gpChannels: TGroupBox
     Left = 240
     Top = 7
-    Width = 217
+    Width = 305
     Height = 249
     Caption = ' Channels '
     TabOrder = 3
     object ChannelTable: TStringGrid
       Left = 8
       Top = 16
-      Width = 201
-      Height = 177
+      Width = 289
+      Height = 217
       Hint = 'Input channel scaling factors and calibration units'
       ColCount = 4
       DefaultColWidth = 50
@@ -255,9 +235,9 @@ object ImportRawFrm: TImportRawFrm
   end
   object GroupBox3: TGroupBox
     Left = 64
-    Top = 90
+    Top = 68
     Width = 161
-    Height = 91
+    Height = 69
     Caption = ' Sample Format'
     Font.Charset = ANSI_CHARSET
     Font.Color = clWindowText
@@ -266,19 +246,6 @@ object ImportRawFrm: TImportRawFrm
     Font.Style = []
     ParentFont = False
     TabOrder = 4
-    object lbMaxADCValue: TLabel
-      Left = 24
-      Top = 61
-      Width = 53
-      Height = 14
-      Caption = 'Max. Value'
-      Font.Charset = ANSI_CHARSET
-      Font.Color = clWindowText
-      Font.Height = -11
-      Font.Name = 'Arial'
-      Font.Style = []
-      ParentFont = False
-    end
     object Label1: TLabel
       Left = 16
       Top = 38
@@ -293,7 +260,7 @@ object ImportRawFrm: TImportRawFrm
       ParentFont = False
     end
     object rbFloat: TRadioButton
-      Left = 8
+      Left = 9
       Top = 16
       Width = 49
       Height = 17
@@ -322,22 +289,7 @@ object ImportRawFrm: TImportRawFrm
       Font.Style = [fsBold]
       ParentFont = False
       TabOrder = 1
-      OnClick = rbFloatClick
-    end
-    object edMaxADCValue: TValidatedEdit
-      Left = 88
-      Top = 61
-      Width = 65
-      Height = 20
-      Hint = 'Upper limit of sample values '
-      OnKeyPress = edMaxADCValueKeyPress
-      AutoSize = False
-      Text = ' 1 '
-      Value = 1.000000000000000000
-      Scale = 1.000000000000000000
-      NumberFormat = '%.0f'
-      LoLimit = 1.000000000000000000
-      HiLimit = 1.000000015047466E30
+      OnClick = rbIntegerClick
     end
     object edNumBytesPerSample: TValidatedEdit
       Left = 120

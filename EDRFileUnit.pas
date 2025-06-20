@@ -73,6 +73,7 @@ unit EDRFileUnit;
   14.03.24 ... Form position saved to INI file
   08.05.25 ... Access violation when ADCName and ADCUnits = '' trapped
   15.05.25 ... FileOverWriteCheck() Now uses Main.SaveDialog
+  19.05.25 ... #0 in first letter of ADCName and ADCUnirs now trapped correctly. No longer overwrites units with "Ch.n"
   }
 
 interface
@@ -140,6 +141,7 @@ type
     TSmallIntArray = Array[0..MaxTBuf] of SmallInt ;
     TSingleArray = Array[0..MaxTBuf] of Single ;
     TLongIntArray = Array[0..MaxTBuf] of LongInt ;
+    PLongIntArray = ^TLongIntArray ;
     TBooleanArray = Array[0..MaxTBuf] of Boolean ;
     TSmallIntArrayDyn = Array[0..99999999] of SmallInt ;
     PSmallIntArrayDyn = ^TSmallIntArrayDyn ;
@@ -1142,17 +1144,13 @@ begin
          Channel[ch].ADCUnits := '??' ;
          Channel[ch].ADCUnits := GetKeyValue( Header, format('YU%d',[ch]) , Channel[ch].ADCUnits ) ;
          { Fix to avoid strings with #0 in them }
-         if Length(Channel[ch].ADCUnits) > 0 then
-          if Channel[ch].ADCUnits[1] = #0 then Channel[ch].ADCUnits := '??'
-         else Channel[ch].ADCUnits := '??' ;
+         if Length(Channel[ch].ADCUnits) > 0 then if Channel[ch].ADCUnits[1] = #0 then Channel[ch].ADCUnits := '??' ;
 
          // Channel name
          Channel[ch].ADCName := 'Ch' + IntToStr(ch) ;
          Channel[ch].ADCName := GetKeyValue( Header, format('YN%d',[ch]), Channel[ch].ADCName ) ;
          { Fix to avoid strings with #0 in them }
-         if Length(Channel[ch].ADCName) > 0 then
-          if Channel[ch].ADCName[1] = #0 then Channel[ch].ADCUnits := 'Ch' + IntToStr(ch)
-         else Channel[ch].ADCUnits := 'Ch' + IntToStr(ch) ;
+         if Length(Channel[ch].ADCName) > 0 then if Channel[ch].ADCName[1] = #0 then Channel[ch].ADCUnits := 'Ch' + IntToStr(ch) ;
 
          Channel[ch].ADCCalibrationFactor := GetKeyValue( Header, format('YCF%d',[ch]), Channel[ch].ADCCalibrationFactor) ;
 

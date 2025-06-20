@@ -135,7 +135,8 @@ begin
      ChannelTable.options := [goEditing,goHorzLine,goVertLine] ;
 
      { Add details for new channels to table }
-     for Row := 1 to ChannelTable.RowCount-1 do begin
+     for Row := 1 to ChannelTable.RowCount-1 do
+         begin
          ch := Row-1 ;
          ChannelTable.cells[ChNum,Row] := format('%d',[ch]) ;
          ChannelTable.cells[ChName,Row] := ImportFile.ChannelName[ch] ;
@@ -146,7 +147,8 @@ begin
      AssignFile( F, FileName ) ;
      Reset(F);
      meText.Clear ;
-     While (not EOF(F)) and (meText.Lines.Count < 2000) do begin
+     While (not EOF(F)) and (meText.Lines.Count < 2000) do
+         begin
          Readln(F, s);
          meText.Lines.Add( s ) ;
          end ;
@@ -187,7 +189,8 @@ begin
      else ImportFile.ASCIISeparator := #9 ;
 
      { Add details for new channels to table }
-     for Row := 1 to ChannelTable.RowCount-1 do begin
+     for Row := 1 to ChannelTable.RowCount-1 do
+         begin
          ch := Row-1 ;
          ImportFile.ChannelName[ch] := ChannelTable.cells[ChName,Row] ;
          ImportFile.ChannelUnits[ch] := ChannelTable.cells[ChUnits,Row] ;

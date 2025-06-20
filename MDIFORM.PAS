@@ -1208,7 +1208,8 @@ begin
 
      CloseFormsAndDataFile( AllForms ) ;
 
-     if ImportFromDataFile then begin ;
+     if ImportFromDataFile then
+        begin ;
         { Open new data file }
         EDRFile.LoadDataFiles( EDRFile.CdrFH.FileName ) ;
         // Update list of recently used files
@@ -1965,7 +1966,8 @@ begin
      OpenDialog.FileName := '' ;
 
      OpenDialog.Title := 'Import File ' ;
-     if EDRFile.DataDirectory <> '' then begin
+     if EDRFile.DataDirectory <> '' then
+        begin
         OpenDialog.InitialDir := EDRFile.DataDirectory ;
         SetCurrentDir(EDRFile.DataDirectory) ;
         end ;
@@ -1977,7 +1979,8 @@ begin
      FileName := OpenDialog.FileName ;
 
      { Close existing data file }
-     if EDRFile.CdrFH.FileHandle >= 0 then begin
+     if EDRFile.CdrFH.FileHandle >= 0 then
+        begin
         FileClose( EDRFile.CdrFH.FileHandle ) ;
         EDRFile.CdrFH.FileHandle := -1 ;
         end ;
@@ -1988,36 +1991,51 @@ begin
      if not EDRFile.FileOverwriteCheck( EDRFile.CdrFH.FileName ) then Exit ;
 
      // Report progress
-     Main.StatusBar.SimpleText := format(
-     ' IMPORT: Importing data from %s ',[FileName] ) ;
+     Main.StatusBar.SimpleText := format( ' IMPORT: Importing data from %s ',[FileName] ) ;
 
-     if FileType = ftASC then begin
+     if FileType = ftASC then
+        begin
         // ASCII format data files
         ImportASCIIFrm.ImportFile := ImportFile ;
         ImportASCIIFrm.FileName := FileName ;
         ImportASCIIFrm.Left := Main.Left + 20 ;
         ImportASCIIFrm.Top := Main.Top + 60 ;
-        if ImportASCIIFrm.ShowModal <> mrOK Then Exit ;
         if not Main.ImportFile.OpenDataFile( FileName, FileType ) then Exit ;
+        if ImportASCIIFrm.ShowModal <> mrOK Then Exit ;
+//        if not Main.ImportFile.OpenDataFile( FileName, FileType ) then Exit ;
         end
-     else if FileType = ftRaw then begin
+     else if FileType = ftRaw then
+        begin
         // Raw binary data files
-        // Set form position
-//        EDRFile.SetFormPosition( ImportRawFrm, Main.Left + 20,Main.Top + 60, ImportRawFrm.Width, ImportRawFrm.Height ) ;
         ImportRawFrm.Left := Main.Left + 20 ;
         ImportRawFrm.Top := Main.Top + 60 ;
         ImportRawFrm.ImportFile := ImportFile ;
+        ImportRawFrm.FileName := FileName ;
         if ImportRawFrm.ShowModal <> mrOK Then Exit ;
         if not Main.ImportFile.OpenDataFile( FileName, FileType ) then Exit ;
         end
-     else  if FileType = ftHEK then begin
+     else  if FileType = ftHEK then
+        begin
         if not Main.ImportFile.OpenDataFile( FileName, FileType ) then Exit ;
         end
-     else begin
+     else
+        begin
         // All other data files
         FileType := ImportFile.FindFileType( FileName ) ;
-        if not Main.ImportFile.OpenDataFile( FileName, FileType ) then Exit ;
+        if not Main.ImportFile.OpenDataFile( FileName, FileType ) then
+           begin
+           ShowMessage('Unable to open: ' + FileName ) ;
+           Exit ;
+           end;
         end ;
+
+     // Exit if file type unknown
+     if FileType = ftUnknown then
+        begin
+        Main.ImportFile.CloseDataFile ;
+        ShowMessage('Import failed: ' + FileName + ' data format is not of the requested type!');
+        Exit ;
+        end;
 
      { Create EDR data file to hold import}
      if not EDRFile.CreateNewDataFile( EDRFile.CdrFH ) then Exit ;
@@ -2025,7 +2043,8 @@ begin
      EDRFile.CdrFH.NumChannels := Main.ImportFile.NumChannelsPerScan ;
 
      // Reset display magnification
-     for ch := 0 to EDRChannelLimit do begin
+     for ch := 0 to EDRChannelLimit do
+         begin
          EDRFile.Channel[ch].ADCMaxValue := Main.ImportFile.MaxADCValue ;
          EDRFile.Channel[ch].yMin := -EDRFile.Channel[ch].ADCMaxValue -1 ;
          EDRFile.Channel[ch].yMax := EDRFile.Channel[ch].ADCMaxValue ;
@@ -2038,7 +2057,8 @@ begin
 
      { Copy records }
      NumScansTotal := 0 ;
-     for iRec := 1 to Main.ImportFile.NumRecords do begin
+     for iRec := 1 to Main.ImportFile.NumRecords do
+         begin
 
          Main.ImportFile.RecordNum := iRec ;
          EDRFile.CdrFH.ADCVoltageRange := Main.ImportFile.ChannelADCVoltageRange[0] ;
