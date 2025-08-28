@@ -74,6 +74,7 @@ unit EDRFileUnit;
   08.05.25 ... Access violation when ADCName and ADCUnits = '' trapped
   15.05.25 ... FileOverWriteCheck() Now uses Main.SaveDialog
   19.05.25 ... #0 in first letter of ADCName and ADCUnirs now trapped correctly. No longer overwrites units with "Ch.n"
+  25.08.25 ... Settings.LowPassFIlterActive, Settings.LowPassFIlterCoeff added to INI file
   }
 
 interface
@@ -536,7 +537,8 @@ TSettings = record
           PageViewLineDuration : Single ;
           NewCalculation : Boolean ;
           SimEPC : TSimEPCSettings ;
-
+          LowPassFIlterActive : Boolean ;
+          LowPassFilterCoeff : Single ;
 
           end ;
 
@@ -714,11 +716,6 @@ TMarkerShape = ( SquareMarker, CircleMarker ) ;
 
     procedure AddKeyValue( List : TStringList ;  // List for Key=Value pairs
                            Keyword : string ;    // Key
-                           Value : NativeInt        // Value
-                           ) ; Overload ;
-
-    procedure AddKeyValue( List : TStringList ;  // List for Key=Value pairs
-                           Keyword : string ;    // Key
                            Value : String        // Value
                            ) ; Overload ;
 
@@ -737,11 +734,6 @@ TMarkerShape = ( SquareMarker, CircleMarker ) ;
                          KeyWord : string ;   // Key
                          Value : Integer       // Value
                          ) : Integer ; Overload ;        // Return value
-
-   function GetKeyValue( List : TStringList ;  // List for Key=Value pairs
-                         KeyWord : string ;   // Key
-                         Value : NativeInt       // Value
-                         ) : NativeInt ; Overload ;        // Return value
 
    function GetKeyValue( List : TStringList ;  // List for Key=Value pairs
                          KeyWord : string ;   // Key
@@ -1480,6 +1472,10 @@ begin
      Settings.SimEPC.Depression := GetKeyValue( Header, 'EPCDEP', Settings.SimEPC.Depression) ;
      Settings.SimEPC.TauDepression := GetKeyValue( Header, 'EPCTAUDEP', Settings.SimEPC.TauDepression) ;
 
+
+     Settings.LowPassFIlterActive := GetKeyValue( Header, 'LPFILTERACTIVE', Settings.LowPassFIlterActive) ;
+     Settings.LowPassFIlterCoeff := GetKeyValue( Header, 'LPFILTERCOEFF', Settings.LowPassFIlterCoeff) ;
+
      // Load last used form positions
      for i := 0 to High(FPLeft) do
          begin
@@ -1717,7 +1713,8 @@ begin
      AddKeyValue( Header, 'EPCDEP', Settings.SimEPC.Depression) ;
      AddKeyValue( Header, 'EPCTAUDEP', Settings.SimEPC.TauDepression) ;
 
-
+     AddKeyValue( Header, 'LPFILTERACTIVE', Settings.LowPassFIlterActive) ;
+     AddKeyValue( Header, 'LPFILTERCOEFF', Settings.LowPassFIlterCoeff) ;
 
      // Save form positions
      for i := 0 to High(FPLeft) do
@@ -2131,6 +2128,10 @@ begin
     Settings.SimEPC.Depression := 0.0 ;
     Settings.SimEPC.TauDepression := 1.0  ;
 
+    // Display low pass filter
+    Settings.LowPassFilterCoeff := 0.5 ;
+    Settings.LowPassFilterActive := False ;
+
     Cm := 0.0 ;
     Gm := 0.0 ;
     Ga := 0.0 ;
@@ -2465,34 +2466,6 @@ end;
 
 function TEDRFile.GetKeyValue( List : TStringList ;  // List for Key=Value pairs
                                KeyWord : string ;   // Key
-                               Value : NativeInt       // Value
-                               ) : NativeInt ;        // Return value
-// ------------------------------
-// Get Key=Integer Value from List
-// ------------------------------
-var
-    istart,idx : Integer ;
-    s : string ;
-begin
-     // Remove any '=' in keyword
-     Keyword := ReplaceText( Keyword, '=', '' ) ;
-
-     idx := List.IndexOfName( Keyword ) ;
-     if idx >= 0 then
-        begin
-        s := List[idx] ;
-        // Find key=value separator and remove key
-        istart := Pos( '=', s ) ;
-        if istart > 0 then Delete( s, 1, istart ) ;
-        Result := STrToInt( s ) ;
-        end
-     else Result := Value ;
-
-end;
-
-
-function TEDRFile.GetKeyValue( List : TStringList ;  // List for Key=Value pairs
-                               KeyWord : string ;   // Key
                                Value : string       // Value
                                ) : string ;        // Return value
 // ------------------------------
@@ -2576,21 +2549,6 @@ begin
      Keyword := ReplaceText( Keyword, '=', '' ) ;
 
      List.Add( Keyword + format('=%d',[Value]) ) ;
-end;
-
-procedure TEDRFile.AddKeyValue( List : TStringList ;  // List for Key=Value pairs
-                                KeyWord : string ;    // Key
-                                Value : NativeInt        // Value
-                                 ) ;
-// ---------------------
-// Add Key=NativeInt Value to List
-// ---------------------
-begin
-
-     // Remove any '=' characters in keyword
-     Keyword := ReplaceText( Keyword, '=', '' ) ;
-
-     List.Add( Keyword + format('=%d',[Value] )) ;
 end;
 
 

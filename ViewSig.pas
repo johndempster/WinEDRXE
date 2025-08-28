@@ -26,6 +26,7 @@ unit ViewSig;
   14.03.24 ... Form position saved to INI file
 / 21.03.24 ... Key presses for controlling display cursor positions now sourced from edDisplayKeySource
               rather than form key preview
+  26.08.25 ... Display recursive low pass filter feature added
   ========================================================}
 
 interface
@@ -72,6 +73,10 @@ type
     bCalcAverage: TButton;
     ckFixedZeroLevels: TCheckBox;
     edDisplayKeyPressSource: TEdit;
+    gpLPFilter: TGroupBox;
+    ckLowPassFilterActive: TCheckBox;
+    edLowPassFilterFrequency: TValidatedEdit;
+    lbCutOffFrequency: TLabel;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormResize(Sender: TObject);
@@ -101,6 +106,8 @@ type
     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
     procedure edDisplayKeyPressSourceKeyDown(Sender: TObject; var Key: Word;
       Shift: TShiftState);
+    procedure ckLowPassFilterActiveClick(Sender: TObject);
+    procedure edLowPassFilterFrequencyKeyPress(Sender: TObject; var Key: Char);
 
   private
     { Private declarations }
@@ -165,6 +172,11 @@ begin
      edTDisplay.Value := EDRFile.Settings.DisplayDuration ;
      edTDisplay.Scale := EDRFile.Settings.TSCale ;
      edTDisplay.Units := EDRFile.Settings.TUnits ;
+
+     edLowPassFilterFrequency.Value := scDisplay.LowPassFilterCutOffFrequency(EDRFile.Settings.LowPassFilterCoeff) ;
+     ckLowPassFilterActive.Checked := EDRFile.Settings.LowPassFilterActive ;
+     scDisplay.LowPassFilterOn := ckLowPassFilterActive.Checked ;
+     scDisplay.LowPassFilterCoeff :=  EDRFile.Settings.LowPassFilterCoeff ;
 
      ckFixedZeroLevels.Checked := EDRFile.Settings.FixedZeroLevels ;
 
@@ -241,6 +253,20 @@ procedure TViewSigFrm.edIdentKeyPress(Sender: TObject; var Key: Char);
 begin
      if key = #13 then EDRFile.WriteToLogFile( edIdent.text ) ;
      end;
+
+
+procedure TViewSigFrm.edLowPassFilterFrequencyKeyPress(Sender: TObject;
+  var Key: Char);
+// ------------------------------------------------
+// Change display low-pass filter cut-off frequency
+// ------------------------------------------------
+begin
+     if Key = #13 then
+        begin
+        EDRFile.Settings.LowPassFilterCoeff := scDisplay.LowPassFilterSmoothingFactor(edLowPassFilterFrequency.Value) ;
+        scDisplay.LowPassFilterCoeff :=  EDRFile.Settings.LowPassFilterCoeff ;
+        end;
+end;
 
 
 procedure TViewSigFrm.PrintDisplay ;
@@ -881,5 +907,18 @@ procedure TViewSigFrm.ckFixedZeroLevelsClick(Sender: TObject);
 begin
      EDRFile.Settings.FixedZeroLevels := ckFixedZeroLevels.Checked ;
      end;
+
+procedure TViewSigFrm.ckLowPassFilterActiveClick(Sender: TObject);
+// -----------------------------------
+// Turn display low-pass filter on/off
+// -----------------------------------
+begin
+     EDRFile.Settings.LowPassFilterCoeff := scDisplay.LowPassFilterSmoothingFactor(edLowPassFilterFrequency.Value) ;
+     scDisplay.LowPassFilterCoeff :=  EDRFile.Settings.LowPassFilterCoeff ;
+     EDRFile.Settings.LowPassFilterActive := ckLowPassFilterActive.Checked ;
+     scDisplay.LowPassFilterOn := ckLowPassFilterActive.Checked ;
+
+
+end;
 
 end.

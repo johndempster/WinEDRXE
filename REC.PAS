@@ -98,7 +98,7 @@ unit Rec;
   19.03.24 ... Patch clamp control panels load requests now made from timer to ensure seal form is on display BEFORE panel is displayed
   09.06.25 ... Fixed duration sweeps now possible in Free Run recording mode and each sweep can be saved to a separate data file
                If no data is open, a data file is now automatically opened when Record is pressed.
-
+  26.08.25 ... Display recursive low pass filter feature added
   ==============================================================================}
 interface
 
@@ -302,6 +302,10 @@ type
     rbContinuousRecording: TRadioButton;
     rbRecordingDuration: TRadioButton;
     ckNewFilePerSweep: TCheckBox;
+    FilterTab: TTabSheet;
+    edLowPassFilterFrequency: TValidatedEdit;
+    lbCutOffFrequency: TLabel;
+    ckLowPassFilterActive: TCheckBox;
     procedure TimerTimer(Sender: TObject);
     procedure bRecordClick(Sender: TObject);
     procedure FormResize(Sender: TObject);
@@ -366,6 +370,8 @@ type
     procedure rbContinuousRecordingClick(Sender: TObject);
     procedure rbRecordingDurationClick(Sender: TObject);
     procedure ckNewFilePerSweepClick(Sender: TObject);
+    procedure edLowPassFilterFrequencyKeyPress(Sender: TObject; var Key: Char);
+    procedure ckLowPassFilterActiveClick(Sender: TObject);
   private
     { Private declarations }
     NewAmplifierGain : Boolean ;
@@ -686,16 +692,19 @@ begin
 
      scDisplay.NumPoints := 0 ;
      scDisplay.NumChannels := EDRFile.Settings.NumChannels ;
+     scDisplay.TScale := Main.SESLabIO.ADCSamplingInterval*EDRFile.Settings.TScale ;
 
      { Create a set of zero level cursors }
      scDisplay.ClearHorizontalCursors ;
-     for ch := 0 to EDRFile.Settings.NumChannels-1 do begin
+     for ch := 0 to EDRFile.Settings.NumChannels-1 do
+        begin
         Cursors.Base[ch] := scDisplay.AddHorizontalCursor( ch, clGray, True,'z' ) ;
         scDisplay.HorizontalCursors[ch] := Main.SESLabIO.ADCChannelZero[ch] ;
         end ;
 
      { Set channel information }
-     for ch := 0 to EDRFile.Settings.NumChannels-1 do begin
+     for ch := 0 to EDRFile.Settings.NumChannels-1 do
+        begin
         scDisplay.ChanOffsets[ch] := Main.SESLabIO.ADCChannelOffset[ch] ;
         scDisplay.ChanUnits[ch] := Main.SESLabIO.ADCChannelUnits[ch] ;
         scDisplay.ChanName[ch] := Main.SESLabIO.ADCChannelName[ch] ;
@@ -733,6 +742,12 @@ begin
 
      // Number of chart markers still available
      edNumMarkers.text := format('%d',[MaxMarkers-EDRFile.MarkerList.Count]);
+
+     // Display low pass filter settings (note does not affect stored data)
+     edLowPassFilterFrequency.Value := scDisplay.LowPassFilterCutOffFrequency(EDRFile.Settings.LowPassFilterCoeff) ;
+     ckLowPassFilterActive.Checked := EDRFile.Settings.LowPassFilterActive ;
+     scDisplay.LowPassFilterOn := ckLowPassFilterActive.Checked ;
+     scDisplay.LowPassFilterCoeff :=  EDRFile.Settings.LowPassFilterCoeff ;
 
      end ;
 
@@ -1158,7 +1173,8 @@ begin
 
        OldDisplayBufSize := DisplayBufSize ;
        DisplayBufSize := scDisplay.MaxPoints*scDisplay.NumChannels*2 ;
-       if (DisplayBuf = Nil) or (DisplayBufSize <> OldDisplayBufSize) then begin
+       if (DisplayBuf = Nil) or (DisplayBufSize <> OldDisplayBufSize) then
+          begin
           if DisplayBuf <> Nil then FreeMem(DisplayBuf) ;
           DisplayBuf := GetMemory( DisplayBufSize ) ;
           end;
@@ -1181,15 +1197,19 @@ begin
                                                     else Done := False ;
      NewPoints := scDisplay.NumPoints ;
      LastDisplayedScan := 0 ;
-     While not Done do begin
+     While not Done do
+        begin
         // Increment pointer to next available scan
+
         j := NewPoints*scDisplay.NumChannels ;
         LastDisplayedScan := WriteBufs.OldestScan ;
-        for i := 0 to scDisplay.NumChannels-1 do begin
+        for i := 0 to scDisplay.NumChannels-1 do
+            begin
             DisplayBuf^[j] := ADC^[WriteBufs.OldestScan] ;
             Inc(j) ;
             Inc(WriteBufs.OldestScan) ;
             end;
+        if j = 0 then outputdebugstring(pchar('j=0'));
         Inc(NewPoints) ;
         if WriteBufs.OldestScan >= WriteBufs.NumSamples then
            WriteBufs.OldestScan := WriteBufs.OldestScan - WriteBufs.NumSamples ;
@@ -2483,6 +2503,21 @@ begin
      end;
 
 
+procedure TRecordFrm.edLowPassFilterFrequencyKeyPress(Sender: TObject;
+  var Key: Char);
+// ------------------------------------------------
+// Change display low-pass filter cut-off frequency
+// ------------------------------------------------
+begin
+     if Key = #13 then
+        begin
+        EDRFile.Settings.LowPassFilterCoeff := scDisplay.LowPassFilterSmoothingFactor(edLowPassFilterFrequency.Value) ;
+        scDisplay.LowPassFilterCoeff :=  EDRFile.Settings.LowPassFilterCoeff ;
+        outputdebugstring(pchar(format('%.4g',[EDRFile.Settings.LowPassFilterCoeff])));
+        end;
+end;
+
+
 procedure TRecordFrm.FormActivate(Sender: TObject);
 { --------------------------------------------
   Activities required when form becomes active
@@ -2598,6 +2633,18 @@ begin
      EDRFile.Settings.Fluorescence.InUse := ckFluorescence.Checked ;
      Main.SESLabIO.ADCStop ;
      end;
+
+
+procedure TRecordFrm.ckLowPassFilterActiveClick(Sender: TObject);
+// -----------------------------------
+// Turn display low-pass filter on/off
+// -----------------------------------
+begin
+     EDRFile.Settings.LowPassFilterCoeff := scDisplay.LowPassFilterSmoothingFactor(edLowPassFilterFrequency.Value) ;
+     EDRFile.Settings.LowPassFilterActive := ckLowPassFilterActive.Checked ;
+     scDisplay.LowPassFilterOn := ckLowPassFilterActive.Checked ;
+     scDisplay.LowPassFilterCoeff :=  EDRFile.Settings.LowPassFilterCoeff ;
+end;
 
 
 procedure TRecordFrm.ckNewFilePerSweepClick(Sender: TObject);

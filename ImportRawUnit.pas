@@ -4,6 +4,7 @@ unit ImportRawUnit;
 // ---------------------------------------
 // 19.03.04 Updated to support WinWCP
 // 14.03.24 ... Form position saved to INI file
+// 20.06.24 ... Extensively revised. Supports 2/4 byte integer, single precision float
 
 interface
 
@@ -100,15 +101,18 @@ begin
     edNumChannelsPerScan.Value := ImportFile.NumChannelsPerScan ;
     edNumBytesPerSample.Value := ImportFile.NumBytesPerSample ;
 
-    if rbsecs.Checked then begin
+    if rbsecs.Checked then
+       begin
        edScanInterval.Scale := 1.0 ;
        edScanInterval.Units := 's' ;
        end
-    else if rbmsecs.Checked then begin
+    else if rbmsecs.Checked then
+       begin
        edScanInterval.Scale := 1000.0 ;
        edScanInterval.Units := 'ms' ;
        end
-    else begin
+    else
+       begin
        edScanInterval.Scale := 1.0/60.0 ;
        edScanInterval.Units := 'min' ;
        end ;

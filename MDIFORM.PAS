@@ -449,6 +449,8 @@ unit Mdiform;
    V4.2.0 29.05.25 SingChanAnal: NAN and INF fitted parameters now cause GoodFit + False
    V4.2.1 09.06.25 rec.pas: Fixed duration sweeps now possible in Free Run recording mode and each sweep can be saved to a separate data file
                    If no data is open, a data file is now automatically opened when Record is pressed.
+   V4.2.2 20.06.24 ImportRawUnit.pas Extensively revised. Supports 2/4 byte integer, single precision float
+   V4.2.3 28.08.25 Export to European Data Format (EDF) files added. Low-pass display only filter added
 
   =======================================================================}
 
@@ -677,20 +679,8 @@ var
    FileName : String ;
 begin
 
-     EDRFile.Version := 'V4.2.1' ;
+     EDRFile.Version := 'V4.2.3' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + EDRFile.Version ;
-
-     { Name of last used data file returned in fH.FileName }
-
-     // Initialise laboratory interface hardware
-//     SESLabIO.OpenLabInterface( Settings.LaboratoryInterface,
-//                                Settings.DeviceNumber,
-//                                Settings.ADCInputMode ) ;
-
-     // Set A/D input mode
-//     SESLabIO.ADCInputMode := Settings.ADCInputMode ;
-
-//     SESLabIO.ADCVoltageRange := CDRFH.ADCVoltageRange ;
 
      WindowMenu := Windows ;
 
@@ -1911,7 +1901,7 @@ Type
               FType : TADCDataFileType ;
               end ;
 var
-   Filters : Array[1..17] of TFilter ;
+   Filters : Array[1..18] of TFilter ;
    FileName : String ;
    FileType : TADCDataFileType ;
    i : Integer ;
@@ -1955,8 +1945,10 @@ begin
      Filters[15].FType := ftRaw ;
      Filters[16].Ext := 'HEKA Pulse (*.asc)|*.asc|' ;
      Filters[16].FType := ftHEK ;
-     Filters[17].Ext := 'All Files (*.*)|*.*|' ;
-     Filters[17].FType := ftUnknown ;
+     Filters[17].Ext := 'European Data Format (*.EDF)|*.EDF|' ;
+     Filters[17].FType := ftEDF ;
+     Filters[18].Ext := 'All Files (*.*)|*.*|' ;
+     Filters[18].FType := ftUnknown ;
 
      OpenDialog.Filter := '' ;
      for i := 1 to High(Filters) do
@@ -2016,6 +2008,7 @@ begin
         end
      else  if FileType = ftHEK then
         begin
+        // Heka data files
         if not Main.ImportFile.OpenDataFile( FileName, FileType ) then Exit ;
         end
      else
@@ -2093,12 +2086,12 @@ begin
          NumScansTotal := NumScansTotal + NumRead ;
 
          // Report progress
-         Main.StatusBar.SimpleText := format(
-         ' IMPORT: Importing %d/%d (%d channel) scans from record %d/%d from %s ',
-         [NumRead,
-          Main.ImportFile.NumScansPerRecord,
-          Main.ImportFile.NumChannelsPerScan,
-          iRec,Main.ImportFile.NumRecords,FileName]) ;
+         if (iRec mod 10) = 0 then
+            begin
+            Main.StatusBar.SimpleText := format(
+            ' IMPORT: Importing %d/%d (%d channel) scans from record %d/%d from %s ',
+           [NumRead,Main.ImportFile.NumScansPerRecord,Main.ImportFile.NumChannelsPerScan,iRec,Main.ImportFile.NumRecords,FileName]) ;
+            end;
 
          end ;
 

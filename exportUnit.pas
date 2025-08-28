@@ -34,6 +34,7 @@ unit exportUnit;
   01.08.24 ... Igor Export: Unable to create file error fixed
                CreateExportFileName now returns StartAt & EndAt
   07.04.25 ... User set zero levels no longer subtracted from data (except fotr ASCII text file exports)
+  22.08.25 ... European Data File export added. Channel names added to export file name when selected channels exported
   }
 interface
 
@@ -223,6 +224,9 @@ begin
      cbExportFormat.Items.AddObject('Matlab MAT',TObject(ftMAT)) ;
      ExportExtension[cbExportFormat.Items.Count-1] := '.mat' ;
 
+     cbExportFormat.Items.AddObject('European Data Format',TObject(ftEDF)) ;
+     ExportExtension[cbExportFormat.Items.Count-1] := '.edf' ;
+
      cbExportFormat.ItemIndex := 0 ;
 
      { Update O/P file name channel selection options }
@@ -238,6 +242,7 @@ begin
 
      end;
 
+
 procedure TExportFrm.SetChannel(
           CheckBox : TCheckBox ;
           ch : Integer
@@ -246,7 +251,8 @@ procedure TExportFrm.SetChannel(
 // Set channel selection state
 // ---------------------------
 begin
-     if ch < EDRFIle.Cdrfh.NumChannels then begin
+     if ch < EDRFIle.Cdrfh.NumChannels then
+        begin
         CheckBox.Visible := True ;
         CheckBox.Checked := EDRFIle.Channel[ch].InUse ;
         CheckBox.Caption := EDRFIle.Channel[ch].ADCName ;
@@ -264,7 +270,7 @@ procedure TExportFrm.ExportToFile(
 const
    NumScansPerBuf = 512 ;
 var
-   StartAt,EndAt,ch,i,j : Integer ;
+   StartAt,EndAt,ch,i,j,iCount : Integer ;
    InBuf : Array[0..NumScansPerBuf*(EDRChannelLimit+1)-1] of SmallInt ;
    OutBuf : Array[0..NumScansPerBuf*(EDRChannelLimit+1)-1] of SmallInt ;
    InScan : Integer ;
@@ -281,16 +287,13 @@ begin
      ExportFileName := CreateExportFileName(FileName,StartAt,EndAt) ;
 
      // If destination file already exists, allow user to abort
-     if FileExists( ExportFileName ) then begin
-        if MessageDlg( ExportFileName + ' exists! Overwrite?!',
-           mtConfirmation, [mbYes, mbNo], 0) <> mrYes then Exit ;
-         end ;
+     if FileExists( ExportFileName ) then
+        begin
+        if MessageDlg( ExportFileName + ' exists! Overwrite?!', mtConfirmation, [mbYes, mbNo], 0) <> mrYes then Exit ;
+        end ;
 
      // Export file type
      ExportType := TADCDataFileType(cbExportFormat.Items.objects[cbExportFormat.ItemIndex]);
-
-     // Create empty export data file
-     ExportFile.CreateDataFile( ExportFileName, ExportType ) ;
 
      // Set file parameters
      ExportFile.NumChannelsPerScan := EDRFIle.Cdrfh.NumChannels ;
@@ -301,9 +304,12 @@ begin
      ExportFile.IdentLine := EDRFIle.Cdrfh.IdentLine ;
      ExportFile.RecordNum := 1 ;
      ExportFile.ABFAcquisitionMode := ftGapFree ;
+     ExportFile.CreationTime := EDRFile.CDRFH.CreationTime ;
+     ExportFile.IdentLine := EDRFile.CDRFH.IdentLine ;
 
      chOut := 0 ;
-     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do if UseChannel(ch)then begin
+     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do if UseChannel(ch)then
+         begin
          ExportFile.ChannelOffset[chOut] := chOut ;
          ExportFile.ChannelADCVoltageRange[chOut] := EDRFIle.Cdrfh.ADCVoltageRange ;
          ExportFile.ChannelName[chOut] := EDRFile.Channel[ch].ADCName ;
@@ -315,11 +321,17 @@ begin
          end ;
      ExportFile.NumChannelsPerScan := chOut ;
 
+     // Create empty export data file
+     // (Note. Do this after setting up channels and other file data)
+
+     ExportFile.CreateDataFile( ExportFileName, ExportType ) ;
+
      { Copy records }
      InScan := StartAt ;
      NumScansToCopy := EndAt - StartAt + 1 ;
      OutScan := 0 ;
      Done := False ;
+     iCount := 0 ;
      While not Done do
          begin
 
@@ -347,9 +359,9 @@ begin
          OutScan := OutScan + NumScansRead ;
 
          // Report progress
-         Main.StatusBar.SimpleText := format(
-         ' EXPORT: Exporting time points %d/%d to %s ',
-         [InScan,EndAt,ExportFileName]) ;
+         if (iCount mod 100) = 0 then
+            Main.StatusBar.SimpleText := format(' EXPORT: Exporting time points %d/%d to %s ',[InScan,EndAt,ExportFileName]) ;
+         Inc(iCount) ;
 
          InScan := InScan + NumScansRead ;
          NumScansToCopy := NumScansToCopy - NumScansRead ;
@@ -612,6 +624,7 @@ function TExportFrm.CreateExportFileName(
 var
     ch : Integer ;
     s : string ;
+    AllChannelsInUse : Boolean ;
 begin
 
      if rbAllRecords.Checked then
@@ -632,14 +645,20 @@ begin
      // Add record range
      FileName := ANSIReplaceText( FileName,'.tmp',format( '.%.6g-%.6gs.tmp',[StartAt*EDRFIle.Cdrfh.dt,EndAt*EDRFIle.Cdrfh.dt]) ) ;
 
-     // Add channels for ASCII text export
-     if TADCDataFileType(cbExportFormat.Items.objects[cbExportFormat.ItemIndex])=ftASC then
-        begin
-        s := '[' ;
-        for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do if UseChannel(ch) then
+     // Add channel names if only selected channels exported
+     AllChannelsInUse := True ;
+     s := '[' ;
+     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do
+         begin
+         if UseChannel(ch) then
             begin
             s := s + EDRFile.Channel[ch].ADCName + ',' ;
-            end;
+            end
+         else AllChannelsInUse := False ;
+         end;
+
+     if not AllChannelsInUse then
+        begin
         s := LeftStr(s,Length(s)-1)+'].tmp' ;
         FileName := ANSIReplaceText( FileName,'.tmp',s);
         end;
