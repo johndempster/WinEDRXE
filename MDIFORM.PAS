@@ -451,6 +451,7 @@ unit Mdiform;
                    If no data is open, a data file is now automatically opened when Record is pressed.
    V4.2.2 20.06.24 ImportRawUnit.pas Extensively revised. Supports 2/4 byte integer, single precision float
    V4.2.3 28.08.25 Export to European Data Format (EDF) files added. Low-pass display only filter added
+   V4.2.4 12.09.25 High-pass display only filter added
 
   =======================================================================}
 
@@ -679,7 +680,7 @@ var
    FileName : String ;
 begin
 
-     EDRFile.Version := 'V4.2.3' ;
+     EDRFile.Version := 'V4.2.4' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + EDRFile.Version ;
 
      WindowMenu := Windows ;

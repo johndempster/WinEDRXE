@@ -27,6 +27,8 @@ unit ViewSig;
 / 21.03.24 ... Key presses for controlling display cursor positions now sourced from edDisplayKeySource
               rather than form key preview
   26.08.25 ... Display recursive low pass filter feature added
+  05.09.25 ... Max. displayed samples now limited to <= 400000000 to avoid GetMemory() failure to allocate display buffer 05.09.25
+  12.09.25 ... Display recursive high pass filter feature added
   ========================================================}
 
 interface
@@ -73,10 +75,11 @@ type
     bCalcAverage: TButton;
     ckFixedZeroLevels: TCheckBox;
     edDisplayKeyPressSource: TEdit;
-    gpLPFilter: TGroupBox;
-    ckLowPassFilterActive: TCheckBox;
+    gpDisplayFilters: TGroupBox;
     edLowPassFilterFrequency: TValidatedEdit;
-    lbCutOffFrequency: TLabel;
+    ckLowPassFilterActive: TCheckBox;
+    edHighPassFilterFrequency: TValidatedEdit;
+    ckHighPassFilterActive: TCheckBox;
     procedure FormShow(Sender: TObject);
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure FormResize(Sender: TObject);
@@ -108,6 +111,8 @@ type
       Shift: TShiftState);
     procedure ckLowPassFilterActiveClick(Sender: TObject);
     procedure edLowPassFilterFrequencyKeyPress(Sender: TObject; var Key: Char);
+    procedure ckHighPassFilterActiveClick(Sender: TObject);
+    procedure edHighPassFilterFrequencyKeyPress(Sender: TObject; var Key: Char);
 
   private
     { Private declarations }
@@ -173,10 +178,18 @@ begin
      edTDisplay.Scale := EDRFile.Settings.TSCale ;
      edTDisplay.Units := EDRFile.Settings.TUnits ;
 
+//   Set low and high pass display-only filter controls
+
      edLowPassFilterFrequency.Value := scDisplay.LowPassFilterCutOffFrequency(EDRFile.Settings.LowPassFilterCoeff) ;
      ckLowPassFilterActive.Checked := EDRFile.Settings.LowPassFilterActive ;
      scDisplay.LowPassFilterOn := ckLowPassFilterActive.Checked ;
      scDisplay.LowPassFilterCoeff :=  EDRFile.Settings.LowPassFilterCoeff ;
+
+     edHighPassFilterFrequency.Value := scDisplay.HighPassFilterCutOffFrequency(EDRFile.Settings.HighPassFilterCoeff) ;
+     ckHighPassFilterActive.Checked := EDRFile.Settings.HighPassFilterActive ;
+     scDisplay.HighPassFilterOn := ckHighPassFilterActive.Checked ;
+     scDisplay.HighPassFilterCoeff :=  EDRFile.Settings.HighPassFilterCoeff ;
+
 
      ckFixedZeroLevels.Checked := EDRFile.Settings.FixedZeroLevels ;
 
@@ -229,9 +242,10 @@ begin
      // Set size and location of display readout cursor
      TDisplayPanel.Top := ClientHeight - TDisplayPanel.Height - 5 ;
      sbDisplayPanel.Top := TDisplayPanel.Top ;
+
      scDisplay.Width := Max( ClientWidth - scDisplay.Left - 5, 2) ;
-     TDisplayPanel.Left := scDisplay.Left + scDisplay.Width
-                           - TDisplayPanel.Width ;
+
+     TDisplayPanel.Left := scDisplay.Left + scDisplay.Width - TDisplayPanel.Width ;
      sbDisplayPanel.Width := Max(TDisplayPanel.Left - sbDisplayPanel.Left - 2,2) ;
      sbStartTime.Width := sbDisplayPanel.ClientWidth - sbStartTime.Left - 1 ;
 
@@ -239,9 +253,8 @@ begin
      scDisplay.Height := Max( sbDisplayPanel.Top - scDisplay.Top, 2 ) ;
 
      { Set width of identification text box }
-     edIdent.Width := scDisplay.Left
-                    + scDisplay.Width
-                    - edIdent.Left ;
+     edIdent.Width := scDisplay.Left + scDisplay.Width - edIdent.Left ;
+     gpDisplayFilters.Width := scDisplay.Width ;
 
      end;
 
@@ -353,7 +366,8 @@ begin
      scdisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
 
      scdisplay.NumChannels := EDRFIle.Cdrfh.NumChannels ;
-     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do begin
+     for ch := 0 to EDRFIle.Cdrfh.NumChannels-1 do
+        begin
         scdisplay.yMin[ch] := EDRFile.Channel[ch].yMin ;
         scdisplay.yMax[ch] := EDRFile.Channel[ch].yMax ;
         scdisplay.ChanName[ch] := EDRFile.Channel[ch].ADCName ;
@@ -456,6 +470,20 @@ begin
 
 end;
 
+procedure TViewSigFrm.edHighPassFilterFrequencyKeyPress(Sender: TObject;
+  var Key: Char);
+// ------------------------------------------------
+// Change display high-pass filter cut-off frequency
+// ------------------------------------------------
+begin
+     if Key = #13 then
+        begin
+        EDRFile.Settings.HighPassFilterCoeff := scDisplay.HighPassFilterSmoothingFactor(edHighPassFilterFrequency.Value) ;
+        scDisplay.HighPassFilterCoeff :=  EDRFile.Settings.HighPassFilterCoeff ;
+        end;
+end;
+
+
 procedure TViewSigFrm.edIdentChange(Sender: TObject);
 { -------------------------------------------
   Update identification string in file header
@@ -474,7 +502,7 @@ procedure TViewSigFrm.DisplayFromFile ;
 var
 
     NumScans,MaxScans : Integer ;
-    NumBytesInBuf : Integer ;
+    NumBytesInBuf,MaxSamples : Cardinal ;
     StartScan : Integer ;
     FilePointer : Integer ;
     i : Integer ;
@@ -490,22 +518,24 @@ begin
      scDisplay.XOffset := StartScan ;
 
      // No. of multi-channel scans to be displayed
-     MaxScans := EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels ;
-     edTDisplay.Value := Min( edTDisplay.Value, Max(1.0,MaxScans*EDRFIle.Cdrfh.dt*1.1));
+     // (Note. Limited to <= 400000000 samples to avoid GetMemory() failure to allocate display buffer 05.09.25)
+
+     MaxScans := Min( EDRFIle.Cdrfh.NumSamplesInFile,  400000000 ) div EDRFIle.Cdrfh.NumChannels ;
+     edTDisplay.Value := Min( edTDisplay.Value, Max(1.0,MaxScans*EDRFIle.Cdrfh.dt));
      scDisplay.MaxPoints := Round(edTDisplay.Value/EDRFIle.Cdrfh.dt) ;
      NumScans := Max( Min(Round(edTDisplay.Value/EDRFIle.Cdrfh.dt),MaxScans-StartScan),1 ) ;
      scDisplay.NumPoints := NumScans ;
 
      // Allocate memory buffer
      if DisplayBuf <> Nil then FreeMem(DisplayBuf) ;
-     NumBytesInBuf := scDisplay.MaxPoints*EDRFIle.Cdrfh.NumChannels*2 ;
-     DisplayBuf := GetMemory( NumBytesInBuf) ;
+     NumBytesInBuf := scDisplay.MaxPoints*EDRFIle.Cdrfh.NumChannels*SizeOf(SmallInt) ;
+     DisplayBuf := GetMemory( NumBytesInBuf ) ;
 
      scDisplay.TScale := EDRFIle.Cdrfh.dt*EDRFile.Settings.TScale ;
      scDisplay.TUnits := EDRFile.Settings.TUnits ;
 
      // Read data from file
-     FilePointer := EDRFIle.Cdrfh.NumBytesInHeader + StartScan*EDRFIle.Cdrfh.NumChannels*2 ;
+     FilePointer := EDRFIle.Cdrfh.NumBytesInHeader + StartScan*EDRFIle.Cdrfh.NumChannels*SizeOf(SmallInt) ;
      FileSeek( EDRFIle.Cdrfh.FileHandle, FilePointer, 0 ) ;
      FileRead(EDRFIle.Cdrfh.FileHandle,DisplayBuf^,NumBytesInBuf) ;
 
@@ -521,7 +551,8 @@ begin
      // Add markers (if any appear on display
      scDisplay.ClearMarkers ;
      TimeScale := scDisplay.TScale/EDRFile.Settings.TScale ;
-     for i := 0 to EDRFile.MarkerList.Count-1 do begin
+     for i := 0 to EDRFile.MarkerList.Count-1 do
+         begin
          MarkerTime := Single(EDRFile.MarkerList.Objects[i]) ;
          MarkerAt := Round(MarkerTime/TimeScale) - scDisplay.XOffset ;
          if (MarkerAt >= 0) and (MarkerAt < scDisplay.MaxPoints) then
@@ -574,7 +605,7 @@ procedure TViewSigFrm.scDisplayCursorChange(Sender: TObject);
 // Respond to display cursor position change
 // -----------------------------------------
 var
-   ch,Cursor1Pos,Cursor0Pos : Integer ;
+   ch,Cursor1Pos,Cursor0Pos : Cardinal ;
 begin
 
       { Time zero cursor }
@@ -585,18 +616,22 @@ begin
 
       { Read out cursor }
       Cursor1Pos := Round(scDisplay.VerticalCursors[Cursors.C1]) ;
+      Cursor1Pos := Min(Cursor1Pos,scDisplay.MaxPoints-1) ;
 
       EDRFile.Channel[0].CursorTime := (Cursor1Pos + scDisplay.XOffset)*scDisplay.TScale
                                 - (TZeroScan*EDRFIle.Cdrfh.dt*EDRFile.Settings.TScale);
 
-      for ch := 0 to scDisplay.NumChannels-1 do begin
+      for ch := 0 to scDisplay.NumChannels-1 do
+          begin
 
           { Get signal baseline cursor }
-          if EDRFile.Settings.FixedZeroLevels then begin
+          if EDRFile.Settings.FixedZeroLevels then
+             begin
              if scDisplay.HorizontalCursors[ch] <> EDRFile.Channel[ch].ADCZero then
                 scDisplay.HorizontalCursors[ch] := EDRFile.Channel[ch].ADCZero ;
              end
-          else begin
+          else
+             begin
              EDRFile.Channel[ch].ADCZero := Round(scDisplay.HorizontalCursors[ch]) ;
              end ;
 
@@ -908,6 +943,18 @@ begin
      EDRFile.Settings.FixedZeroLevels := ckFixedZeroLevels.Checked ;
      end;
 
+procedure TViewSigFrm.ckHighPassFilterActiveClick(Sender: TObject);
+// -----------------------------------
+// Turn display high-pass filter on/off
+// -----------------------------------
+begin
+     EDRFile.Settings.HighPassFilterCoeff := scDisplay.HighPassFilterSmoothingFactor(edHighPassFilterFrequency.Value) ;
+     scDisplay.HighPassFilterCoeff :=  EDRFile.Settings.HighPassFilterCoeff ;
+     EDRFile.Settings.HighPassFilterActive := ckHighPassFilterActive.Checked ;
+     scDisplay.HighPassFilterOn := ckHighPassFilterActive.Checked ;
+end;
+
+
 procedure TViewSigFrm.ckLowPassFilterActiveClick(Sender: TObject);
 // -----------------------------------
 // Turn display low-pass filter on/off
@@ -917,8 +964,6 @@ begin
      scDisplay.LowPassFilterCoeff :=  EDRFile.Settings.LowPassFilterCoeff ;
      EDRFile.Settings.LowPassFilterActive := ckLowPassFilterActive.Checked ;
      scDisplay.LowPassFilterOn := ckLowPassFilterActive.Checked ;
-
-
 end;
 
 end.

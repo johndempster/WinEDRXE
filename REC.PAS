@@ -99,6 +99,7 @@ unit Rec;
   09.06.25 ... Fixed duration sweeps now possible in Free Run recording mode and each sweep can be saved to a separate data file
                If no data is open, a data file is now automatically opened when Record is pressed.
   26.08.25 ... Display recursive low pass filter feature added
+  12.09.25 ... Display recursive high pass filter feature added
   ==============================================================================}
 interface
 
@@ -302,10 +303,11 @@ type
     rbContinuousRecording: TRadioButton;
     rbRecordingDuration: TRadioButton;
     ckNewFilePerSweep: TCheckBox;
-    FilterTab: TTabSheet;
+    gpDisplayFilters: TGroupBox;
     edLowPassFilterFrequency: TValidatedEdit;
-    lbCutOffFrequency: TLabel;
     ckLowPassFilterActive: TCheckBox;
+    edHighPassFilterFrequency: TValidatedEdit;
+    ckHighPassFilterActive: TCheckBox;
     procedure TimerTimer(Sender: TObject);
     procedure bRecordClick(Sender: TObject);
     procedure FormResize(Sender: TObject);
@@ -372,6 +374,8 @@ type
     procedure ckNewFilePerSweepClick(Sender: TObject);
     procedure edLowPassFilterFrequencyKeyPress(Sender: TObject; var Key: Char);
     procedure ckLowPassFilterActiveClick(Sender: TObject);
+    procedure ckHighPassFilterActiveClick(Sender: TObject);
+    procedure edHighPassFilterFrequencyKeyPress(Sender: TObject; var Key: Char);
   private
     { Private declarations }
     NewAmplifierGain : Boolean ;
@@ -600,6 +604,7 @@ begin
      edTDisplay.Scale := EDRFile.Settings.TSCale ;
      edTDisplay.Units := EDRFile.Settings.TUnits ;
 
+
      { No recording }
      WriteBufs.Recording := False ;
      lbRecording.Visible := False ;
@@ -648,14 +653,15 @@ procedure TRecordFrm.ShowAmplifierGains ;
 // Show gain values for amplifiers in use
 // --------------------------------------
 begin
+
      if Amplifier.AmplifierType[0] = amNone then Amp0Tab.Visible := False
-                                      else Amp0Tab.Visible := True ;
+                                            else Amp0Tab.Visible := True ;
      if Amplifier.AmplifierType[1] = amNone then Amp1Tab.Visible := False
-                                      else Amp1Tab.Visible := True ;
+                                            else Amp1Tab.Visible := True ;
      if Amplifier.AmplifierType[2] = amNone then Amp2Tab.Visible := False
-                                      else Amp2Tab.Visible := True ;
+                                            else Amp2Tab.Visible := True ;
      if Amplifier.AmplifierType[3] = amNone then Amp3Tab.Visible := False
-                                      else Amp3Tab.Visible := True ;
+                                            else Amp3Tab.Visible := True ;
 
      end ;
 
@@ -743,11 +749,18 @@ begin
      // Number of chart markers still available
      edNumMarkers.text := format('%d',[MaxMarkers-EDRFile.MarkerList.Count]);
 
-     // Display low pass filter settings (note does not affect stored data)
+
+//   Set low and high pass display-only filter controls
+
      edLowPassFilterFrequency.Value := scDisplay.LowPassFilterCutOffFrequency(EDRFile.Settings.LowPassFilterCoeff) ;
      ckLowPassFilterActive.Checked := EDRFile.Settings.LowPassFilterActive ;
      scDisplay.LowPassFilterOn := ckLowPassFilterActive.Checked ;
      scDisplay.LowPassFilterCoeff :=  EDRFile.Settings.LowPassFilterCoeff ;
+
+     edHighPassFilterFrequency.Value := scDisplay.HighPassFilterCutOffFrequency(EDRFile.Settings.HighPassFilterCoeff) ;
+     ckHighPassFilterActive.Checked := EDRFile.Settings.HighPassFilterActive ;
+     scDisplay.HighPassFilterOn := ckHighPassFilterActive.Checked ;
+     scDisplay.HighPassFilterCoeff :=  EDRFile.Settings.HighPassFilterCoeff ;
 
      end ;
 
@@ -767,7 +780,8 @@ var
 begin
 
      Changed := False ;
-     for ch := 0 to Main.SESLabIO.ADCNumChannels-1 do begin
+     for ch := 0 to Main.SESLabIO.ADCNumChannels-1 do
+         begin
 
          OldValue := EDRFile.CDRFH.ADCVoltageRange ;
          OldUnits := Main.SESLabIO.ADCChannelUnits[ch] ;
@@ -782,12 +796,7 @@ begin
          Main.SESLabIO.ADCChannelGain[ch] := Gain ;
          Main.SESLabIO.ADCChannelInputNumber[ch] := ADCInput ;
 
-//         RH.ADCVoltageRange[ch] := Main.SESLabIO.ADCVoltageRange /
-//                                   Main.SESLabIO.ADCChannelGain[ch] ;
-
-         if (OldValue <> EDRFile.CDRFH.ADCVoltageRange) or
-            (OldUnits <> Units ) or
-            (OldName <> Name) then Changed := True ;
+         if (OldValue <> EDRFile.CDRFH.ADCVoltageRange) or (OldUnits <> Units ) or (OldName <> Name) then Changed := True ;
 
          end ;
 
@@ -797,7 +806,8 @@ begin
      DisplayClampMode ;
 
      // Update display readout scaling factors
-     for ch := 0 to Main.SESLabIO.ADCNumChannels-1 do begin
+     for ch := 0 to Main.SESLabIO.ADCNumChannels-1 do
+         begin
          scDisplay.ChanScale[ch] := Main.SESLabIO.ADCChannelUnitsPerBit[ch] ;
          scDisplay.ChanUnits[ch] := Main.SESLabIO.ADCChannelUnits[ch] ;
          scDisplay.ChanName[ch] := Main.SESLabIO.ADCChannelName[ch] ;
@@ -830,7 +840,7 @@ begin
    UpdateAOHold( 2, rbVClamp2, rbIClamp2) ;
    UpdateAOHold( 3, rbVClamp3, rbIClamp3) ;
 
-     end ;
+   end ;
 
 
 procedure TRecordFrm.UpdateAOHold(
@@ -903,23 +913,6 @@ begin
      NewAmplifierGain := False ;
 
      end ;
-
-
-{procedure TRecordFrm.GetAmplifierGainsFromTextBox ;
-// -----------------------------------------------
-// Update amplifier gains with user-entered values
-// -----------------------------------------------
-begin
-    if Amp0Tab.Visible then
-       Amplifier.PrimaryChannelScaleFactor[0] := edAmplifierGain0.Value ;
-    if Amp1Tab.Visible then
-       Amplifier.PrimaryChannelScaleFactor[1] := edAmplifierGain1.Value ;
-    if Amp2Tab.Visible then
-       Amplifier.PrimaryChannelScaleFactor[2] := edAmplifierGain2.Value ;
-    if Amp3Tab.Visible then
-       Amplifier.PrimaryChannelScaleFactor[3] := edAmplifierGain3.Value ;
-    NewAmplifierGain := True ;
-    end ;  }
 
 
 procedure TRecordFrm.TimerTimer(Sender: TObject);
@@ -2383,6 +2376,7 @@ begin
 
      // Adjust width of ident boxes to match display area
      edIdent.Width := scDisplay.Left + scDisplay.Width - edIdent.Left ;
+     gpDisplayFilters.Width := scDisplay.Width ;
 
      if not Initialised then Timer.Enabled := False
                         else Timer.Enabled := True ;
@@ -2633,6 +2627,18 @@ begin
      EDRFile.Settings.Fluorescence.InUse := ckFluorescence.Checked ;
      Main.SESLabIO.ADCStop ;
      end;
+
+
+procedure TRecordFrm.ckHighPassFilterActiveClick(Sender: TObject);
+// ------------------------------------
+// Turn display high-pass filter on/off
+// -----------------------------------
+begin
+     EDRFile.Settings.HighPassFilterCoeff := scDisplay.HighPassFilterSmoothingFactor(edLowPassFilterFrequency.Value) ;
+     scDisplay.HighPassFilterCoeff :=  EDRFile.Settings.HighPassFilterCoeff ;
+     EDRFile.Settings.HighPassFilterActive := ckHighPassFilterActive.Checked ;
+     scDisplay.HighPassFilterOn := ckHighPassFilterActive.Checked ;
+end;
 
 
 procedure TRecordFrm.ckLowPassFilterActiveClick(Sender: TObject);
@@ -3327,6 +3333,20 @@ begin
         else UpdateOutputs ;
         end ;
      end;
+
+
+procedure TRecordFrm.edHighPassFilterFrequencyKeyPress(Sender: TObject;
+  var Key: Char);
+// ------------------------------------------------
+// Change display high-pass filter cut-off frequency
+// ------------------------------------------------
+begin
+     if Key = #13 then
+        begin
+        EDRFile.Settings.HighPassFilterCoeff := scDisplay.HighPassFilterSmoothingFactor(edLowPassFilterFrequency.Value) ;
+        scDisplay.HighPassFilterCoeff :=  EDRFile.Settings.HighPassFilterCoeff ;
+        end;
+end;
 
 
 procedure TRecordFrm.edAmplifierGain0KeyPress(Sender: TObject;

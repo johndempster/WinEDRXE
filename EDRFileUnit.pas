@@ -75,6 +75,7 @@ unit EDRFileUnit;
   15.05.25 ... FileOverWriteCheck() Now uses Main.SaveDialog
   19.05.25 ... #0 in first letter of ADCName and ADCUnirs now trapped correctly. No longer overwrites units with "Ch.n"
   25.08.25 ... Settings.LowPassFIlterActive, Settings.LowPassFIlterCoeff added to INI file
+  06.09.25 ... Settings.HighPassFIlterActive, Settings.HighPassFIlterCoeff added to INI file
   }
 
 interface
@@ -539,6 +540,8 @@ TSettings = record
           SimEPC : TSimEPCSettings ;
           LowPassFIlterActive : Boolean ;
           LowPassFilterCoeff : Single ;
+          HighPassFIlterActive : Boolean ;
+          HighPassFilterCoeff : Single ;
 
           end ;
 
@@ -1475,6 +1478,8 @@ begin
 
      Settings.LowPassFIlterActive := GetKeyValue( Header, 'LPFILTERACTIVE', Settings.LowPassFIlterActive) ;
      Settings.LowPassFIlterCoeff := GetKeyValue( Header, 'LPFILTERCOEFF', Settings.LowPassFIlterCoeff) ;
+     Settings.HighPassFIlterActive := GetKeyValue( Header, 'HPFILTERACTIVE', Settings.HighPassFIlterActive) ;
+     Settings.HighPassFIlterCoeff := GetKeyValue( Header, 'HPFILTERCOEFF', Settings.HighPassFIlterCoeff) ;
 
      // Load last used form positions
      for i := 0 to High(FPLeft) do
@@ -1715,6 +1720,8 @@ begin
 
      AddKeyValue( Header, 'LPFILTERACTIVE', Settings.LowPassFIlterActive) ;
      AddKeyValue( Header, 'LPFILTERCOEFF', Settings.LowPassFIlterCoeff) ;
+     AddKeyValue( Header, 'HPFILTERACTIVE', Settings.HighPassFIlterActive) ;
+     AddKeyValue( Header, 'HPFILTERCOEFF', Settings.HighPassFIlterCoeff) ;
 
      // Save form positions
      for i := 0 to High(FPLeft) do
@@ -2128,9 +2135,11 @@ begin
     Settings.SimEPC.Depression := 0.0 ;
     Settings.SimEPC.TauDepression := 1.0  ;
 
-    // Display low pass filter
+    // Display-only low & high pass filters
     Settings.LowPassFilterCoeff := 0.5 ;
     Settings.LowPassFilterActive := False ;
+    Settings.HighPassFilterCoeff := 0.5 ;
+    Settings.HighPassFilterActive := False ;
 
     Cm := 0.0 ;
     Gm := 0.0 ;
