@@ -164,14 +164,14 @@ TCDRFileHeader = record
             FileName : string ;
             WCPFileName : string ;
             FileHandle : integer ;
-            FilePointer : Integer ;
-            NumSamples : Integer ;
+            FilePointer : Int64 ;
+            NumSamples : Int64 ;
             NumChannels : Integer ;
-            NumSamplesInFile : Integer ;
-            NumBlocksInFile : Integer ;
+            NumSamplesInFile : Int64 ;
+            NumBlocksInFile : Int64 ;
             NumSamplesPerBlock : Integer ;
             NumBytesPerBlock : Integer ;
-            NumBytesInHeader : Integer ;
+            NumBytesInHeader : Int64 ;
             RecordDuration : single ;
             RecordNum : Integer ;
             dt : single ;
@@ -616,27 +616,27 @@ TMarkerShape = ( SquareMarker, CircleMarker ) ;
     procedure SaveHeader( var fHDR : TCDRFileHeader ) ;
     procedure GetHeader( var fHDR : TCDRFileHeader ) ;
     function ADCScaleToCalibFactor(
-         ADCVoltageRange : Single ;
-         var Channel : TChannel )  : single ;
+               ADCVoltageRange : Single ;
+             var Channel : TChannel )  : single ;
     function CalibFactorToADCScale(
-         ADCVoltageRange : Single ;
-         var Channel : TChannel )  : single ;
+             ADCVoltageRange : Single ;
+             var Channel : TChannel )  : single ;
 
     function FileOverwriteCheck( var FileName : string ) : boolean ;
 
 
     function ReadBuffer(
          var FHdr : TCDRFileHeader ;
-         BlockPointer : Integer ;
+         BlockPointer : Int64 ;
          var Buf : Array of SmallInt ;
-         NumBlocksToRead : Integer ) : Integer ;
+         NumBlocksToRead : Int64 ) : Int64 ;
 
     function WriteBuffer(
          var FHdr : TCDRFileHeader ;
-         BlockPointer : Integer ;
+         BlockPointer : Int64 ;
          var Buf : Array of SmallInt ;
-         NumBlocksToWrite : Integer
-         ) : Integer ;
+         NumBlocksToWrite : Int64
+         ) : Int64 ;
 
     procedure LoadInitializationFile( const IniFileName : string ) ;
     procedure SaveInitializationFile( const IniFileName : string ) ;
@@ -719,6 +719,11 @@ TMarkerShape = ( SquareMarker, CircleMarker ) ;
 
     procedure AddKeyValue( List : TStringList ;  // List for Key=Value pairs
                            Keyword : string ;    // Key
+                           Value : Int64        // Value
+                           ) ; Overload ;
+
+    procedure AddKeyValue( List : TStringList ;  // List for Key=Value pairs
+                           Keyword : string ;    // Key
                            Value : String        // Value
                            ) ; Overload ;
 
@@ -737,6 +742,11 @@ TMarkerShape = ( SquareMarker, CircleMarker ) ;
                          KeyWord : string ;   // Key
                          Value : Integer       // Value
                          ) : Integer ; Overload ;        // Return value
+
+   function GetKeyValue( List : TStringList ;  // List for Key=Value pairs
+                         KeyWord : string ;   // Key
+                         Value : Int64       // Value
+                         ) : Int64 ; Overload ;        // Return value
 
    function GetKeyValue( List : TStringList ;  // List for Key=Value pairs
                          KeyWord : string ;   // Key
@@ -1001,7 +1011,8 @@ var
    ANSIHeader : ANSIString ;
 
    i,ch,OldValue : Integer ;
-   NumMarkers,NumSamplesInFile : Integer ;
+   NumMarkers : Integer ;
+   NumSamplesInFile : Int64 ;
    MarkerTime : Single ;
    MarkerText : String ;
    SaveHeader : Boolean ;
@@ -1061,7 +1072,7 @@ begin
 
      fHDR.NumSamplesInFile := GetKeyValue( Header, 'NP', fHDR.NumSamplesInFile ) ;
 
-     NumSamplesInFile := (FileSeek( fHDR.FileHandle, 0, 2 ) + 1 - fHDR.NumBytesInHeader) div 2 ;
+     NumSamplesInFile := (FileSeek( fHDR.FileHandle, Int64(0), 2 ) + 1 - fHDR.NumBytesInHeader) div 2 ;
 
      if fHDR.NumSamplesInFile <> NumSamplesInFile then
         begin
@@ -1198,15 +1209,15 @@ begin
 
 function TEDRFile.Readbuffer(
          var FHdr : TCDRFileHeader ;     { Data file header }
-         BlockPointer : Integer ;        { Sample block to start reading at }
+         BlockPointer : Int64 ;        { Sample block to start reading at }
          var Buf : Array of SmallInt ;   { Buffer to hold samples }
-         NumBlocksToRead : Integer       { Number of sample blocks to read }
-         ) : Integer ;
+         NumBlocksToRead : Int64       { Number of sample blocks to read }
+         ) : Int64 ;
 { -----------------------------------------------
   Read a buffer of A/D samples from EDR data file
   ----------------------------------------------- }
 var
-   NumBytes : Integer ;
+   NumBytes : LongWord ;
 begin
      FHdr.FilePointer := FileSeek( FHdr.FileHandle,
                                    (BlockPointer*FHdr.NumChannels*2)
@@ -1218,15 +1229,15 @@ begin
 
 function TEDRFile.WriteBuffer(
          var FHdr : TCDRFileHeader ;     { Data file header }
-         BlockPointer : Integer ;        { Sample block to start Writeing at }
+         BlockPointer : Int64 ;        { Sample block to start Writeing at }
          var Buf : Array of SmallInt ;   { Buffer to hold samples }
-         NumBlocksToWrite : Integer       { Number of sample blocks to Write }
-         ) : Integer ;
+         NumBlocksToWrite : Int64       { Number of sample blocks to Write }
+         ) : Int64 ;
 { -----------------------------------------------
   Write a buffer of A/D samples to EDR data file
   ----------------------------------------------- }
 var
-   NumBytes : Integer ;
+   NumBytes : LongWord ;
 begin
      FHdr.FilePointer := FileSeek( FHdr.FileHandle,
                                    (BlockPointer*FHdr.NumChannels*2)
@@ -2472,6 +2483,33 @@ begin
 
 end;
 
+function TEDRFile.GetKeyValue( List : TStringList ;  // List for Key=Value pairs
+                               KeyWord : string ;   // Key
+                               Value : Int64       // Value
+                               ) : Int64 ;        // Return value
+// ------------------------------
+// Get Key=Int64 Value from List
+// ------------------------------
+var
+    istart,idx : Integer ;
+    s : string ;
+begin
+
+     // Remove any '=' in keyword
+     Keyword := ReplaceText( Keyword, '=', '' ) ;
+
+     idx := List.IndexOfName( Keyword ) ;
+     if idx >= 0 then
+        begin
+        s := List[idx] ;
+        // Find key=value separator and remove key
+        istart := Pos( '=', s ) ;
+        if istart > 0 then Delete( s, 1, istart ) ;
+        Result := STrToInt( s ) ;
+        end
+     else Result := Value ;
+
+end;
 
 function TEDRFile.GetKeyValue( List : TStringList ;  // List for Key=Value pairs
                                KeyWord : string ;   // Key
@@ -2551,6 +2589,21 @@ procedure TEDRFile.AddKeyValue( List : TStringList ;  // List for Key=Value pair
                                  ) ;
 // ---------------------
 // Add Key=Integer Value to List
+// ---------------------
+begin
+
+     // Remove any '=' characters in keyword
+     Keyword := ReplaceText( Keyword, '=', '' ) ;
+
+     List.Add( Keyword + format('=%d',[Value]) ) ;
+end;
+
+procedure TEDRFile.AddKeyValue( List : TStringList ;  // List for Key=Value pairs
+                                KeyWord : string ;    // Key
+                                Value : Int64        // Value
+                                 ) ;
+// ---------------------
+// Add Key=Int64 Value to List
 // ---------------------
 begin
 

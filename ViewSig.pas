@@ -171,7 +171,7 @@ begin
 
      // Initialise time readout units
      if EDRFile.Settings.TScale = 1000.0 then rbTDisplayUnitsMsecs.Checked := True
-                                 else rbTDisplayUnitsSecs.Checked := True ;
+                                         else rbTDisplayUnitsSecs.Checked := True ;
      edStartTime.Scale := EDRFile.Settings.TSCale ;
      edStartTime.Units := EDRFile.Settings.TUnits ;
      edTDisplay.Value := EDRFile.Settings.DisplayDuration ;
@@ -501,10 +501,9 @@ procedure TViewSigFrm.DisplayFromFile ;
 // ------------------------------------------
 var
 
-    NumScans,MaxScans : Integer ;
-    NumBytesInBuf,MaxSamples : Cardinal ;
-    StartScan : Integer ;
-    FilePointer : Integer ;
+    NumScans,MaxScans,NumBytesInBuf,MaxSamples : LongWord ;
+    StartScan : Int64 ;
+    FilePointer : Int64 ;
     i : Integer ;
     MarkerTime : Single ;
     MarkerAt : Integer ;
@@ -868,8 +867,8 @@ var
     Sum : Array[0..MaxChannels-1] of Single ;
     Avg : Single ;
     NumAvg : Integer ;
-    NumBytesPerScan,NumScansInBuf,NumScansToDo,NumScansToRead : Integer ;
-    FilePointer : Integer ;
+    NumBytesPerScan,NumScansInBuf,NumScansToDo,NumScansToRead : LongWord ;
+    FilePointer : Int64 ;
     Buf : PSmallIntArrayDyn ;
 begin
 

@@ -100,6 +100,8 @@ unit Rec;
                If no data is open, a data file is now automatically opened when Record is pressed.
   26.08.25 ... Display recursive low pass filter feature added
   12.09.25 ... Display recursive high pass filter feature added
+  10.11.25 ... Terminate recording to prevent no. of samples in file exceeding 32 bit integer range
+               Samplecounters now use Int64
   ==============================================================================}
 interface
 
@@ -131,7 +133,7 @@ type
         LatestScan : Integer ;               // Index of latest available scan (ADC^)
         EmptyPointer : Integer ;             // Index of empty region (ADC^)
         Recording : Boolean ;
-        NumSamplesInFileRequired : Integer ;
+        NumSamplesInFileRequired : Int64 ;
         NumRecordsToAcquire : Integer ;
         TAcquired : Single ;
         end ;
@@ -921,9 +923,8 @@ procedure TRecordFrm.TimerTimer(Sender: TObject);
   ---------------------}
 var
    i,iEnd,NumNewScans,NewScan,np,npHalfBuf : Integer ;
-
-   FilePointer : Integer ;
-   //ProcessingTime : Single ;
+   AbortRecording : Boolean ;
+   FilePointer : Int64 ;
    StimulusTime : Single ;
 begin
 
@@ -1017,15 +1018,17 @@ begin
         WriteBufs.ActiveBuf := WriteBufs.OldestScan div WriteBufs.NumSamplesPerBuf ;
   //      outputdebugstring(pchar(format('%d %d %d %d',[NewScan,WriteBufs.OldestScan,WriteBufs.ActiveBuf,WriteBufs.WriteBuf])));
 
+        AbortRecording := False ;
         while (WriteBufs.ActiveBuf <> WriteBufs.WriteBuf) do
            begin
 
            // Write block to file (if recording)
            if WriteBufs.Recording then
               begin
-              FilePointer := (EDRFIle.Cdrfh.NumSamplesInFile*2) + EDRFile.CDRFH.NumBytesInHeader ;
 
+              FilePointer := (EDRFIle.Cdrfh.NumSamplesInFile*SizeOf(SmallInt)) + EDRFile.CDRFH.NumBytesInHeader ;
               FileSeek( EDRFIle.Cdrfh.FileHandle, FilePointer, 0 ) ;
+
               if FileWrite( EDRFIle.Cdrfh.FileHandle,ADC^[WriteBufs.BufStart[WriteBufs.WriteBuf]],WriteBufs.NumBytesPerBuf )
                  <> WriteBufs.NumBytesPerBuf then Main.StatusBar.SimpleText := 'Error writing to ' + EDRFIle.Cdrfh.FileName ;
 
@@ -1033,8 +1036,6 @@ begin
               WriteBufs.TAcquired := WriteBufs.TAcquired
                                      + EDRFIle.Cdrfh.dt*(WriteBufs.NumSamplesPerBuf div EDRFIle.Cdrfh.NumChannels) ;
               lbRecording.Visible := not lbRecording.Visible ;
-
-
 
               if EDRFile.Settings.ContinuousRecording then
                  begin
@@ -1052,6 +1053,13 @@ begin
 
               Main.StatusBar.SimpleText := SweepStatus + RecordingStatus + StimulusStatus ;
               Caption := 'Record to Disk: ' + SweepStatus + RecordingStatus + StimulusStatus ;
+
+              // Terminate recording to prevent no. of samples in file exceeding 32 bit integer range
+              if (EDRFIle.Cdrfh.NumSamplesInFile + WriteBufs.NumSamplesPerBuf) >= High(LongWord) then
+                 begin
+                 AbortRecording := True ;
+                 end;
+
               end ;
 
            // Fill buffer with empty flags
@@ -1070,9 +1078,9 @@ begin
            //ProcessingTime := (100.0*SumProcTime/nProcTime)/Timer.Interval ;
            end ;
 
-        if WriteBufs.Recording and
+        if (WriteBufs.Recording and
            (EDRFIle.Cdrfh.NumSamplesInFile >= WriteBufs.NumSamplesInFileRequired) and
-           (not EDRFile.Settings.ContinuousRecording) then
+           (not EDRFile.Settings.ContinuousRecording)) or AbortRecording then
            begin
            // Save file header data to file
            EDRFile.SaveHeader( EDRFIle.CdrFH ) ;
