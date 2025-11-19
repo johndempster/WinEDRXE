@@ -628,7 +628,7 @@ TMarkerShape = ( SquareMarker, CircleMarker ) ;
     function ReadBuffer(
          var FHdr : TCDRFileHeader ;
          BlockPointer : Int64 ;
-         var Buf : Array of SmallInt ;
+         var Buf :  Array of SmallInt ;
          NumBlocksToRead : Int64 ) : Int64 ;
 
     function WriteBuffer(
@@ -1219,11 +1219,9 @@ function TEDRFile.Readbuffer(
 var
    NumBytes : LongWord ;
 begin
-     FHdr.FilePointer := FileSeek( FHdr.FileHandle,
-                                   (BlockPointer*FHdr.NumChannels*2)
-                                   + FHdr.NumBytesInHeader, 0 ) ;
-     NumBytes := NumBlocksToRead*FHdr.NumChannels*2 ;
-     Result := FileRead(FHdr.FileHandle,Buf,NumBytes) div (FHdr.NumChannels*2) ;
+     FHdr.FilePointer := FileSeek( FHdr.FileHandle,(BlockPointer*FHdr.NumChannels*SizeOf(SmallInt)) + FHdr.NumBytesInHeader, 0 ) ;
+     NumBytes := NumBlocksToRead*FHdr.NumChannels*SizeOf(SmallInt) ;
+     Result := FileRead(FHdr.FileHandle,Buf,NumBytes) div (FHdr.NumChannels*SizeOf(SmallInt)) ;
      end ;
 
 
@@ -2505,7 +2503,7 @@ begin
         // Find key=value separator and remove key
         istart := Pos( '=', s ) ;
         if istart > 0 then Delete( s, 1, istart ) ;
-        Result := STrToInt( s ) ;
+        Result := STrToInt64( s ) ;
         end
      else Result := Value ;
 

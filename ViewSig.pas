@@ -501,7 +501,7 @@ procedure TViewSigFrm.DisplayFromFile ;
 // ------------------------------------------
 var
 
-    NumScans,MaxScans,NumBytesInBuf,MaxSamples : LongWord ;
+    NumScans,MaxScans,NumBytesInBuf,MaxSamples : Int64 ;
     StartScan : Int64 ;
     FilePointer : Int64 ;
     i : Integer ;
@@ -517,12 +517,16 @@ begin
      scDisplay.XOffset := StartScan ;
 
      // No. of multi-channel scans to be displayed
-     // (Note. Limited to <= 400000000 samples to avoid GetMemory() failure to allocate display buffer 05.09.25)
 
-     MaxScans := Min( EDRFIle.Cdrfh.NumSamplesInFile,  400000000 ) div EDRFIle.Cdrfh.NumChannels ;
+
+     MaxScans := EDRFIle.Cdrfh.NumSamplesInFile div EDRFIle.Cdrfh.NumChannels ;
      edTDisplay.Value := Min( edTDisplay.Value, Max(1.0,MaxScans*EDRFIle.Cdrfh.dt));
      scDisplay.MaxPoints := Round(edTDisplay.Value/EDRFIle.Cdrfh.dt) ;
+
      NumScans := Max( Min(Round(edTDisplay.Value/EDRFIle.Cdrfh.dt),MaxScans-StartScan),1 ) ;
+     // (Note. Limited to <= 400000000 samples to avoid GetMemory() failure to allocate display buffer 18.11.25)
+     NumScans := Max(  NumScans, 400000000 div EDRFIle.Cdrfh.NumChannels ) ;
+
      scDisplay.NumPoints := NumScans ;
 
      // Allocate memory buffer
@@ -534,9 +538,11 @@ begin
      scDisplay.TUnits := EDRFile.Settings.TUnits ;
 
      // Read data from file
-     FilePointer := EDRFIle.Cdrfh.NumBytesInHeader + StartScan*EDRFIle.Cdrfh.NumChannels*SizeOf(SmallInt) ;
-     FileSeek( EDRFIle.Cdrfh.FileHandle, FilePointer, 0 ) ;
-     FileRead(EDRFIle.Cdrfh.FileHandle,DisplayBuf^,NumBytesInBuf) ;
+ //    FilePointer := EDRFIle.Cdrfh.NumBytesInHeader + StartScan*EDRFIle.Cdrfh.NumChannels*SizeOf(SmallInt) ;
+ //    FileSeek( EDRFIle.Cdrfh.FileHandle, FilePointer, 0 ) ;
+ //    FileRead(EDRFIle.Cdrfh.FileHandle,DisplayBuf^,NumBytesInBuf) ;
+
+    EDRFIle.ReadBuffer( EDRFIle.Cdrfh, StartScan, DisplayBuf^, NumScans ) ;
 
      scDisplay.xMin := 0 ;
      scDisplay.xMax := Max(scDisplay.MaxPoints-1,1) ;
