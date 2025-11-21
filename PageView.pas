@@ -15,6 +15,7 @@ unit PageView;
 // 28.08.12 ... Zero Level popup and Fixed Zero level option added
 // 07.08.15 ... Min/Max compression of large array signal arrays now handled by ScopeDisplay.pas
 // 15.03.24 ... Form position saved to INI file
+// 20.11.25 ... EDRFIle.ReadBuffer now used to read data from file
 
 interface
 
@@ -188,12 +189,11 @@ procedure TPageViewFrm.DisplayPage ;
 var
     i,j,k,ch : Integer ;
     Line : Integer ;              // Line counter
-    StartScan : Integer ;       // Starting scan for line
+    StartScan : LongWord ;       // Starting scan for line
     NumPointsPerLine : Integer ;  // No. of A/D samples per line
     NumLines : Integer ;          // No. of lines per page
     t : single ;                  // Time
     NumScans,MaxScans : Integer ;
-    FilePointer : Int64 ;
     ADC : PSmallIntArray ;
 begin
 
@@ -260,10 +260,8 @@ begin
     for Line := 0 to NumLines-1 do begin
 
         // Read data from file
-        FilePointer := EDRFile.cdrfh.NumBytesInHeader + StartScan*EDRFile.cdrfh.NumChannels*2 ;
-        FileSeek( EDRFile.cdrfh.FileHandle, FilePointer, 0 ) ;
         for i := 0 to (NumScans*EDRFile.cdrfh.NumChannels)-1 do ADC^[i] := 0 ;
-        FileRead(EDRFile.cdrfh.FileHandle,ADC^,NumScans*EDRFile.cdrfh.NumChannels*2) ;
+        EDRFIle.ReadBuffer( EDRFIle.Cdrfh, StartScan, ADC^, NumScans ) ;
 
         j := EDRFile.Channel[cbChannel.ItemIndex].ChannelOffset ;
         k := Line ;

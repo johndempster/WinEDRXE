@@ -136,6 +136,8 @@ type
         NumSamplesInFileRequired : Int64 ;
         NumRecordsToAcquire : Integer ;
         TAcquired : Single ;
+        NumBufsWritten : Integer ;
+        MaxNumBufsWritten : Integer ;
         end ;
 
        TCapacity = record
@@ -419,6 +421,10 @@ type
     nTicks : Cardinal ;
     ii : Integer ;
 
+    TimerStartTime : LongWord ;
+    LastTimerStartTime : LongWord ;
+    MaxTimerInterval : LongWord ;
+    MaxDiskWriteTime : LongWord ;
 
     function CheckNewDataFileNeeded : Boolean ;
     procedure ShowAmplifierGains ;
@@ -926,14 +932,20 @@ var
    AbortRecording : Boolean ;
    FilePointer : Int64 ;
    StimulusTime : Single ;
+   nTicksOld,DiskWriteTime,TimerInterval : LongWord ;
+   s : string ;
 begin
+
 
      // Abort execution if last call still running
 
-//     outputDebugString( PChar(format('%d',[TimeGetTime-nTicks]))) ;
-     nTicks := TimeGetTime ;
+
+
      if TimerBusy then Exit ;
      TimerBusy := True ;
+
+     if TimerStartTime <> 0 then LastTimerStartTime := TimerStartTime ;
+     TimerStartTime := TimeGetTime ;
 
 //
 //   Load virtual control panel if required
@@ -1019,6 +1031,7 @@ begin
   //      outputdebugstring(pchar(format('%d %d %d %d',[NewScan,WriteBufs.OldestScan,WriteBufs.ActiveBuf,WriteBufs.WriteBuf])));
 
         AbortRecording := False ;
+        WriteBufs.NumBufsWritten := 0 ;
         while (WriteBufs.ActiveBuf <> WriteBufs.WriteBuf) do
            begin
 
@@ -1033,26 +1046,8 @@ begin
                  <> WriteBufs.NumBytesPerBuf then Main.StatusBar.SimpleText := 'Error writing to ' + EDRFIle.Cdrfh.FileName ;
 
               EDRFIle.Cdrfh.NumSamplesInFile := EDRFIle.Cdrfh.NumSamplesInFile + WriteBufs.NumSamplesPerBuf ;
-              WriteBufs.TAcquired := WriteBufs.TAcquired
-                                     + EDRFIle.Cdrfh.dt*(WriteBufs.NumSamplesPerBuf div EDRFIle.Cdrfh.NumChannels) ;
+              WriteBufs.TAcquired := WriteBufs.TAcquired + EDRFIle.Cdrfh.dt*(WriteBufs.NumSamplesPerBuf div EDRFIle.Cdrfh.NumChannels) ;
               lbRecording.Visible := not lbRecording.Visible ;
-
-              if EDRFile.Settings.ContinuousRecording then
-                 begin
-                 RecordingStatus := format( 'Recording: %.1fs (%d Kb) ',
-                                             [WriteBufs.TAcquired  ,
-                                              EDRFIle.Cdrfh.NumSamplesInFile div 512]) ;
-                 end
-              else
-                 begin
-                 RecordingStatus := format( 'Recording: %.1f/%.1f s (%d Kb)',
-                                           [WriteBufs.TAcquired,
-                                            EDRFile.Settings.RecordDuration,
-                                            EDRFIle.Cdrfh.NumSamplesInFile div 512]) ;
-                 end;
-
-              Main.StatusBar.SimpleText := SweepStatus + RecordingStatus + StimulusStatus ;
-              Caption := 'Record to Disk: ' + SweepStatus + RecordingStatus + StimulusStatus ;
 
               // Terminate recording to prevent no. of samples in file exceeding 32 bit integer range
               if (EDRFIle.Cdrfh.NumSamplesInFile + WriteBufs.NumSamplesPerBuf) >= High(LongWord) then
@@ -1074,8 +1069,32 @@ begin
                  end ;
            WriteBufs.WriteBuf := WriteBufs.WriteBuf + 1 ;
            if WriteBufs.WriteBuf >= WriteBufs.NumBufs then WriteBufs.WriteBuf := 0 ;
+           Inc(WriteBufs.NumBufsWritten) ;
 
-           //ProcessingTime := (100.0*SumProcTime/nProcTime)/Timer.Interval ;
+           end ;
+
+        if WriteBufs.Recording then
+           begin
+           if EDRFile.Settings.ContinuousRecording then
+                 begin
+                 RecordingStatus := format( 'Recording: %.1fs (%d Kb) ',[WriteBufs.TAcquired, EDRFIle.Cdrfh.NumSamplesInFile div 512]) ;
+                 end
+              else
+                 begin
+                 RecordingStatus := format( 'Recording: %.1f/%.1f s (%d Kb)',[WriteBufs.TAcquired,EDRFile.Settings.RecordDuration,EDRFIle.Cdrfh.NumSamplesInFile div 512]) ;
+                 end;
+
+              WriteBufs.MaxNumBufsWritten := Max(WriteBufs.MaxNumBufsWritten,WriteBufs.NumBufsWritten);
+              DiskWriteTime := TimeGetTime - TimerStartTime ;
+              MaxDiskWriteTime := Max(MaxDiskWriteTime,DiskWriteTime) ;
+              TimerInterval := TimerStartTime - LastTimerStartTime ;
+              MaxTimerInterval := Max(MaxTimerInterval,TimerInterval) ;
+              s := format(' Disk write buffers %d (max %d) %d (max. %d) ms, Timer interval = %d (max. %d) ms',
+                          [WriteBufs.NumBufsWritten,WriteBufs.MaxNumBufsWritten,DiskWriteTime,MaxDiskWriteTime,TimerInterval,MaxTimerInterval]) ;
+
+              Main.StatusBar.SimpleText := SweepStatus + RecordingStatus + StimulusStatus + s ;
+              Caption := 'Record to Disk: ' + SweepStatus + RecordingStatus + StimulusStatus ;
+
            end ;
 
         if (WriteBufs.Recording and
@@ -1129,6 +1148,9 @@ begin
         end ;
 
      TimerBusy := False ;
+
+          outputDebugString( PChar(format('Proc. time=%d, Time since last exec=%d',[TimeGetTime-nTicks,nTicks-nTicksOld]))) ;
+
 
      end ;
 
@@ -2266,6 +2288,10 @@ begin
 
      WriteBufs.TAcquired := 0.0 ;
      Main.StatusBar.SimpleText := SweepStatus + RecordingStatus + StimulusStatus ;
+     MaxTimerInterval := 0 ;
+     MaxDiskWriteTime := 0 ;
+     LastTimerStartTime := 0 ;
+     WriteBufs.MaxNumBufsWritten := 0 ;
 
      EDRFile.WriteToLogFile( SweepStatus + format(' Started at %.4g s',
                              [(EDRFIle.Cdrfh.NumSamplesInFile*EDRFIle.Cdrfh.dt)/EDRFIle.Cdrfh.NumChannels])  ) ;

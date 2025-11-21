@@ -12,7 +12,6 @@ object PageViewFrm: TPageViewFrm
   Font.Name = 'Arial'
   Font.Style = []
   FormStyle = fsMDIChild
-  OldCreateOrder = False
   Position = poDefault
   Visible = True
   OnActivate = FormActivate
@@ -21,7 +20,6 @@ object PageViewFrm: TPageViewFrm
   OnDestroy = FormDestroy
   OnResize = FormResize
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 14
   object scDisplay: TScopeDisplay
     Left = 168

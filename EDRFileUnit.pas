@@ -1237,11 +1237,9 @@ function TEDRFile.WriteBuffer(
 var
    NumBytes : LongWord ;
 begin
-     FHdr.FilePointer := FileSeek( FHdr.FileHandle,
-                                   (BlockPointer*FHdr.NumChannels*2)
-                                   + FHdr.NumBytesInHeader, 0 ) ;
+     FHdr.FilePointer := FileSeek( FHdr.FileHandle,(BlockPointer*FHdr.NumChannels*SizeOf(SmallInt)) + FHdr.NumBytesInHeader, 0 ) ;
      NumBytes := NumBlocksToWrite*FHdr.NumChannels*2 ;
-     Result := FileWrite(FHdr.FileHandle,Buf,NumBytes) div (FHdr.NumChannels*2) ;
+     Result := FileWrite(FHdr.FileHandle,Buf,NumBytes) div (FHdr.NumChannels*SizeOf(SmallInt)) ;
      end ;
 
 
