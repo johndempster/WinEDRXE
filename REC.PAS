@@ -1017,7 +1017,6 @@ begin
              Inc(NumNewScans) ;
              end ;
 
-//     outputdebugString(PChar(format('%d %d %d',[WriteBufs.NumSamples,WriteBufs.NumSamplesPerBuf,NumNewScans]))) ;
         // Calculate computed channels
         if NumNewScans >= 2 then
            begin
@@ -1028,7 +1027,6 @@ begin
 
         // If latest write block full .. write to file
         WriteBufs.ActiveBuf := WriteBufs.OldestScan div WriteBufs.NumSamplesPerBuf ;
-  //      outputdebugstring(pchar(format('%d %d %d %d',[NewScan,WriteBufs.OldestScan,WriteBufs.ActiveBuf,WriteBufs.WriteBuf])));
 
         AbortRecording := False ;
         WriteBufs.NumBufsWritten := 0 ;
@@ -1148,9 +1146,6 @@ begin
         end ;
 
      TimerBusy := False ;
-
-          outputDebugString( PChar(format('Proc. time=%d, Time since last exec=%d',[TimeGetTime-nTicks,nTicks-nTicksOld]))) ;
-
 
      end ;
 

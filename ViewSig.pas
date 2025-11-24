@@ -502,10 +502,8 @@ procedure TViewSigFrm.DisplayFromFile ;
 // Display digitised signals stored on file
 // ------------------------------------------
 var
-
-    NumScans,MaxScans,MaxScansInFile,NumBytesInBuf,MaxSamples : Int64 ;
+    NumScans,MaxScans,MaxScansInFile,NumBytesInBuf : Int64 ;
     StartScan : Int64 ;
-    FilePointer : Int64 ;
     i : Integer ;
     MarkerTime : Single ;
     MarkerAt : Integer ;
