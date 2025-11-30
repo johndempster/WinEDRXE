@@ -1,5 +1,5 @@
 unit Rec;
-{ ==============================================================================                                                                                       di
+{ ==============================================================================
   WinEDR - Analogue Recording module (c) J. Dempster 1998, All Rights Reserved.
     9/6/99 ...  Now uses WinRT device driver for Digidata 1200
   26/8/99 ... Real-time fluorescence ratio computation added
@@ -409,6 +409,7 @@ type
 
     SweepStatus : string ;  // Current recording sweep information
     RecordingStatus : string ;
+    DiskIO : string ;      // Disk I/O statistics
     ReadUserEnteredGain : Boolean ;
     Cursors : TCursors ;         { Display cursors }
 
@@ -425,6 +426,7 @@ type
     LastTimerStartTime : LongWord ;
     MaxTimerInterval : LongWord ;
     MaxDiskWriteTime : LongWord ;
+    MaxNewScans : LongWord ;
 
     function CheckNewDataFileNeeded : Boolean ;
     procedure ShowAmplifierGains ;
@@ -1017,6 +1019,8 @@ begin
              Inc(NumNewScans) ;
              end ;
 
+        MaxNewScans := Max(NumNewScans, MaxNewScans ) ;
+
         // Calculate computed channels
         if NumNewScans >= 2 then
            begin
@@ -1087,10 +1091,13 @@ begin
               MaxDiskWriteTime := Max(MaxDiskWriteTime,DiskWriteTime) ;
               TimerInterval := TimerStartTime - LastTimerStartTime ;
               MaxTimerInterval := Max(MaxTimerInterval,TimerInterval) ;
-              s := format(' Disk write buffers %d (max %d) %d (max. %d) ms, Timer interval = %d (max. %d) ms',
-                          [WriteBufs.NumBufsWritten,WriteBufs.MaxNumBufsWritten,DiskWriteTime,MaxDiskWriteTime,TimerInterval,MaxTimerInterval]) ;
 
-              Main.StatusBar.SimpleText := SweepStatus + RecordingStatus + StimulusStatus + s ;
+              DiskIO := format(' Samples/ch.=%d (max. %d), Disk write buffers %d (max %d/%d) %d (max. %d) ms, Timer interval = %d (max. %d) ms',
+                          [NumNewScans,MaxNewScans,
+                           WriteBufs.NumBufsWritten,WriteBufs.MaxNumBufsWritten,WriteBufs.NumBufs,
+                           DiskWriteTime,MaxDiskWriteTime,TimerInterval,MaxTimerInterval]) ;
+
+              Main.StatusBar.SimpleText := SweepStatus + RecordingStatus + StimulusStatus + DiskIO ;
               Caption := 'Record to Disk: ' + SweepStatus + RecordingStatus + StimulusStatus ;
 
            end ;
@@ -1421,12 +1428,8 @@ begin
         bMark.Click ;
         end ;
 
-     StimulusStatus := 'Stim: '
-                       + ChangeFileExt(ExtractFileName(ActiveStimFileName),'') ;
-
+     StimulusStatus := 'Stim: ' + ChangeFileExt(ExtractFileName(ActiveStimFileName),'') ;
      Main.StatusBar.SimpleText := SweepStatus + RecordingStatus + StimulusStatus ;
-
-     //EDRFile.Settings.NewCalculation := True ;
 
      end ;
 
@@ -1488,8 +1491,7 @@ begin
 
      { Indicate when recording stopped on log file }
      EDRFile.WriteToLogFile( SweepStatus + format(
-                    ' Stopped at %.4g s',[(EDRFIle.Cdrfh.NumSamplesInFile*EDRFIle.Cdrfh.dt)/
-                                           EDRFIle.Cdrfh.NumChannels])  ) ;
+                    ' Stopped at %.4g s %s',[(EDRFIle.Cdrfh.NumSamplesInFile*EDRFIle.Cdrfh.dt)/EDRFIle.Cdrfh.NumChannels,DiskIO])  ) ;
 
      RecordingStatus := '' ;
      SweepStatus := '' ;
@@ -2287,9 +2289,11 @@ begin
      MaxDiskWriteTime := 0 ;
      LastTimerStartTime := 0 ;
      WriteBufs.MaxNumBufsWritten := 0 ;
+     MaxNewScans := 0 ;
 
-     EDRFile.WriteToLogFile( SweepStatus + format(' Started at %.4g s',
-                             [(EDRFIle.Cdrfh.NumSamplesInFile*EDRFIle.Cdrfh.dt)/EDRFIle.Cdrfh.NumChannels])  ) ;
+     EDRFile.WriteToLogFile( SweepStatus +
+                             format(' Started at %.4g File=s',[(EDRFIle.Cdrfh.NumSamplesInFile*EDRFIle.Cdrfh.dt)/EDRFIle.Cdrfh.NumChannels])  +
+                             EDRFile.CDRFH.FileName ) ;
 
      FileSeek(EDRFIle.Cdrfh.FileHandle,0,2) ;
 
