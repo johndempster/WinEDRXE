@@ -30,7 +30,8 @@ unit ViewSig;
   05.09.25 ... Max. displayed samples now limited to <= 400000000 to avoid GetMemory() failure to allocate display buffer 05.09.25
   12.09.25 ... Display recursive high pass filter feature added
   20.11.25 ... EDRFIle.ReadBuffer now used to read data from file
-               Display buffer limited to 400Mbyte to avoid GetMemory() failures
+               Display buffer limited to 400Mbyte to avoid GetMemory()
+  06.12.25 ... .ZoomInAll added - Zooms display into min-max range of signal amplitudes
   ========================================================}
 
 interface
@@ -127,12 +128,14 @@ type
     procedure PrintDisplay  ;
     procedure CopyImageToClipboard ;
     procedure SaveDataToFile ;
+    procedure ZoomInAll ;
     procedure ZoomOutAll ;
     procedure NewData ;
     procedure ChangeDisplayGrid ;
     procedure DisplayFromFile ;
     procedure ZoomIn( ChanNum : Integer ) ;
     procedure ZoomOut( ChanNum : Integer ) ;
+    procedure EditSignalData ;
 
   end;
 
@@ -143,7 +146,7 @@ var
 
 implementation
 
-uses mdiform,shared,Printrec , Zero, EventDetector;
+uses mdiform,shared,Printrec , Zero, EventDetector, EditSignal ;
 
 const
      MaxDisplayScans = 2000 ;
@@ -340,6 +343,15 @@ begin
           end ;
 end;
 
+procedure  TViewSigFrm.ZoomInAll ;
+{ ---------------------------------------------------
+  Set display magnification to signal amplitude range
+  --------------------------------------------------- }
+begin
+     scDisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+     scDisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue -1 ;
+     scDisplay.ZoomIn ;
+     end ;
 
 
 procedure  TViewSigFrm.ZoomOutAll ;
@@ -853,8 +865,6 @@ begin
      end ;
 
 
-
-
 procedure TViewSigFrm.bCalcAverageClick(Sender: TObject);
 // ----------------------------------------------------------------
 // Calculate and display average signal between t=0 and t=? cursors
@@ -963,6 +973,29 @@ begin
      scDisplay.LowPassFilterCoeff :=  EDRFile.Settings.LowPassFilterCoeff ;
      EDRFile.Settings.LowPassFilterActive := ckLowPassFilterActive.Checked ;
      scDisplay.LowPassFilterOn := ckLowPassFilterActive.Checked ;
+end;
+
+
+procedure TViewSigFrm.EditSignalData ;
+// ----------------------------------
+// Open signal data point editor form
+// ----------------------------------
+begin
+   if Main.FormExists('EditSignalDataFrm') then
+     begin
+     if EditSignalDataFrm.WindowState = wsMinimized then EditSignalDataFrm.WindowState := wsNormal ;
+     EditSignalDataFrm.BringToFront ;
+     EditSignalDataFrm.SetFocus ;
+     end
+  else
+     begin
+     EditSignalDataFrm := TEditSignalDataFrm.Create(Self) ;
+     EditSignalDataFrm.StartAtScan := Round(scDisplay.VerticalCursors[Cursors.C1] + scDisplay.XOffset) ;
+ //    EditSignalDataFrm.ScansToDelete := Round(scDisplay.VerticalCursors[Cursors.C1] - scDisplay.VerticalCursors[Cursors.C0]) ;
+     EditSignalDataFrm.Show ;
+     EditSignalDataFrm.Top := Main.Top + ViewSigFrm.Top + 10 ;
+     EditSignalDataFrm.Left := Main.Left + ViewSigFrm.Left + 10 ;
+     end ;
 end;
 
 end.

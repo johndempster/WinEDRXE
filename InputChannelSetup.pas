@@ -42,6 +42,7 @@ unit InputChannelSetup;
   24.07.17 AxoPatch 200 and AMS-2440 secondary channel analogue input for CC mode can
            now be defined by user and changed when CC mode selected
            All other channels cannot be changed from default settings
+  03.12.25 Invert channel option added to channels table.
                   }
 interface
 
@@ -152,7 +153,8 @@ const
      ChVPU = 2 ;
      ChUnits = 3 ;
      ChInputChannel = 4 ;
-     chAmp = 5 ;
+     ChInvert = 5 ;
+     chAmp = 6 ;
 
 var
   InputChannelSetupFrm: TInputChannelSetupFrm;
@@ -400,6 +402,7 @@ begin
 
      { Set channel calibration table }
      ChannelTable.RowCount := MaxADCChannels + 1 ;
+     ChannelTable.ColCount := ChAmp + 1 ;
 
      ChannelTable.cells[ChNum,0] := 'Ch.' ;
      ChannelTable.colwidths[ChNum] := Round(ChannelTable.DefaultColWidth*0.4) ;
@@ -411,21 +414,25 @@ begin
      ChannelTable.colwidths[ChUnits] := ChannelTable.DefaultColWidth ;
      ChannelTable.cells[ChInputChannel,0] := 'AI Ch.' ;
      ChannelTable.colwidths[ChInputChannel] := Round(ChannelTable.DefaultColWidth*0.9) ;
+     ChannelTable.cells[ChInvert,0] := 'Invert' ;
+     ChannelTable.colwidths[ChInvert] := Round(ChannelTable.DefaultColWidth) ;
      ChannelTable.cells[ChAmp,0] := 'Amplifier' ;
      ChannelTable.colwidths[ChAmp] := Round(ChannelTable.DefaultColWidth*2.1) ;
      ChannelTable.options := [goEditing,goHorzLine,goVertLine] ;
 
-     for ch := 0 to Main.SESLabIO.ADCMaxChannels-1  do begin
+     for ch := 0 to Main.SESLabIO.ADCMaxChannels-1  do
+         begin
          ChannelTable.cells[ChNum,ch+1] := IntToStr(ch) ;
          ChannelTable.cells[ChName,ch+1] := Main.SESLabIO.ADCChannelName[ch] ;
          ChannelTable.cells[ChVPU,ch+1] := Format( '%5.4g',[Main.SESLabIO.ADCChannelVoltsPerUnit[ch]] ) ;
          ChannelTable.cells[ChUnits,ch+1] := Main.SESLabIO.ADCChannelUnits[ch] ;
-         ChannelTable.cells[ChInputChannel,ch+1] := format('%d',
-                                                    [Main.SESLabIO.ADCChannelInputNumber[ch]]) ;
+         ChannelTable.cells[ChInputChannel,ch+1] := format('%d',[Main.SESLabIO.ADCChannelInputNumber[ch]]) ;
+         if Main.SESLabIO.ADCChannelInvert[ch] then ChannelTable.cells[ChInvert,ch+1] := 'Y'
+                                               else ChannelTable.cells[ChInvert,ch+1] := 'N' ;
          AmpNumber := ch div 2 ;
-         if Amplifier.AmplifierType[AmpNumber] <> amNone then begin
-            ChannelTable.cells[ChAmp,ch+1] :=
-               format('#%d %s',[AmpNumber+1,Amplifier.ModelName[AmpNumber]]) ;
+         if Amplifier.AmplifierType[AmpNumber] <> amNone then
+            begin
+            ChannelTable.cells[ChAmp,ch+1] := format('#%d %s',[AmpNumber+1,Amplifier.ModelName[AmpNumber]]) ;
             end
          else ChannelTable.cells[ChAmp,ch+1] := '' ;
 
@@ -463,15 +470,19 @@ procedure TInputChannelSetupFrm.UpdateChannelSettings ;
 // Update channel calibration from table
 // --------------------------------------
 var
-    ch : Integer ;
+    ch,col : Integer ;
 begin
 
      // Update channels with calibration settings from table
-     for ch := 0 to Main.SESLabIO.ADCMaxChannels-1  do begin
-         Main.SESLabIO.ADCChannelName[ch] := ChannelTable.cells[ChName,ch+1] ;
-         Main.SESLabIO.ADCChannelUnits[ch] := ChannelTable.cells[ChUnits,ch+1] ;
-         Main.SESLabIO.ADCChannelVoltsPerUnit[ch] := ExtractFloat(ChannelTable.cells[ChVPU,ch+1],1.0) ;
-         Main.SESLabIO.ADCChannelInputNumber[ch] := ExtractInt(ChannelTable.cells[ChInputChannel,ch+1]) ;
+     for ch := 0 to Main.SESLabIO.ADCMaxChannels-1  do
+         begin
+         Col := ch + 1 ;
+         Main.SESLabIO.ADCChannelName[ch] := ChannelTable.cells[ChName,Col] ;
+         Main.SESLabIO.ADCChannelUnits[ch] := ChannelTable.cells[ChUnits,Col] ;
+         Main.SESLabIO.ADCChannelVoltsPerUnit[ch] := ExtractFloat(ChannelTable.cells[ChVPU,Col],1.0) ;
+         Main.SESLabIO.ADCChannelInputNumber[ch] := ExtractInt(ChannelTable.cells[ChInputChannel,Col]) ;
+         if ContainsText(ChannelTable.cells[ChInvert,Col],'Y') then Main.SESLabIO.ADCChannelInvert[ch] := True
+                                                               else Main.SESLabIO.ADCChannelInvert[ch] := False ;
          end ;
 
      // Update channels with amplifier settings
@@ -525,11 +536,13 @@ begin
         // Update Channel Settings
         UpdateChannelSettings ;
 
-        if Amplifier.AmplifierType[0] = amTriton then begin
+        if Amplifier.AmplifierType[0] = amTriton then
+            begin
             EDRFile.Settings.NumChannels := Min(EDRFile.Settings.NumChannels,2) ;
             if Main.FormExists( 'TritonPanelFrm' ) then TritonPanelFrm.UpdateTritonSettings ;
             // Update channels with amplifier settings
-            for ch := 0 to 15 {Main.SESLabIO.ADCMaxChannels-1}  do begin
+            for ch := 0 to 15 {Main.SESLabIO.ADCMaxChannels-1}  do
+                begin
                 Name := Main.SESLabIO.ADCChannelName[ch] ;
                 Units := Main.SESLabIO.ADCChannelUnits[ch] ;
                 VPU := Main.SESLabIO.ADCChannelVoltsPerUnit[ch] ;

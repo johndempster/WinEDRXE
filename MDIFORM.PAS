@@ -452,7 +452,9 @@ unit Mdiform;
    V4.2.2 20.06.24 ImportRawUnit.pas Extensively revised. Supports 2/4 byte integer, single precision float
    V4.2.3 28.08.25 Export to European Data Format (EDF) files added. Low-pass display only filter added
    V4.2.4 12.09.25 High-pass display only filter added
-   V4.2.5 20.11.25
+   V4.2.5 20.11.25 Zoom In (All) menu item added - zooms display into min-max data range + 10% margin
+                   Edit > EditSignal dialog box added which allows the deletion of segments of data
+                   and the re-alignment of signal channels.
 
   =======================================================================}
 
@@ -475,7 +477,7 @@ type
   TMain = class(TForm)
     MainMenu: TMainMenu;
     File1: TMenuItem;
-    Edit: TMenuItem;
+    mnEdit: TMenuItem;
     View: TMenuItem;
     Help1: TMenuItem;
     mnNew: TMenuItem;
@@ -566,6 +568,8 @@ type
     mnDClamp: TMenuItem;
     mnSaveDataToFile: TMenuItem;
     Timer: TTimer;
+    mnZoomInAll: TMenuItem;
+    mnEditSignalData: TMenuItem;
     procedure mnOpenClick(Sender: TObject);
     procedure mnZoomInClick(Sender: TObject);
     procedure Exit1Click(Sender: TObject);
@@ -604,7 +608,7 @@ type
     procedure FormShow(Sender: TObject);
     procedure mnInvertClick(Sender: TObject);
     procedure mnDetectEvent2Click(Sender: TObject);
-    procedure EditClick(Sender: TObject);
+    procedure mnEditClick(Sender: TObject);
     procedure mnShowHintsClick(Sender: TObject);
     procedure mnPageViewClick(Sender: TObject);
     procedure File1Click(Sender: TObject);
@@ -625,6 +629,8 @@ type
     procedure mnResetMulticlampClick(Sender: TObject);
     procedure mnDClampClick(Sender: TObject);
     procedure mnSaveDataToFileClick(Sender: TObject);
+    procedure mnZoomInAllClick(Sender: TObject);
+    procedure mnEditSignalDataClick(Sender: TObject);
   private
     { Private declarations }
 
@@ -668,7 +674,8 @@ implementation
 uses AmpModule, Invert, EventDetector, PageView, EditMarkers,
   Import, ImportASCIIUnit, maths , ECG, ImportRawUnit, VP500Panel,
   FilePropsUnit, DBSPanelUnit, LabInterfaceSetup,
-  InputChannelSetup, EditProtocolUnit , DCLAMPUnit, exportUnit, EDRFileUnit;
+  InputChannelSetup, EditProtocolUnit , DCLAMPUnit, exportUnit, EDRFileUnit,
+  EditSignal;
 
 {$R *.DFM}
 
@@ -848,25 +855,18 @@ begin
 
      for i := 0 to MDIChildCount-1 do
           begin
-          if MDIChildren[I].Name = 'SimMEPCFrm' then
-             TSimMEPCFrm(MDIChildren[I]).ZoomOut
-          else if MDIChildren[I].Name = 'SimNoiseFrm' then
-             TSimNoiseFrm(MDIChildren[I]).ZoomOut
-          else if MDIChildren[I].Name = 'SimChanFrm' then
-             TSimChanFrm(MDIChildren[I]).ZoomOut
-          else if MDIChildren[I].Name = 'NoiseAnal' then
-             TNoiseAnalFrm(MDIChildren[I]).ZoomOutAll
-          else if MDIChildren[I].Name = 'SingleChanAnalFrm' then
-             TSingleChanAnalFrm(MDIChildren[I]).ZoomOutAll
-          else if MDIChildren[I].Name = 'RecordFrm' then
-             TRecordFrm(MDIChildren[I]).ZoomOutAll
-          else if MDIChildren[I].Name = 'ViewSigFrm' then
-             TViewSigFrm(MDIChildren[I]).ZoomOutAll
-          else if MDIChildren[I].Name = 'SealTestFrm' then
-             TSealTestFrm(MDIChildren[I]).ZoomOut
-          else if MDIChildren[I].Name = 'EventDetFrm' then
-             TEventDetFrm(MDIChildren[I]).ZoomOutAll ;
+          if MDIChildren[I].Name = 'SimMEPCFrm' then TSimMEPCFrm(MDIChildren[I]).ZoomOut
+          else if MDIChildren[I].Name = 'SimNoiseFrm' then TSimNoiseFrm(MDIChildren[I]).ZoomOut
+          else if MDIChildren[I].Name = 'SimChanFrm' then TSimChanFrm(MDIChildren[I]).ZoomOut
+          else if MDIChildren[I].Name = 'NoiseAnal' then TNoiseAnalFrm(MDIChildren[I]).ZoomOutAll
+          else if MDIChildren[I].Name = 'SingleChanAnalFrm' then TSingleChanAnalFrm(MDIChildren[I]).ZoomOutAll
+          else if MDIChildren[I].Name = 'RecordFrm' then TRecordFrm(MDIChildren[I]).ZoomOutAll
+          else if MDIChildren[I].Name = 'ViewSigFrm' then TViewSigFrm(MDIChildren[I]).ZoomOutAll
+           else if MDIChildren[I].Name = 'PageViewFrm' then TPageViewFrm(MDIChildren[I]).ZoomOutAll
+          else if MDIChildren[I].Name = 'SealTestFrm' then TSealTestFrm(MDIChildren[I]).ZoomOut
+          else if MDIChildren[I].Name = 'EventDetFrm' then TEventDetFrm(MDIChildren[I]).ZoomOutAll ;
           end ;
+
     end;
 
 
@@ -1071,7 +1071,7 @@ begin
      View.Enabled := True ;
      Analysis.Enabled := False ;
      mnPrint.Enabled := False ;
-     Edit.Enabled := True ;
+     mnEdit.Enabled := True ;
      Setup.Enabled := True ;
      Record1.Enabled := True ;
      mnClose.Enabled := False ;
@@ -1081,20 +1081,22 @@ begin
      Simulations1.Enabled := False ;
 
      { Enable setup, recording and simulation ... if a data file is open }
-     if EDRFile.CdrFH.FileHandle >= 0 then begin
+     if EDRFile.CdrFH.FileHandle >= 0 then
+        begin
            { Allow these functions when a data file is open }
            mnClose.Enabled := True ;
            mnFileProperties.Enabled := True ;
            Simulations1.Enabled := True ;
-           Edit.Enabled := True ;
+           mnEdit.Enabled := True ;
            mnAppend.Enabled := True ;
 
            { Enable these functions when file contains data records }
-           if EDRFile.CdrFH.NumSamplesInFile > 0 then begin
+           if EDRFile.CdrFH.NumSamplesInFile > 0 then
+              begin
               Analysis.Enabled := True ;
               mnPrint.Enabled := True ;
               mnExport.Enabled := True ;
-              Edit.Enabled := True ;
+              mnEdit.Enabled := True ;
               end ;
 
            end ;
@@ -1753,7 +1755,7 @@ begin
      end;
 
 
-procedure TMain.EditClick(Sender: TObject);
+procedure TMain.mnEditClick(Sender: TObject);
 // --------------------------------------
 // Enable/disable Copy items on Edit menu
 // --------------------------------------
@@ -1762,6 +1764,8 @@ begin
      CopyData.Enabled := False ;
      CopyImage.Enabled := False ;
      mnSaveDataToFile.Enabled := False ;
+     mnEditSignalData.Enabled := False ;
+
 
      if MDIChildCount <= 0 then Exit ;
 
@@ -1769,6 +1773,7 @@ begin
         CopyData.Enabled := True ;
         CopyImage.Enabled := True ;
         mnSaveDataToFile.Enabled := True ;
+        mnEditSignalData.Enabled := True ;
         end
      else if (ActiveMDIChild.Name = 'NoiseAnalFrm') then begin
         CopyData.Enabled :=NoiseAnalFrm.IsClipboardDataAvailable ;
@@ -1891,10 +1896,21 @@ begin
      end ;
 
 
+procedure TMain.mnEditSignalDataClick(Sender: TObject);
+// -------------------------
+// Edit Samples in Data File
+// -------------------------
+begin
+
+  if FormExists('ViewSigFrm') then ViewSigFrm.EditSignalData ;
+
+end;
+
+
 function TMain.ImportFromDataFile : Boolean ;
 { -------------------------------------------
   Import data from another data file format
-  -------------------------------------------}
+  ---------------------S----------------------}
 const
    NumScansPerBuf = 512 ;
 Type
@@ -1976,7 +1992,7 @@ begin
      if EDRFile.CdrFH.FileHandle >= 0 then
         begin
         FileClose( EDRFile.CdrFH.FileHandle ) ;
-        EDRFile.CdrFH.FileHandle := -1 ;
+        EDRFile.CdrFH.FileHandle := THandle(-1) ;
         end ;
 
      { Create name of EDR file to hold imported file }
@@ -2124,7 +2140,7 @@ begin
      { Close dest. file }
      if EDRFile.CdrFH.FileHandle >= 0 then begin
         FileClose( EDRFile.CdrFH.FileHandle ) ;
-        EDRFile.CdrFH.FileHandle := -1 ;
+        EDRFile.CdrFH.FileHandle := THandle(-1) ;
         end ;
 
      Result := True ;
@@ -2388,6 +2404,27 @@ begin
         end ;
 
      end;
+
+procedure TMain.mnZoomInAllClick(Sender: TObject);
+// --------------------------------------
+// Set vertical magnification to signal min-max range
+// --------------------------------------
+var
+    i : Integer ;
+begin
+
+     for i := 0 to MDIChildCount-1 do
+         begin
+         if MDIChildren[I].Name = 'NoiseAnalFrm' then TNoiseAnalFrm(MDIChildren[I]).ZoomInAll
+         else if MDIChildren[I].Name = 'SingleChanAnalFrm' then TSingleChanAnalFrm(MDIChildren[I]).ZoomInAll
+         else if MDIChildren[I].Name = 'RecordFrm' then TRecordFrm(MDIChildren[I]).ZoomInAll
+         else if MDIChildren[I].Name = 'ViewSigFrm' then TViewSigFrm(MDIChildren[I]).ZoomInAll
+         else if MDIChildren[I].Name = 'PageViewFrm' then TPageViewFrm(MDIChildren[I]).ZoomInAll
+         else if MDIChildren[I].Name = 'EventDetFrm' then TEventDetFrm(MDIChildren[I]).ZoomInAll ;
+         end ;
+
+end;
+
 
 procedure TMain.mnZoomInCh0Click(Sender: TObject);
 // --------------------------------------

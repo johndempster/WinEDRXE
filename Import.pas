@@ -251,7 +251,7 @@ begin
         { Close existing data file }
         if EDRFile.cdrfh.FileHandle >= 0 then begin
            FileClose( EDRFile.cdrfh.FileHandle ) ;
-           EDRFile.cdrfh.FileHandle := -1 ;
+           EDRFile.cdrfh.FileHandle := THandle(-1) ;
            end ;
 
         { Create name of EDR file to hold imported data }
@@ -372,7 +372,7 @@ begin
         { Close data file }
         if EDRFile.cdrfh.FileHandle >= 0 then begin
            FileClose( EDRFile.cdrfh.FileHandle ) ;
-           EDRFile.cdrfh.FileHandle := -1 ;
+           EDRFile.cdrfh.FileHandle := THandle(-1) ;
            end ;
         { Close text file }
         CloseFile(F) ;

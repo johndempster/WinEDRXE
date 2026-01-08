@@ -49,6 +49,7 @@ unit SingleChanAnal;
   29.05.25 ... NAN and INF fitted parameters now cause GoodFit to be set to False to
                prevent NAN and INF values crashing XYPlotDisplay (also trapped in XYPlotDisplay)
                Event file closed and re-opened after detection to ensure it is saved after a program crash.
+  06.12.25 ... .ZoomInAll added - Zooms display into min-max range of signal amplitudes
               }
 
 interface
@@ -469,6 +470,7 @@ type
     procedure CopyDataToClipBoard ;
     procedure PrintDisplay ;
     procedure CopyImageToClipboard ;
+    procedure ZoomInAll ;
     procedure ZoomOutAll ;
     procedure ZoomIn( Chan : Integer ) ;
     procedure ZoomOut( Chan : Integer ) ;
@@ -3016,6 +3018,19 @@ begin
      scDetDisplay.YZoom( Chan, 50.0 ) ;
      scEditDisplay.YZoom( Chan, 50.0 ) ;
 
+     end ;
+
+procedure  TSingleChanAnalFrm.ZoomInAll ;
+{ ---------------------------------------------------
+  Set display magnification to signal amplitude range
+  --------------------------------------------------- }
+begin
+     scDetDisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+     scDetDisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue -1 ;
+     scDetDisplay.ZoomIn ;
+     scEditDisplay.MaxADCValue := scDetDisplay.MaxADCValue ;
+     scEditDisplay.MinADCValue := scDetDisplay.MinADCValue ;
+     scEditDisplay.ZoomIn ;
      end ;
 
 

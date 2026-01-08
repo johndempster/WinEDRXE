@@ -38,18 +38,18 @@ object EventDetFrm: TEventDetFrm
   object Page: TPageControl
     Left = 8
     Top = 8
-    Width = 925
+    Width = 923
     Height = 730
     ActivePage = EditEventsPage
     Anchors = [akLeft, akTop, akRight, akBottom]
     TabOrder = 0
     OnChange = PageChange
     ExplicitWidth = 921
-    ExplicitHeight = 729
+    ExplicitHeight = 722
     object DetectEventsPage: TTabSheet
       Caption = 'Detect Events'
       DesignSize = (
-        917
+        915
         700)
       object scDisplay: TScopeDisplay
         Left = 221
@@ -139,7 +139,7 @@ object EventDetFrm: TEventDetFrm
       object sbDisplay: TScrollBar
         Left = 221
         Top = 656
-        Width = 693
+        Width = 691
         Height = 17
         Hint = 'Display window slider'
         Anchors = [akLeft, akRight, akBottom]
@@ -151,7 +151,7 @@ object EventDetFrm: TEventDetFrm
         ExplicitWidth = 697
       end
       object DetDisplayPanel: TPanel
-        Left = 769
+        Left = 767
         Top = 674
         Width = 145
         Height = 23
@@ -783,7 +783,7 @@ object EventDetFrm: TEventDetFrm
       Caption = 'Review/Edit Events'
       ImageIndex = 1
       DesignSize = (
-        917
+        915
         700)
       object scMarkDisplay: TScopeDisplay
         Left = 219
@@ -870,7 +870,7 @@ object EventDetFrm: TEventDetFrm
         FontSize = 8
       end
       object EditDisplayWidthPanel: TPanel
-        Left = 624
+        Left = 622
         Top = 571
         Width = 281
         Height = 25
@@ -878,7 +878,7 @@ object EventDetFrm: TEventDetFrm
         BevelOuter = bvNone
         TabOrder = 3
         ExplicitLeft = 620
-        ExplicitTop = 570
+        ExplicitTop = 563
         object lbEditDisplayPoints: TLabel
           Left = 4
           Top = 2
@@ -959,7 +959,7 @@ object EventDetFrm: TEventDetFrm
         Height = 688
         Anchors = [akLeft, akTop, akBottom]
         TabOrder = 0
-        ExplicitHeight = 687
+        ExplicitHeight = 680
         object Label14: TLabel
           Left = 8
           Top = 16
@@ -1519,7 +1519,7 @@ object EventDetFrm: TEventDetFrm
       object sbEditDisplay: TScrollBar
         Left = 219
         Top = 550
-        Width = 686
+        Width = 684
         Height = 17
         Hint = 'Display window slider'
         Anchors = [akLeft, akRight, akBottom]
@@ -1528,18 +1528,18 @@ object EventDetFrm: TEventDetFrm
         ShowHint = True
         TabOrder = 1
         OnChange = sbEditDisplayChange
-        ExplicitTop = 549
+        ExplicitTop = 542
         ExplicitWidth = 682
       end
       object EventFilterGrp: TGroupBox
         Left = 219
         Top = 594
-        Width = 686
+        Width = 684
         Height = 105
         Anchors = [akLeft, akRight, akBottom]
         Caption = ' Event Filter '
         TabOrder = 2
-        ExplicitTop = 593
+        ExplicitTop = 586
         ExplicitWidth = 682
         object GroupBox4: TGroupBox
           Left = 312
@@ -1747,7 +1747,7 @@ object EventDetFrm: TEventDetFrm
       Caption = 'X-Y Plot'
       ImageIndex = 2
       DesignSize = (
-        917
+        915
         700)
       object plPlot: TXYPlotDisplay
         Left = 224
@@ -2056,7 +2056,7 @@ object EventDetFrm: TEventDetFrm
       Caption = 'Histogram'
       ImageIndex = 3
       DesignSize = (
-        917
+        915
         700)
       object plHist: TXYPlotDisplay
         Left = 219
@@ -2101,7 +2101,7 @@ object EventDetFrm: TEventDetFrm
       object HistResultsGrp: TGroupBox
         Left = 219
         Top = 490
-        Width = 681
+        Width = 679
         Height = 207
         Anchors = [akLeft, akRight, akBottom]
         Caption = ' Curve fitting '
@@ -2453,7 +2453,7 @@ object EventDetFrm: TEventDetFrm
       Caption = 'Average'
       ImageIndex = 4
       DesignSize = (
-        917
+        915
         700)
       object scAverageDisplay: TScopeDisplay
         Left = 219
@@ -2683,7 +2683,7 @@ object EventDetFrm: TEventDetFrm
       object AverageResultsGrp: TGroupBox
         Left = 224
         Top = 486
-        Width = 681
+        Width = 679
         Height = 211
         Anchors = [akLeft, akRight, akBottom]
         Caption = ' Curve fitting '

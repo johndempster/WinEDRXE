@@ -5,7 +5,7 @@ object InputChannelSetupFrm: TInputChannelSetupFrm
   BorderStyle = bsDialog
   Caption = 'Input Channels & Amplifiers Setup'
   ClientHeight = 529
-  ClientWidth = 359
+  ClientWidth = 406
   Color = clBtnFace
   Font.Charset = ANSI_CHARSET
   Font.Color = clBlack
@@ -13,33 +13,27 @@ object InputChannelSetupFrm: TInputChannelSetupFrm
   Font.Name = 'Arial'
   Font.Style = [fsBold]
   FormStyle = fsMDIChild
-  OldCreateOrder = True
   Position = poScreenCenter
   Visible = True
   OnClose = FormClose
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 15
   object PageControl: TPageControl
     Left = 8
     Top = 0
-    Width = 345
+    Width = 385
     Height = 497
-    ActivePage = AmplifiersPage
+    ActivePage = ChannelsPage
     TabOrder = 0
     OnChange = PageControlChange
     OnChanging = PageControlChanging
     object ChannelsPage: TTabSheet
       Caption = 'Input Channels '
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object ChannelTable: TStringGrid
         Left = 0
         Top = 2
-        Width = 321
+        Width = 361
         Height = 351
         Hint = 'Input channel scaling factors and calibration units'
         ColCount = 6
@@ -196,7 +190,7 @@ object InputChannelSetupFrm: TInputChannelSetupFrm
       object GroupBox3: TGroupBox
         Left = 5
         Top = 360
-        Width = 316
+        Width = 356
         Height = 81
         Caption = ' Display Grid'
         TabOrder = 1

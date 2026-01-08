@@ -128,6 +128,7 @@ unit EventDetector;
 //              Display cursor movement keys monitored in hidden edDisplaykeypressSource eitr box.
 // 16.05.25 ... Running mean no longer initialised by DisplayReord() when new buffer of data loaded during event detection
 //              Prevents occasionional misdetection of events
+// 06.12.25 ... .ZoomInAll added - Zooms display into min-max range of signal amplitudes
 
 interface
 
@@ -632,6 +633,7 @@ function CalculateVariablesInInterval(
     procedure SaveDataToFile ;
     procedure CopyImageToClipboard ;
     procedure PrintDisplay ;
+    procedure ZoomInAll ;
     procedure ZoomOutAll ;
     procedure ZoomIn( Chan : Integer ) ;
     procedure ZoomOut( Chan : Integer ) ;
@@ -5490,6 +5492,22 @@ begin
      scAverageDisplay.YZoom( Chan, 50.0 );
      end ;
 
+procedure  TEventDetFrm.ZoomInAll ;
+{ ---------------------------------------------------
+  Set display magnification to signal amplitude range
+  --------------------------------------------------- }
+begin
+     scDisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+     scDisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue -1 ;
+     scDisplay.ZoomIn ;
+     scEditDisplay.MaxADCValue := scDisplay.MaxADCValue ;
+     scEditDisplay.MinADCValue := scDisplay.MinADCValue ;
+     scEditDisplay.ZoomIn ;
+     scAverageDisplay.MaxADCValue := scDisplay.MaxADCValue ;
+     scAverageDisplay.MinADCValue := scDisplay.MinADCValue ;
+     scAverageDisplay.ZoomIn ;
+
+     end ;
 
 
 procedure  TEventDetFrm.ZoomOutAll ;

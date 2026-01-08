@@ -102,6 +102,8 @@ unit Rec;
   12.09.25 ... Display recursive high pass filter feature added
   10.11.25 ... Terminate recording to prevent no. of samples in file exceeding 32 bit integer range
                Samplecounters now use Int64
+  05.12.25 ... Signal polarity now inverted bases on ADCChannelInvert T/F setting.
+  06.12.25 ... .ZoomInAll added - Zooms display into min-max range of signal amplitudes
   ==============================================================================}
 interface
 
@@ -129,15 +131,15 @@ type
         WriteBuf : Integer ;          // Index no. of next sub-buffer to be written
         BufStart : Array[0..NumWriteBufsMax-1] of Integer ; // Sub-buffer starting indexes (in ADC^)
         BufEnd : Array[0..NumWriteBufsMax-1] of Integer ;   // Sub-buffer end indexes (in ADC^)
-        OldestScan : Integer ;               //
+        OldestScan : Integer ;               // Index of oldest (unprocessed) scan
         LatestScan : Integer ;               // Index of latest available scan (ADC^)
         EmptyPointer : Integer ;             // Index of empty region (ADC^)
-        Recording : Boolean ;
-        NumSamplesInFileRequired : Int64 ;
-        NumRecordsToAcquire : Integer ;
-        TAcquired : Single ;
-        NumBufsWritten : Integer ;
-        MaxNumBufsWritten : Integer ;
+        Recording : Boolean ;                // T = recording to file in progess
+        NumSamplesInFileRequired : Int64 ;   // No. samples to be recorded in record
+        NumRecordsToAcquire : Integer ;      // No. of records to acquire
+        TAcquired : Single ;                 // Recording time acquired
+        NumBufsWritten : Integer ;           // No. of buffers written in this timer tick
+        MaxNumBufsWritten : Integer ;        // Max. no. buffers written per tick
         end ;
 
        TCapacity = record
@@ -485,6 +487,7 @@ type
     procedure ZoomIn( ChanNum : Integer ) ;
     procedure ZoomOut( ChanNum : Integer ) ;
     procedure ZoomOutAll ;
+    procedure ZoomInAll ;
     procedure UpdateStimProgramList ;
     procedure RestartADC ;
     procedure StartRecording ;
@@ -930,7 +933,7 @@ procedure TRecordFrm.TimerTimer(Sender: TObject);
   Timed Event scheduler
   ---------------------}
 var
-   i,iEnd,NumNewScans,NewScan,np,npHalfBuf : Integer ;
+   i,ch,iEnd,NumNewScans,NewScan,np,npHalfBuf : Integer ;
    AbortRecording : Boolean ;
    FilePointer : Int64 ;
    StimulusTime : Single ;
@@ -938,17 +941,12 @@ var
    s : string ;
 begin
 
-
      // Abort execution if last call still running
-
-
-
      if TimerBusy then Exit ;
      TimerBusy := True ;
 
      if TimerStartTime <> 0 then LastTimerStartTime := TimerStartTime ;
      TimerStartTime := TimeGetTime ;
-
 //
 //   Load virtual control panel if required
 //
@@ -998,8 +996,7 @@ begin
         np := 0 ;
         npHalfBuf := (WriteBufs.NumSamples div 2) - 1 ;
         While ((ADC^[WriteBufs.EmptyPointer] <> EmptyFlag) or
-              (ADC^[WriteBufs.EmptyPointer+1] <> -EmptyFlag)) and
-              (np < npHalfBuf) do
+               (ADC^[WriteBufs.EmptyPointer+1] <> -EmptyFlag)) and (np < npHalfBuf) do
               begin
               WriteBufs.EmptyPointer := WriteBufs.EmptyPointer + Main.SESLabIO.ADCNumChannels*2 ;
               if WriteBufs.EmptyPointer >= WriteBufs.NumSamples then
@@ -1014,6 +1011,13 @@ begin
         NewScan :=  WriteBufs.OldestScan ;
         while NewScan <> WriteBufs.LatestScan do
              begin
+
+             // Invert signal polarity if channel inversion flag set
+             for ch := 0 to Main.SESLabIO.ADCNumChannels-1 do
+                 begin
+                 if Main.SESLabIO.ADCChannelInvert[ch] then ADC^[NewScan+ch] := -ADC^[NewScan+ch] ;
+                 end;
+
              NewScan := NewScan + Main.SESLabIO.ADCNumChannels ;
              if NewScan >= WriteBufs.NumSamples then NewScan := NewScan - WriteBufs.NumSamples ;
              Inc(NumNewScans) ;
@@ -2769,6 +2773,17 @@ begin
      scDisplay.MaxADCValue := Main.SESLabIO.ADCMaxValue ;
      scDisplay.MinADCValue := Main.SESLabIO.ADCMinValue ;
      scDisplay.ZoomOut ;
+     end ;
+
+
+procedure  TRecordFrm.ZoomInAll ;
+{ ---------------------------------------------------
+  Set display magnification to signal amplitude range
+  --------------------------------------------------- }
+begin
+     scDisplay.MaxADCValue := Main.SESLabIO.ADCMaxValue ;
+     scDisplay.MinADCValue := Main.SESLabIO.ADCMinValue ;
+     scDisplay.ZoomIn ;
      end ;
 
 

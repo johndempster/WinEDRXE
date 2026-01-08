@@ -261,6 +261,10 @@
             <Form>EDRFile</Form>
             <DesignClass>TDataModule</DesignClass>
         </DCCReference>
+        <DCCReference Include="EditSignal.pas">
+            <Form>EditSignalDataFrm</Form>
+            <FormType>dfm</FormType>
+        </DCCReference>
         <RidlCompile Include="WinEDR.ridl"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
@@ -342,7 +346,19 @@
                 <DeployFile LocalName="SETVAR.PAS" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="SIMNOISE.PAS" Configuration="Debug" Class="ProjectFile"/>
                 <DeployFile LocalName="WinEDR.exe" Configuration="Debug" Class="ProjectOutput"/>
+                <DeployFile LocalName="WinEDR.exe" Configuration="Debug" Class="ProjectOutput">
+                    <Platform Name="Win32">
+                        <RemoteName>WinEDR.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="WinEDR.ridl" Configuration="Debug" Class="ProjectFile"/>
+                <DeployFile LocalName="WinEDR.ridl" Configuration="Debug" Class="ProjectFile">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\</RemoteDir>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
                 <DeployFile LocalName="ZERO.PAS" Configuration="Debug" Class="ProjectFile"/>
                 <DeployClass Name="AdditionalDebugSymbols">
                     <Platform Name="OSX32">

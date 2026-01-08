@@ -16,6 +16,7 @@ unit PageView;
 // 07.08.15 ... Min/Max compression of large array signal arrays now handled by ScopeDisplay.pas
 // 15.03.24 ... Form position saved to INI file
 // 20.11.25 ... EDRFIle.ReadBuffer now used to read data from file
+// 06.12.25 ... .ZoomInAll added - Zooms display into min-max range of signal amplitudes
 
 interface
 
@@ -78,6 +79,8 @@ type
     procedure ChangeDisplayGrid ;
     procedure ZoomIn( ChanNum : Integer ) ;
     procedure ZoomOut( ChanNum : Integer ) ;
+    procedure ZoomInAll ;
+    procedure ZoomOutAll ;
 
     end ;
 
@@ -594,6 +597,28 @@ begin
          scDisplay.YZoom( i, -50.0 ) ;
          end ;
 
+     end ;
+
+
+procedure  TPageViewFrm.ZoomInAll ;
+{ ---------------------------------------------------
+  Set display magnification to signal amplitude range
+  --------------------------------------------------- }
+begin
+     scDisplay.MaxADCValue :=  EDRFile.Channel[0].ADCMaxValue ;
+     scDisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue -1 ;
+     scDisplay.ZoomIn ;
+     end ;
+
+
+procedure  TPageViewFrm.ZoomOutAll ;
+{ ---------------------------------
+  Set minimum display magnification
+  --------------------------------- }
+begin
+     scDisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+     scDisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue -1 ;
+     scDisplay.ZoomOut ;
      end ;
 
 

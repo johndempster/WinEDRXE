@@ -687,7 +687,7 @@ begin
 
     // Close currently open data file
     FileClose(EDRFIle.Cdrfh.FileHandle) ;
-    EDRFIle.Cdrfh.FileHandle := -1 ;
+    EDRFIle.Cdrfh.FileHandle := THandle(-1) ;
 
     for i := 0 to meFileList.Lines.Count-1 do
         begin
@@ -702,7 +702,7 @@ begin
              end ;
 
         FileClose(EDRFIle.Cdrfh.FileHandle) ;
-        EDRFIle.Cdrfh.FileHandle := -1 ;
+        EDRFIle.Cdrfh.FileHandle := THandle(-1) ;
 
         if AbortExport then Break ;
 

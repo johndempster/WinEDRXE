@@ -40,6 +40,7 @@ unit NoiseAnal;
                  and power spectrum results not updated in variance plot
     11.03.24 ... Vertical cursors can now be moved using left/right arrow keys
     14.03.24 ... Form position saved to INI file
+    06.12.25 ... .ZoomInAll added - Zooms display into min-max range of signal amplitudes
     }
 
 
@@ -281,6 +282,7 @@ type
     procedure CopyImageToClipboard ;
     procedure SaveDataToFile ;
     function IsClipboardDataAvailable : Boolean ;
+    procedure ZoomInAll ;
     procedure ZoomOutAll ;
     procedure ZoomIn( Chan : Integer ) ;
     procedure ZoomOut( Chan : Integer ) ;
@@ -2709,6 +2711,16 @@ begin
      scDisplay.YZoom( cbACChannel.ItemIndex, 50.0 );
      end ;
 
+
+procedure  TNoiseAnalFrm.ZoomInAll ;
+{ ---------------------------------------------------
+  Set display magnification to signal amplitude range
+  --------------------------------------------------- }
+begin
+     scDisplay.MaxADCValue := EDRFile.Channel[0].ADCMaxValue ;
+     scDisplay.MinADCValue := -EDRFile.Channel[0].ADCMaxValue -1 ;
+     scDisplay.ZoomIn ;
+     end ;
 
 
 procedure  TNoiseAnalFrm.ZoomOutAll ;

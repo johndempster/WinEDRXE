@@ -141,6 +141,7 @@ type
     TDestination = (ToPrinter,ToClipboard) ;
     TIntArray = Array[0..MaxTBuf] of SmallInt ;
     TSmallIntArray = Array[0..MaxTBuf] of SmallInt ;
+ //   PSmallIntArray = ^TSmallIntArray ;
     TSingleArray = Array[0..MaxTBuf] of Single ;
     TLongIntArray = Array[0..MaxTBuf] of LongInt ;
     PLongIntArray = ^TLongIntArray ;
@@ -163,7 +164,7 @@ type
 TCDRFileHeader = record
             FileName : string ;
             WCPFileName : string ;
-            FileHandle : integer ;
+            FileHandle : THandle ;
             FilePointer : Int64 ;
             NumSamples : Int64 ;
             NumChannels : Integer ;
@@ -1808,7 +1809,7 @@ begin
      if FHeader.FileHandle >= 0 then
         begin
         FileClose( FHeader.FileHandle ) ;
-        FHeader.FileHandle := -1 ;
+        FHeader.FileHandle := THandle(-1) ;
         end ;
 
      { Create a new file }
@@ -2156,7 +2157,7 @@ begin
      MarkerList := TStringList.Create ;
 
      { Set the file names and handles for all header blocks to null }
-     CdrFH.FileHandle := -1 ;
+     CdrFH.FileHandle := THandle(-1) ;
      CdrFH.FileName := '' ;
 
      // Clear form positions
@@ -2222,7 +2223,7 @@ begin
      if  CdrFH.FileHandle >= 0 then
          begin
          FileClose(CdrFH.FileHandle) ;
-         CdrFH.FileHandle := -1 ;
+         CdrFH.FileHandle :=THandle(-1) ;
          //CdrFH.FileName := '' ;
          end ;
 
@@ -2233,58 +2234,65 @@ procedure TEDRFile.MakeBackupFile ;
 { -------------------------------------------------
   Copy data file to backup file with .BAK extension
   ------------------------------------------------- }
+const
+    BufSize = 65536 ;
 var
    FileName : string ;
-   FileHandle : Integer ;
-   NumBytes,nRead : Integer ;
-   Buf : Array[0..255] of SmallInt ;
-   Done : Boolean ;
+   FileHandle : THandle ;
+   NumBytes,NumBytesInFile,nRead : Int64 ;
+   Buf : PByteArray ;
 begin
-
-     if CdrFH.BackedUp then Exit ;
 
      { Create backup file }
      FileName := ChangeFileExt( cdrFH.FileName, '.bak' ) ;
+     if FileExists( FileName ) then Exit ;
+
      FileHandle := FileCreate( FileName ) ;
      if FileHandle < 0 then begin
         ShowMessage( 'Error creating ' + FileName ) ;
         Exit ;
         end ;
 
-     // Save latest header block data
+     // Save latest header block data to file
      CdrFH.BackedUp := True ;
      SaveHeader( CdrFH ) ;
 
-     { Copy data to backup }
-
-     { No. of bytes to be copied }
-     NumBytes := FileSeek( CdrFH.FileHandle, 0, 2 ) + 1 ;
+     // Allocate buffer
+     Buf := AllocMem( BufSize ) ;
 
      { Point to start of data files }
-     CdrFH.FilePointer := FileSeek( CdrFH.FileHandle, 0, 0 ) ;
-     FileSeek( FileHandle, 0, 0 ) ;
+     CdrFH.FilePointer := FileSeek( CdrFH.FileHandle, Int64(0), 0 ) ;
+     FileSeek( FileHandle, Int64(0), 0 ) ;
 
-     Done := False ;
-     while not Done do begin
-           // Read from EDR file
-           nRead := FileRead(CdrFH.FileHandle,Buf,Sizeof(Buf)) ;
-           // Write to backup file
-           if nRead > 0 then begin
-              if FileWrite(FileHandle,Buf,nRead) < nRead then begin
-                 ShowMessage( 'Backup: Error writing ' + FileName ) ;
-                 WriteToLogFile( 'Backup: Error writing ' + FileName ) ;
-                 Done := True ;
-                 end ;
-              end
-           else Done := True ;
+     // Copy file header
+     FileRead( CDRFH.FileHandle, Buf^, CDRFH.NumBytesInHeader ) ;
+     FileWrite( FileHandle, Buf^, CDRFH.NumBytesInHeader ) ;
+
+     { No. of data bytes to be copied }
+     NumBytes := CDRFH.NumSamplesInFile*SizeOf(SmallInt) ;
+     NumBytesInFile := NumBytes ;
+
+     { Copy data to backup }
+
+     repeat
+
+           // Read data from backup
+           nRead := Min( BufSize, NumBytes ) ;
+           FileRead(CDRFH.FileHandle,Buf^,nRead) ;
+           FileWrite(FileHandle,Buf^,nRead) ;
+
+           Main.StatusBar.SimpleText := Format( 'Backup to %s %.0f%% done',
+                                        [FileName,100.0*(1.0 - NumBytes/NumBytesInFile)]);
+//           Application.ProcessMessages ;
 
            NumBytes := NumBytes - nRead ;
-           if NumBytes <= 0 then Done := True ;
 
-           end ;
+     until NumBytes <= 0 ;
 
      { Close backup file }
      FileClose( FileHandle ) ;
+
+     FreeMem( Buf ) ;
 
      Main.mnRestoreOriginal.Enabled := CdrFH.BackedUp ;
 
@@ -2297,66 +2305,73 @@ procedure TEDRFile.RestoreFromBackupFile ;
 { -------------------------------------------------
   Restore original data file from backup file
   ------------------------------------------------- }
+const
+    BufSize = 65536 ;
 var
    FileName : string ;
-   FileHandle : Integer ;
-   NumBytes,nRead : Integer ;
-   Buf : Array[0..255] of SmallInt ;
-   Done : Boolean ;
+   FileHandle : THandle ;
+   NumBytes,NumBytesInFile,nRead,FilePointer : Int64 ;
+   Buf : PByteArray ;
 begin
 
      // Create back up file name
      FileName := ChangeFileExt( cdrFH.FileName, '.bak' ) ;
 
-     if (not CdrFH.BackedUp) or (not FileExists(FileName)) then Exit ;
+     if not FileExists(FileName) then Exit ;
 
      { Open backup file }
      FileHandle := FileOpen( FileName, fmOpenRead ) ;
-     if FileHandle < 0 then begin
-        ShowMessage( 'Restore: Unable to open ' + FileName ) ;
+     if FileHandle < 0 then
+        begin
+        ShowMessage( 'Restore Backup: Unable to open ' + FileName ) ;
         Exit ;
         end ;
 
-     { No. of bytes to be copied }
-     NumBytes := FileSeek( FileHandle, 0, 2 ) + 1 ;
 
-     { Point to start of files }
-     FileSeek( FileHandle, 0, 0 ) ;
-     CdrFH.FilePointer := FileSeek( CdrFH.FileHandle, 0, 0 ) ;
+     // Allocate buffer
+     Buf := AllocMem( BufSize ) ;
 
-     { Copy data from backup }
-     Done := False ;
-     while not Done do begin
-
-           // Read data from backup
-           nRead := FileRead(FileHandle,Buf,Sizeof(Buf)) ;
-
-           // Write to EDR file
-           if nRead > 0 then begin
-              if FileWrite(CdrFH.FileHandle,Buf,nRead) <> nRead then begin
-                 ShowMessage( 'Restore: Error writing ' + CdrFH.FileName ) ;
-                 WriteToLogFile( 'Restore: Error writing ' + FileName ) ;
-                 Done := True ;
-                 end ;
-              end
-           else Done := True ;
-
-           NumBytes := NumBytes - nRead ;
-           if NumBytes <= 0 then Done := True ;
-
-           end ;
+     // Copy file header
+     FileSeek( FileHandle, Int64(0), 0 ) ;
+     FileRead( FileHandle, Buf^, CDRFH.NumBytesInHeader ) ;
+     FileSeek( CdrFH.FileHandle, Int64(0), 0 ) ;
+     FileWrite( CDRFH.FileHandle, Buf^, CDRFH.NumBytesInHeader ) ;
 
      { Update header record with restored data }
      GetHeader( CdrFH ) ;
 
+     { No. of data bytes to be copied }
+     NumBytes := CDRFH.NumSamplesInFile*SizeOf(SmallInt) ;
+     NumBytesInfile := NumBytes ;
+     { Copy data to backup }
+
+     FilePointer := CDRFH.NumBytesInHeader ;
+     repeat
+
+           // Read data from backup
+           nRead := Min( BufSize, NumBytes ) ;
+           FileSeek( FileHandle, FilePointer, 0 ) ;
+           FileRead(FileHandle,Buf^,nRead) ;
+           FileSeek( CDRFH.FileHandle, FilePointer, 0 ) ;
+           FileWrite(CDRFH.FileHandle,Buf^,nRead) ;
+
+           Main.StatusBar.SimpleText := Format( 'Restore from %s %.0f%% done',
+                                        [FileName,100.0*(1.0 - NumBytes/NumBytesInFile)]);
+//           Application.ProcessMessages ;
+
+           NumBytes := NumBytes - nRead ;
+           FilePointer := FilePointer + nRead ;
+
+     until NumBytes <= 0 ;
+
      { Close backup file }
      FileClose( FileHandle ) ;
+
+     FreeMem( Buf ) ;
 
      WriteToLogFile( cdrFH.FileName + ' restored from ' + FileName ) ;
 
      end ;
-
-
 
 
 procedure TEDRFile.OpenLogFile ;

@@ -2,7 +2,9 @@ program WinEDR;
 
 uses
   Forms,
-  Winapi.Windows,System.SysUtils,VCL.Dialogs,   { Required for CreateMutex 27.3.24}
+  Winapi.Windows,
+  System.SysUtils,
+  VCL.Dialogs,
   WinEDR_TLB in 'WinEDR_TLB.pas',
   AutoUnit in 'AutoUnit.pas' {AUTO: CoClass},
   MDIFORM in 'MDIFORM.PAS' {Main},
@@ -58,7 +60,8 @@ uses
   MATFileWriterUnit in 'MATFileWriterUnit.pas',
   DCLAMPUnit in 'DCLAMPUnit.pas' {DCLAMPFrm},
   exportUnit in 'exportUnit.pas' {ExportFrm},
-  EDRFileUnit in 'EDRFileUnit.pas' {EDRFile: TDataModule};
+  EDRFileUnit in 'EDRFileUnit.pas' {EDRFile: TDataModule},
+  EditSignal in 'EditSignal.pas' {EditSignalDataFrm};
 
 {$R *.TLB}
 
@@ -98,5 +101,6 @@ begin
   Application.CreateForm(TAmplifier, Amplifier);
   Application.CreateForm(TDirectorySelectFrm, DirectorySelectFrm);
   Application.CreateForm(TEDRFile, EDRFile);
+  Application.CreateForm(TEditSignalDataFrm, EditSignalDataFrm);
   Application.Run;
 end.
