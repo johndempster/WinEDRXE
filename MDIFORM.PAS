@@ -455,7 +455,8 @@ unit Mdiform;
    V4.2.5 20.11.25 Zoom In (All) menu item added - zooms display into min-max data range + 10% margin
                    Edit > EditSignal dialog box added which allows the deletion of segments of data
                    and the re-alignment of signal channels.
-
+   V4.2.6 12.01.26 ZoomIn > Ch. and Zoom Out > Ch. menu items now support 16 channels
+                   and no longer generate list out of bounds error when there are more than 9 channels.
   =======================================================================}
 
 interface
@@ -570,6 +571,18 @@ type
     Timer: TTimer;
     mnZoomInAll: TMenuItem;
     mnEditSignalData: TMenuItem;
+    mnZoomInCh10: TMenuItem;
+    mnZoomInCh11: TMenuItem;
+    mnZoomInCh12: TMenuItem;
+    mnZoomInCh13: TMenuItem;
+    mnZoomInCh14: TMenuItem;
+    mnZoomInCh15: TMenuItem;
+    mnZoomOutCh10: TMenuItem;
+    mnZoomOutCh11: TMenuItem;
+    mnZoomOutCh12: TMenuItem;
+    mnZoomOutCh13: TMenuItem;
+    mnZoomOutCh14: TMenuItem;
+    mnZoomOutCh15: TMenuItem;
     procedure mnOpenClick(Sender: TObject);
     procedure mnZoomInClick(Sender: TObject);
     procedure Exit1Click(Sender: TObject);
@@ -688,7 +701,7 @@ var
    FileName : String ;
 begin
 
-     EDRFile.Version := 'V4.2.5' ;
+     EDRFile.Version := 'V4.2.6' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + EDRFile.Version ;
 
      WindowMenu := Windows ;
@@ -798,30 +811,32 @@ procedure TMain.mnZoomInClick(Sender: TObject);
   Display zoom in menu
   --------------------- }
 var
-    i,ch : Integer ;
+    i,ch,nItems : Integer ;
+    s : string ;
 begin
 
      for i := 0 to mnZoomIn.Count-1 do mnZoomIn.Items[i].Visible := False ;
      if MDIChildCount <= 0 then Exit ;
 
-     if ActiveMDIChild.Name = 'RecordFrm' then
-        begin
-        // Use Recording channels if recording form is active
-        for ch := 0 to EDRFile.Settings.NumChannels-1 do begin
-            mnZoomIn.Items[ch].Caption := format( 'Ch.%d (%s)',
-                                         [ch,Main.SESLabIO.ADCChannelName[ch]]) ;
-            mnZoomIn.Items[ch].Tag := ch ;
-            mnZoomIn.Items[ch].Visible := True ;
-            end ;
-         end
-     else begin
-        // Otherwise use file channels
-        for ch := 0 to EDRFile.CDRFH.NumChannels-1 do begin
-            mnZoomIn.Items[ch].Caption := format( 'Ch.%d (%s)',[ch,EDRFile.Channel[ch].ADCName]) ;
-            mnZoomIn.Items[ch].Tag := ch ;
-            mnZoomIn.Items[ch].Visible := True ;
-            end ;
-        end ;
+     if ActiveMDIChild.Name = 'RecordFrm' then nItems := EDRFile.Settings.NumChannels
+                                          else nItems := EDRFile.CDRFH.NumChannels ;
+
+     // Add channel names to menu list
+     for ch := 0 to Min( nItems, mnZoomIn.Count ) - 1 do
+          begin
+          // Use Recording channels if recording form is active
+          if ActiveMDIChild.Name = 'RecordFrm' then
+             begin
+             s := format( 'Ch.%d (%s)', [ch,Main.SESLabIO.ADCChannelName[ch]]) ;
+             end
+          else
+             begin
+             s := format( 'Ch.%d (%s)',[ch,EDRFile.Channel[ch].ADCName]) ;
+             end;
+          mnZoomIn.Items[ch].Caption := s ;
+          mnZoomIn.Items[ch].Tag := ch ;
+          mnZoomIn.Items[ch].Visible := True ;
+         end ;
 
      end;
 
@@ -2338,31 +2353,34 @@ procedure TMain.mnZoomOutClick(Sender: TObject);
 // Display zoom out
 // ----------------
 var
-    i,ch : Integer ;
+    i,ch,nItems : Integer ;
+    s : string ;
 begin
 
      for i := 0 to mnZoomOut.Count-1 do mnZoomOut.Items[i].Visible := False ;
      if MDIChildCount <= 0 then Exit ;
 
-     if ActiveMDIChild.Name = 'RecordFrm' then begin
-        // Use Recording channels if recording form is active
-        for ch := 0 to EDRFile.Settings.NumChannels-1 do begin
-            mnZoomOut.Items[ch].Caption := format( 'Ch.%d (%s)',
-                                         [ch,Main.SESLabIO.ADCChannelName[ch]]) ;
-            mnZoomOut.Items[ch].Tag := ch ;
-            mnZoomOut.Items[ch].Visible := True ;
-            end ;
-         end
-     else begin
-        // Otherwise use file channels
-        for ch := 0 to EDRFile.CDRFH.NumChannels-1 do begin
-            mnZoomOut.Items[ch].Caption := format( 'Ch.%d (%s)',
-                                         [ch,EDRFile.Channel[ch].ADCName]) ;
-            mnZoomOut.Items[ch].Tag := ch ;
-            mnZoomOut.Items[ch].Visible := True ;
-            end ;
-        end ;
-     end ;
+     if ActiveMDIChild.Name = 'RecordFrm' then nItems := EDRFile.Settings.NumChannels
+                                          else nItems := EDRFile.CDRFH.NumChannels ;
+
+     // Add channel names to menu list
+     for ch := 0 to Min( nItems, mnZoomIn.Count ) - 1 do
+          begin
+          // Use Recording channels if recording form is active
+          if ActiveMDIChild.Name = 'RecordFrm' then
+             begin
+             s := format( 'Ch.%d (%s)', [ch,Main.SESLabIO.ADCChannelName[ch]]) ;
+             end
+          else
+             begin
+             s := format( 'Ch.%d (%s)',[ch,EDRFile.Channel[ch].ADCName]) ;
+             end;
+          mnZoomOut.Items[ch].Caption := s ;
+          mnZoomOut.Items[ch].Tag := ch ;
+          mnZoomOut.Items[ch].Visible := True ;
+         end ;
+
+     end;
 
 
 procedure TMain.mnEPC9Click(Sender: TObject);
