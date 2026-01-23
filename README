@@ -1,15 +1,13 @@
 WinEDR - Window Electrophysiology Disk Recorder
 
-The files contained in this archive can be buit using Embarcadero Delphi software development environment which can be downloaded from
-https://www.embarcadero.com/products/delphi/starter
+The files contained in this archive can be buit using the Embarcadero Delphi software development environment which can be downloaded from https://www.embarcadero.com/products/delphi/starter
 
 To build and run the application:
 
-1) Clone this repository to a folder in the Delphi XE Projects folder e.g. ..\My Documents\Embarcadero\Studio\Projects\WinEDR<br>
+1) Clone this repository to a folder in the Delphi XE Projects folder e.g. ..\My Documents\Embarcadero\Studio\Projects\WinEDR
 2) Select File > Open Project and open .. \My Documents\Embarcadero\Studio\Projects\WinEDR\WinEDR
 
 Note. The SESComponents package of common Delphi components used in Strathclyde Electrophysiology Software applications must be downloaded from 
-https://github.com/johndempster/SESComponentsXE 
-and installed on the Delphi toolbar before building this application. See the SESComponentsXE repository  for details.
+https://github.com/johndempster/SESComponentsXE and installed on the Delphi toolbar before building this application. See the SESComponentsXE repository  for details.
 
 
