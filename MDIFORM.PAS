@@ -457,6 +457,9 @@ unit Mdiform;
                    and the re-alignment of signal channels.
    V4.2.6 12.01.26 ZoomIn > Ch. and Zoom Out > Ch. menu items now support 16 channels
                    and no longer generate list out of bounds error when there are more than 9 channels.
+   V4.2.7 21.10.26 Digidata 1440-1550B support updated (still doesn't work with Axoscope V11.x)
+                   EDR data files open in WinEDR now share-able with other programs
+                   Record to Disk: New file now created if no file open when Record is pressed
   =======================================================================}
 
 interface
@@ -701,7 +704,7 @@ var
    FileName : String ;
 begin
 
-     EDRFile.Version := 'V4.2.6' ;
+     EDRFile.Version := 'V4.2.7' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + EDRFile.Version ;
 
      WindowMenu := Windows ;

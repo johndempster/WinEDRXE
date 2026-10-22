@@ -104,6 +104,7 @@ unit Rec;
                Samplecounters now use Int64
   05.12.25 ... Signal polarity now inverted bases on ADCChannelInvert T/F setting.
   06.12.25 ... .ZoomInAll added - Zooms display into min-max range of signal amplitudes
+  22.10.26 ... New file now created if no file open when Record is pressed
   ==============================================================================}
 interface
 
@@ -385,9 +386,6 @@ type
   private
     { Private declarations }
     NewAmplifierGain : Boolean ;
-
-    //FileName : String ;           // Data file in use for recording
-    SweepFileName : string ;
 
     WriteBufs : TWriteBufs ;      // Circular A/D data buffer control record
 
@@ -873,16 +871,17 @@ begin
     if Amplifier.AmplifierType[Amp] = amNone then exit ;
 
     // Units & scale
-    if Amplifier.ClampMode[Amp] = amCurrentClamp then begin
+    if Amplifier.ClampMode[Amp] = amCurrentClamp then
+      begin
       Units := CurrentClampUnits ;
       AOChan := Amplifier.CurrentCommandChannel[Amp] ;
       Scale := CurrentClampScale*Amplifier.CurrentCommandScaleFactor[AOChan] ;
       rbVClamp.checked := False ;
       rbIClamp.checked := True ;
       end
-    else begin
+    else
+      begin
       Units := VoltageClampUnits ;
-      Scale := VoltageClampScale ;
       AOChan := Amplifier.VoltageCommandChannel[Amp] ;
       Scale := VoltageClampScale*Amplifier.VoltageCommandScaleFactor[AOChan] ;
       rbVClamp.checked := True ;
@@ -2234,7 +2233,7 @@ begin
 
      // Create a new file if none open
 
-     if EDRFIle.Cdrfh.FileHandle < 0 then
+     if EDRFIle.Cdrfh.FileHandle = INVALID_HANDLE_VALUE then
         begin
         EDRFile.CdrFH.FileName := Main.CreateIndexedFileName( EDRFile.Settings.RecentFiles[0] ) ;
         EDRFile.CdrFH.FileName := ChangeFileExt( EDRFile.CdrFH.FileName, DataFileExtension ) ;
@@ -2247,6 +2246,8 @@ begin
 
      // Open and new data file (with + appended) if channel scaling settings changed
      CheckNewDataFileNeeded ;
+
+     //EDRFile.LoadDataFiles( EDRFile.CdrFH.FileName ) ;
 
      // Copy data into file header
      EDRFIle.Cdrfh.NumChannels := Main.SESLabIO.ADCNumChannels ;

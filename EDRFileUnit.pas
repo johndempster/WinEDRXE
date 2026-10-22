@@ -76,6 +76,7 @@ unit EDRFileUnit;
   19.05.25 ... #0 in first letter of ADCName and ADCUnirs now trapped correctly. No longer overwrites units with "Ch.n"
   25.08.25 ... Settings.LowPassFIlterActive, Settings.LowPassFIlterCoeff added to INI file
   06.09.25 ... Settings.HighPassFIlterActive, Settings.HighPassFIlterCoeff added to INI file
+  21.10.26 ... EDR data files now opened/created with fmShareDenyNone attribute set so other programs can access data files while open in WInEDR
   }
 
 interface
@@ -652,7 +653,7 @@ TMarkerShape = ( SquareMarker, CircleMarker ) ;
     procedure WriteToLogFile( Line : string ) ;
     procedure WriteToLogFileNoDate( Line : string ) ;
     procedure CloseLogFile ;
-    procedure FileCloseSafe( var FileHandle : Integer ) ;
+    procedure FileCloseSafe( var FileHandle : THandle ) ;
 
     procedure MakeBackupFile ;
     procedure RestoreFromBackupFile ;
@@ -844,7 +845,7 @@ var
 begin
 
      // Exit if file not open
-     if fHDR.FileHandle < 0 then Exit ;
+     if fHDR.FileHandle = INVALID_HANDLE_VALUE then Exit ;
 
      // Create file header Name=Value string list
      Header := TStringList.Create ;
@@ -1760,19 +1761,22 @@ begin
 
      OK := False ;
      if FileExists( FileName ) then OK := True ;
-     if OK then begin
+     if OK then
+        begin
         if (FileGetAttr(FileName) AND faReadOnly) <> 0 then begin
            OK := False ;
            ShowMessage( FileName + ' is READ-ONLY. Unable to open!' ) ;
            end ;
         end ;
 
-     if OK then begin
-        { Open data file }
+     if OK then
+        begin
+        { Open data file (for read/write and allow sharing with other programs}
         CdrFH.Filename := ChangeFileExt(FileName,DataFileExtension) ;
-        CdrFH.FileHandle := FileOpen( CdrFH.FileName, fmOpenReadWrite ) ;
+        CdrFH.FileHandle := FileOpen( CdrFH.FileName, fmOpenReadWrite or fmShareDenyNone ) ;
         Main.Caption := 'WinEDR ' + Version + ' ' + FileName ;
-        if CdrFH.Filehandle >= 0 then begin
+        if CdrFH.Filehandle <> INVALID_HANDLE_VALUE then
+            begin
             { Load the raw file details }
             GetHeader( CdrFH ) ;
             { Make sure all channels are visible }
@@ -1805,16 +1809,23 @@ function TEDRFile.CreateNewDataFile(
 var
    ch : Integer ;
 begin
+
      { Close any existing file }
-     if FHeader.FileHandle >= 0 then
+     if FHeader.FileHandle <> INVALID_HANDLE_VALUE then
         begin
         FileClose( FHeader.FileHandle ) ;
         FHeader.FileHandle := THandle(-1) ;
         end ;
 
-     { Create a new file }
-     FHeader.FileHandle := FileCreate( FHeader.FileName ) ;
-     if FHeader.FileHandle >= 0 then
+     { Create a new file (Note read/write and sharing flag appear to be ignored)}
+     FHeader.FileHandle := FileCreate( FHeader.FileName, fmOpenReadWrite or fmShareDenyNone ) ;
+     Main.Caption := 'WinEDR ' + Version + ' ' + FHeader.FileName ;
+
+     // Close and re-open in order to set read/write and sharing permissions
+     FileClose( FHeader.FileHandle ) ;
+     FHeader.FileHandle := FileOpen(  FHeader.FileName, fmOpenReadWrite or fmShareDenyNone ) ;
+
+     if FHeader.FileHandle <> INVALID_HANDLE_VALUE then
         begin
 
         { No data points }
@@ -1833,14 +1844,17 @@ begin
 
         { Save initial values to header block }
         SaveHeader( FHeader ) ;
+
         // Delete event file associated with a previous data file of same name
         if FileExists(ChangeFileExt(FHeader.FileName,EventFileExtension)) then
            DeleteFile(PChar(ChangeFileExt(FHeader.FileName,EventFileExtension))) ;
+
         // Delete variance record file associated with a previous data file of same name
         if FileExists(ChangeFileExt(FHeader.FileName,'.rec')) then
            DeleteFile(PChar(ChangeFileExt(FHeader.FileName,'.rec'))) ;
 
         Result := True ;
+
         end
      else begin
         ShowMessage( 'Error: Could not create ' + FHeader.FileName ) ;
@@ -2157,7 +2171,7 @@ begin
      MarkerList := TStringList.Create ;
 
      { Set the file names and handles for all header blocks to null }
-     CdrFH.FileHandle := THandle(-1) ;
+     CdrFH.FileHandle := INVALID_HANDLE_VALUE ;
      CdrFH.FileName := '' ;
 
      // Clear form positions
@@ -2220,11 +2234,10 @@ procedure TEDRFile.CloseDataFile ;
 // Close data file (if one is open)
 // --------------------------------
 begin
-     if  CdrFH.FileHandle >= 0 then
+     if  CdrFH.FileHandle <> INVALID_HANDLE_VALUE then
          begin
          FileClose(CdrFH.FileHandle) ;
-         CdrFH.FileHandle :=THandle(-1) ;
-         //CdrFH.FileName := '' ;
+         CdrFH.FileHandle := INVALID_HANDLE_VALUE ;
          end ;
 
      end;
@@ -2248,7 +2261,8 @@ begin
      if FileExists( FileName ) then Exit ;
 
      FileHandle := FileCreate( FileName ) ;
-     if FileHandle < 0 then begin
+     if FileHandle = INVALID_HANDLE_VALUE then
+        begin
         ShowMessage( 'Error creating ' + FileName ) ;
         Exit ;
         end ;
@@ -2321,12 +2335,11 @@ begin
 
      { Open backup file }
      FileHandle := FileOpen( FileName, fmOpenRead ) ;
-     if FileHandle < 0 then
+     if FileHandle = INVALID_HANDLE_VALUE then
         begin
         ShowMessage( 'Restore Backup: Unable to open ' + FileName ) ;
         Exit ;
         end ;
-
 
      // Allocate buffer
      Buf := AllocMem( BufSize ) ;
@@ -3235,15 +3248,15 @@ begin
     end ;
 
 
-procedure TEDRFile.FileCloseSafe( var FileHandle : Integer ) ;
+procedure TEDRFile.FileCloseSafe( var FileHandle : THandle ) ;
 // -------------------------
 // Safe close file procedure
 // -------------------------
 begin
      // Close file (if it is open)
-     if FileHandle >= 0 then FileClose( FileHandle ) ;
-     // File handle = -1 indicates closed file
-     FileHandle := -1 ;
+     if FileHandle <> INVALID_HANDLE_VALUE then FileClose( FileHandle ) ;
+     // File handle = INVALID_HANDLE_VALUE indicates closed file
+     FileHandle := INVALID_HANDLE_VALUE ;
      end ;
 
 
