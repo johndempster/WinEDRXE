@@ -460,6 +460,7 @@ unit Mdiform;
    V4.2.7 21.10.26 Digidata 1440-1550B support updated (still doesn't work with Axoscope V11.x)
                    EDR data files open in WinEDR now share-able with other programs
                    Record to Disk: New file now created if no file open when Record is pressed
+   V4.2.8 25.10.26 Setup file updated: Digidata .bin files restored
   =======================================================================}
 
 interface
@@ -704,7 +705,7 @@ var
    FileName : String ;
 begin
 
-     EDRFile.Version := 'V4.2.7' ;
+     EDRFile.Version := 'V4.2.8' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + EDRFile.Version ;
 
      WindowMenu := Windows ;

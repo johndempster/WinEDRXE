@@ -292,8 +292,8 @@ else
   Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\tritonplus.bit to $TARGETDIR$
   Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\Vp500.bin to $TARGETDIR$
   Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\WinEDR.exe to $TARGETDIR$
-  Create Shortcut $DESKTOPDIR$\WinEDR V4.2.7 to $TARGETDIR$\WinEDR.exe
-  Create Shortcut $SHORTCUTFOLDER$\WinEDR V4.2.7 to $TARGETDIR$\WinEDR.exe
+  Create Shortcut $DESKTOPDIR$\WinEDR V4.2.8 to $TARGETDIR$\WinEDR.exe
+  Create Shortcut $SHORTCUTFOLDER$\WinEDR V4.2.8 to $TARGETDIR$\WinEDR.exe
   Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\winusb.dll to $TARGETDIR$
   Create Shortcut $SHORTCUTFOLDER$\Install Digidata 1200 Driver (Windows NT,2000,XP) to $TARGETDIR$\Digidata 1200 Support Win 2000,XT\Install Digidata 1200 Driver (Windows NT,2000,XP).bat
   Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\stim\Ramp -100 .. +100mV.xml to $ALLDOCUMENTS$\WinEDR\Stim
@@ -313,6 +313,8 @@ else
   Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\shasta.bit to $TARGETDIR$
   Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\WinEDR VBSCRIPT Example.vbs to $TARGETDIR$
   Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\DD1550B.dll to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\DD1550Bfpga.bin to $TARGETDIR$
+  Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\DD1550fpga.bin to $TARGETDIR$
   [DEFINE WEB MEDIA WinEDR]
   Get Component WinEDR Selection State into Variable SELECTED
   if Variable SELECTED Equals TRUE
@@ -325,7 +327,6 @@ else
     Apply Advertised (get result into variable SUCCESS)
   else
     Create File Type EDR with extensions .EDR and associate with program $TARGETDIR$\WinEDR.exe
-    Create Folder $TARGETDIR$\Digidata 1200 Support Win 2000,XT
     Create Folder $ALLDOCUMENTS$\WinEDR
     Create Folder $ALLDOCUMENTS$\WinEDR\Stim
     Apply Install (get result into variable SUCCESS)
