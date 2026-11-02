@@ -292,8 +292,8 @@ else
   Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\tritonplus.bit to $TARGETDIR$
   Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\Vp500.bin to $TARGETDIR$
   Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\WinEDR.exe to $TARGETDIR$
-  Create Shortcut $DESKTOPDIR$\WinEDR V4.2.8 to $TARGETDIR$\WinEDR.exe
-  Create Shortcut $SHORTCUTFOLDER$\WinEDR V4.2.8 to $TARGETDIR$\WinEDR.exe
+  Create Shortcut $DESKTOPDIR$\WinEDR V4.2.9 to $TARGETDIR$\WinEDR.exe
+  Create Shortcut $SHORTCUTFOLDER$\WinEDR V4.2.9 to $TARGETDIR$\WinEDR.exe
   Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\winusb.dll to $TARGETDIR$
   Create Shortcut $SHORTCUTFOLDER$\Install Digidata 1200 Driver (Windows NT,2000,XP) to $TARGETDIR$\Digidata 1200 Support Win 2000,XT\Install Digidata 1200 Driver (Windows NT,2000,XP).bat
   Install Files C:\Users\John\Documents\Embarcadero\Studio\Projects\WinEDRXE\stim\Ramp -100 .. +100mV.xml to $ALLDOCUMENTS$\WinEDR\Stim
