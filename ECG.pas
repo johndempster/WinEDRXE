@@ -190,7 +190,6 @@ type
     procedure ckRejectedClick(Sender: TObject);
     procedure sbSpecNumChange(Sender: TObject);
     procedure PageControlChange(Sender: TObject);
-    procedure TimerTimer(Sender: TObject);
     procedure scSpecDisplayCursorChange(Sender: TObject);
     procedure bPlotGraphClick(Sender: TObject);
     procedure bRejectRecordsClick(Sender: TObject);
@@ -2593,13 +2592,6 @@ begin
      end;
 
 
-procedure TECGFrm.TimerTimer(Sender: TObject);
-var
-     ch : Integer ;
-begin
-
-     end;
-
 procedure TECGFrm.scSpecDisplayCursorChange(Sender: TObject);
 // ------------------------------------
 // Spectrum time window display changed
@@ -2607,7 +2599,7 @@ procedure TECGFrm.scSpecDisplayCursorChange(Sender: TObject);
 var
      ch : Integer ;
      ChannelOnDisplay : Integer ;
-     iCursorPos,j : Integer ;
+     iCursorPos : Integer ;
 begin
 
      { Read out cursor }
@@ -2696,7 +2688,6 @@ procedure TECGFrm.PlotRWaveAmplitude ;
 const
     NumScansToRead = 50 ;
 var
-     i,j : Integer ;
      iEvent : Integer ;
      iScanStart : Integer ;
      NumScansRead : Integer ;

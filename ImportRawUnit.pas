@@ -88,9 +88,6 @@ procedure TImportRawFrm.FormShow(Sender: TObject);
 // ------------------------------------------
 // Initialise controls when form is displayed
 // ------------------------------------------
-var
-     Row : Integer ;
-     ch : Integer ;
 begin
 
      // Ensure form shows all controls
@@ -248,9 +245,6 @@ procedure TImportRawFrm.edNumChannelsPerScanKeyPress(Sender: TObject;
 // ------------------------------
 // No. of signal channels changed
 // ------------------------------
-var
-     Row : Integer ;
-     ch : Integer ;
 begin
      if Key = #13 then
         begin

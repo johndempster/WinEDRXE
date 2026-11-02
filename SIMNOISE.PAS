@@ -13,6 +13,7 @@ unit Simnoise;
   12.01.10 ... Simulation data file now correctly updated with ADCMaxValue
   13.08.12 ... Sampling interval can now be set in window
   15.03.24 ... Form position saved to INI file
+  01.11.26 ... New data file now created if none open
   }
 
 interface
@@ -189,6 +190,18 @@ var
    t,EndAtTime,TauOpen,TauClosed,NoiseRMS : single ;
    Done : Boolean ;
 begin
+
+     // Create a new file if none open
+     if EDRFIle.Cdrfh.FileHandle = INVALID_HANDLE_VALUE then
+        begin
+        EDRFile.CdrFH.FileName := Main.CreateIndexedFileName( EDRFile.Settings.RecentFiles[0] ) ;
+        EDRFile.CdrFH.FileName := ChangeFileExt( EDRFile.CdrFH.FileName, DataFileExtension ) ;
+        if not EDRFile.CreateNewDataFile( EDRFile.CdrFH ) then
+           begin
+           ShowMessage('Unable to create data file!') ;
+           Exit ;
+           end;
+        end ;
 
      { Set buttons to be active during simulation run }
      bStart.Enabled := False ;

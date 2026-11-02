@@ -2117,7 +2117,7 @@ procedure TEventDetFrm.LoadEventList ;
   --------------------------------------- }
 var
      FileName : string ;
-     FileHandle : Integer ;
+     FileHandle : THandle ;
 begin
 
      // Initialise no. of events
@@ -2130,7 +2130,7 @@ begin
 
      // Open an existing event list file
      FileHandle := FileOpen(FileName, fmOpenReadWrite ) ;
-     if FileHandle < 0 then begin
+     if FileHandle = INVALID_HANDLE_VALUE then begin
         ShowMessage('Unable to open ' + FileName ) ;
         Exit ;
         end ;
@@ -2148,7 +2148,7 @@ begin
         end ;
 
      // Close file
-     if FileHandle >= 0 then FileClose( FileHandle ) ;
+     if FileHandle <> INVALID_HANDLE_VALUE then FileClose( FileHandle ) ;
 
      edAverageRange.HiLimit := NumEvents ;
      edAverageRange.LoValue := 1 ;
@@ -2163,7 +2163,7 @@ procedure TEventDetFrm.SaveEventList ;
   ------------------------------------ }
 var
      FileName : string ;
-     FileHandle : Integer ;
+     FileHandle : THandle ;
      OK : Boolean ;
 begin
 
@@ -2190,7 +2190,7 @@ begin
               <> NumEvents*SizeOf(Integer) then OK := False ;
 
         // Close file
-        if FileHandle >= 0 then FileClose( FileHandle ) ;
+        if FileHandle <> INVALID_HANDLE_VALUE then FileClose( FileHandle ) ;
 
         // Set export events range
         edExportRange.LoLimit := edEvent.LoLimit ;
@@ -4160,8 +4160,7 @@ begin
         // Create an empty EDR file to hold extracted data
         ExpFH.FileHandle := FileCreate( Main.SaveDialog.FileName ) ;
         ExpFH.FileName := Main.SaveDialog.FileName ;
-        if ExpFH.FileHandle < 0 then ShowMessage( 'Error creating '
-                                     + Main.SaveDialog.FileName ) ;
+        if ExpFH.FileHandle = INVALID_HANDLE_VALUE then ShowMessage( 'Error creating ' + Main.SaveDialog.FileName ) ;
 
         // Initialise extraction loop
 
@@ -4241,7 +4240,7 @@ begin
         EDRFile.SaveHeader( ExpFH ) ;
 
         // Close EDR export file
-        if ExpFH.FileHandle >= 0 then FileClose( ExpFH.FileHandle ) ;
+        if ExpFH.FileHandle <> INVALID_HANDLE_VALUE then FileClose( ExpFH.FileHandle ) ;
 
         // Final report
         Main.StatusBar.SimpleText := format(

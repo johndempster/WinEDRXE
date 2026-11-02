@@ -2750,7 +2750,7 @@ procedure TNoiseAnalFrm.RecordStatusFile(
   --------------------------------------- }
 var
    FileName : string ;
-   FileHandle : Integer ;
+   FileHandle : THandle ;
    Rec : Integer ;
 begin
 
@@ -2774,14 +2774,13 @@ begin
         end ;
 
      { Load/save data from/to file }
-     if FileHandle >= 0 then begin
+     if FileHandle <> INVALID_HANDLE_VALUE then begin
         { Move file pointer to start of record }
         FileSeek( FileHandle, 0, 0 ) ;
 
         if Operation = rsfLoad then begin
            { Load status array }
-           if FileRead(FileHandle,RecordStatus^,SizeOf(TRecordStatusArray))
-              <> SizeOf(TRecordStatusArray) then
+           if FileRead(FileHandle,RecordStatus^,SizeOf(TRecordStatusArray)) <> SizeOf(TRecordStatusArray) then
               MessageDlg( 'Error reading ' + FileName,mtWarning, [mbOK], 0 ) ;
            end
         else begin

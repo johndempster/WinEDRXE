@@ -1178,7 +1178,7 @@ function TStimulator.LoadSTIProgram(
   Load a voltage program from file
   --------------------------------}
 var
-   FileHandle : Integer ;
+   FileHandle : THandle ;
    i : Integer ;
 begin
 
@@ -1194,7 +1194,7 @@ begin
     Prog.FileName := FileName ;
 
     FileHandle := FileOpen(  FileName, fmOpenReadWrite ) ;
-    if FileHandle < 0 then begin
+    if FileHandle = INVALID_HANDLE_VALUE then begin
        ShowMessage('Unable to open - ' + FileName ) ;
        Exit ;
        end ;
@@ -1224,7 +1224,7 @@ begin
         end ;
 
     // Close file
-    if FileHandle >=0 then FileClose( FileHandle ) ;
+    if FileHandle <> INVALID_HANDLE_VALUE then FileClose( FileHandle ) ;
 
     Prog.Saved := True ;
 
@@ -2008,7 +2008,7 @@ function TStimulator.LoadWaveformFromTextFile(
 var
     F: TextFile;
     BinFileName : String ;
-    iFileHandle : Integer ;
+    iFileHandle : THandle ;
     dt,TOld : single ;
     nValues : Integer ;
     Values : Array[0..10] of single ;
@@ -2029,7 +2029,7 @@ begin
      Reset(F);
 
      iFileHandle := FileCreate( BinFileName ) ;
-     if iFileHandle < 0 then begin
+     if iFileHandle = INVALID_HANDLE_VALUE then begin
         ShowMessage('Unable to create' + BinFileName ) ;
         Exit ;
         end ;
@@ -2081,7 +2081,7 @@ function TStimulator.LoadWaveformFromDATFile(
 // Load waveform from binary file
 // ------------------------------
 var
-    FileHandle : Integer ;
+    FileHandle : THandle ;
     NumBytes : Integer ;
     FileName : String ;
 begin
@@ -2112,7 +2112,7 @@ begin
      // Open DAT file
 
      FileHandle := FileOpen( FileName, fmOpenRead ) ;
-     if FileHandle < 0 then begin
+     if FileHandle = INVALID_HANDLE_VALUE then begin
         ShowMessage('Stimulus Protocol: Unable to load ' + FileName ) ;
         Prot.Stimulus[iStimElement].NumPointsInBuf := 0 ;
         Exit ;
@@ -2148,7 +2148,7 @@ procedure TStimulator.SaveWaveformToDATFile(
 // Save waveform to binary file
 // ------------------------------
 var
-    FileHandle : Integer ;
+    FileHandle : THandle ;
     FileName : String ;
 begin
 
@@ -2160,7 +2160,7 @@ begin
      FileName := EDRFile.VProtDirectory + ChangeFileExt(ExtractFileName(
                  Prot.Stimulus[iStimElement].Parameters[spFileName].Text),'.DAT') ;
      FileHandle := FileCreate( FileName ) ;
-     if FileHandle < 0 then begin
+     if FileHandle = INVALID_HANDLE_VALUE then begin
         ShowMessage('Unable to create ' + FileName ) ;
         Exit ;
         end ;

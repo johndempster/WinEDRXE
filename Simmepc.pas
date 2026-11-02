@@ -26,6 +26,7 @@ unit Simmepc;
   15.05.13 ... Binomial release probability and depression/facilitation added to fixed frequency trains
   07.06.13 ... Fixed frequency variation now functions from start of trains
   15.03.24 ... Form position saved to INI file
+  01.11.26 ... New data file now created if none open
   }
 
 interface
@@ -220,6 +221,19 @@ procedure TSimMEPCFrm.bStartClick(Sender: TObject);
   Start simulation run
   --------------------}
 begin
+
+     // Create a new file if none open
+     if EDRFIle.Cdrfh.FileHandle = INVALID_HANDLE_VALUE then
+        begin
+        EDRFile.CdrFH.FileName := Main.CreateIndexedFileName( EDRFile.Settings.RecentFiles[0] ) ;
+        EDRFile.CdrFH.FileName := ChangeFileExt( EDRFile.CdrFH.FileName, DataFileExtension ) ;
+        if not EDRFile.CreateNewDataFile( EDRFile.CdrFH ) then
+           begin
+           ShowMessage('Unable to create data file!') ;
+           Exit ;
+           end;
+        end ;
+
      { Update all edit boxes and transfer their parameters to
        simulation control record (SIM) }
      { Update log with parameters for this simulation run }
@@ -257,7 +271,8 @@ begin
 
      Sim.t := 0.0 ;
 
-     if EDRFIle.Cdrfh.NumSamplesInFile = 0 then begin
+     if EDRFIle.Cdrfh.NumSamplesInFile = 0 then
+        begin
         { Set scaling factor }
         EDRFIle.Cdrfh.NumChannels := scDisplay.NumChannels ;
 //        EDRFIle.Cdrfh.NumBytesInHeader := NumBytesInHeader ;

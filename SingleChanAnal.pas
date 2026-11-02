@@ -65,7 +65,7 @@ type
 
   TEventFile = record
              Name : string ;
-             Handle : Integer ;
+             Handle : THandle ;
              Pointer : Integer ;
              NumEvents : Integer ;
              Open : Boolean ;
@@ -675,7 +675,7 @@ begin
 
      { Open event file }
      EventFile.Open := False ;
-     EventFile.Handle := -1 ;
+     EventFile.Handle := INVALID_HANDLE_VALUE ;
      OpenEventFile( EventFile ) ;
 
      // Load cursor measurements list
@@ -5671,7 +5671,7 @@ begin
         EDRFile.Settings.DwellTimes.SampleBlockSize :=  Max(EDRFile.Settings.DwellTimes.SampleRangeHi div 20,1) ;
         end ;
 
-     if EventFile.Handle < 0 then begin
+     if EventFile.Handle = INVALID_HANDLE_VALUE then begin
         ShowMessage('Error opening Event file');
         EventFile.Open := False ;
         end
@@ -5688,7 +5688,7 @@ procedure TSingleChanAnalFrm.CloseEventFile(
   ------------------------------------}
 begin
 
-     if EventFile.Handle < 0 then Exit ;
+     if EventFile.Handle = INVALID_HANDLE_VALUE then Exit ;
 
      { Save number of events at beginning of file }
      EventFile.Pointer := FileSeek(EventFile.Handle,0,0) ;
@@ -5697,7 +5697,7 @@ begin
         ShowMessage('Error writing Event file');
      { Close file }
      FileClose( EventFile.Handle ) ;
-     EventFile.Handle := -1 ;
+     EventFile.Handle := INVALID_HANDLE_VALUE ;
      EventFile.Open := False ;
 
      end ;

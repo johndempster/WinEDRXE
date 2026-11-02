@@ -11,13 +11,11 @@ object ECGFrm: TECGFrm
   Font.Name = 'Arial'
   Font.Style = []
   FormStyle = fsMDIChild
-  OldCreateOrder = False
   Position = poMainFormCenter
   Visible = True
   OnClose = FormClose
   OnResize = FormResize
   OnShow = FormShow
-  PixelsPerInch = 96
   TextHeight = 15
   object PageControl: TPageControl
     Left = 8
@@ -29,10 +27,6 @@ object ECGFrm: TECGFrm
     OnChange = PageControlChange
     object ECGPage: TTabSheet
       Caption = 'ECG'
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object ECGControlGrp: TGroupBox
         Left = 8
         Top = 0
@@ -641,10 +635,6 @@ object ECGFrm: TECGFrm
     object SpectrumPage: TTabSheet
       Caption = 'Power Spectra'
       ImageIndex = 1
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object WindowGrp: TGroupBox
         Left = 8
         Top = 0
@@ -864,10 +854,10 @@ object ECGFrm: TECGFrm
           PrinterFontName = 'Arial'
           PrinterLineWidth = 1
           PrinterMarkerSize = 5
-          PrinterLeftMargin = 11
-          PrinterRightMargin = 11
-          PrinterTopMargin = 5
-          PrinterBottomMargin = 5
+          PrinterLeftMargin = 10
+          PrinterRightMargin = 10
+          PrinterTopMargin = 4
+          PrinterBottomMargin = 4
           PrinterDisableColor = False
           MetafileWidth = 500
           MetafileHeight = 400
@@ -987,10 +977,6 @@ object ECGFrm: TECGFrm
     object PlotPage: TTabSheet
       Caption = 'Graph Plots'
       ImageIndex = 2
-      ExplicitLeft = 0
-      ExplicitTop = 0
-      ExplicitWidth = 0
-      ExplicitHeight = 0
       object PlotControlsGrp: TGroupBox
         Left = 8
         Top = 0
@@ -1196,10 +1182,10 @@ object ECGFrm: TECGFrm
           PrinterFontName = 'Arial'
           PrinterLineWidth = 1
           PrinterMarkerSize = 5
-          PrinterLeftMargin = 11
-          PrinterRightMargin = 11
-          PrinterTopMargin = 5
-          PrinterBottomMargin = 5
+          PrinterLeftMargin = 10
+          PrinterRightMargin = 10
+          PrinterTopMargin = 4
+          PrinterBottomMargin = 4
           PrinterDisableColor = False
           MetafileWidth = 500
           MetafileHeight = 400
@@ -1247,7 +1233,6 @@ object ECGFrm: TECGFrm
   end
   object Timer: TTimer
     Interval = 100
-    OnTimer = TimerTimer
     Top = 528
   end
 end

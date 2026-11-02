@@ -626,7 +626,6 @@ TMarkerShape = ( SquareMarker, CircleMarker ) ;
 
     function FileOverwriteCheck( var FileName : string ) : boolean ;
 
-
     function ReadBuffer(
          var FHdr : TCDRFileHeader ;
          BlockPointer : Int64 ;
@@ -838,7 +837,6 @@ procedure TEDRFile.SaveHeader( var fHDR : TCDRFileHeader ) ;
 var
    Header : TStringList ;
    pANSIBuf : pANSIChar ;
-
    i : Integer ;
    ch : Integer ;
 
@@ -1814,7 +1812,7 @@ begin
      if FHeader.FileHandle <> INVALID_HANDLE_VALUE then
         begin
         FileClose( FHeader.FileHandle ) ;
-        FHeader.FileHandle := THandle(-1) ;
+        FHeader.FileHandle := INVALID_HANDLE_VALUE ;
         end ;
 
      { Create a new file (Note read/write and sharing flag appear to be ignored)}
@@ -1893,6 +1891,8 @@ begin
      CdrFH.ADCVoltageRange := 5.0 ;
      CdrFH.dt := 0.001 ;
      CdrFH.Version := 6.2 ;
+     CDRFH.FileHandle := INVALID_HANDLE_VALUE ;
+
      for ch := 0 to EDRChannelLimit do
          begin
          Channel[ch].TimeZero := 1. ;

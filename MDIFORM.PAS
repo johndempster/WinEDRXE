@@ -461,6 +461,8 @@ unit Mdiform;
                    EDR data files open in WinEDR now share-able with other programs
                    Record to Disk: New file now created if no file open when Record is pressed
    V4.2.8 25.10.26 Setup file updated: Digidata .bin files restored
+   V4.2.9 01.11.26 Digidata support updated again
+                  Simulations: New data file now created if none open
   =======================================================================}
 
 interface
@@ -705,7 +707,7 @@ var
    FileName : String ;
 begin
 
-     EDRFile.Version := 'V4.2.8' ;
+     EDRFile.Version := 'V4.2.9' ;
      Caption := 'WinEDR - Strathclyde Electrophysiology Data Recorder ' + EDRFile.Version ;
 
      WindowMenu := Windows ;
@@ -1100,7 +1102,7 @@ begin
      Simulations1.Enabled := False ;
 
      { Enable setup, recording and simulation ... if a data file is open }
-     if EDRFile.CdrFH.FileHandle >= 0 then
+     if EDRFile.CdrFH.FileHandle <> INVALID_HANDLE_VALUE then
         begin
            { Allow these functions when a data file is open }
            mnClose.Enabled := True ;
@@ -1821,8 +1823,8 @@ begin
         CopyImage.Enabled := False ;
         end ;
 
-     if EDRFile.CDRFH.FileHandle >= 0 then mnEditMarkers.Enabled := True
-                                      else mnEditMarkers.Enabled := False ;
+     if EDRFile.CDRFH.FileHandle <> INVALID_HANDLE_VALUE then mnEditMarkers.Enabled := True
+                                                         else mnEditMarkers.Enabled := False ;
 
      end;
 
@@ -2008,10 +2010,10 @@ begin
      FileName := OpenDialog.FileName ;
 
      { Close existing data file }
-     if EDRFile.CdrFH.FileHandle >= 0 then
+     if EDRFile.CdrFH.FileHandle <> INVALID_HANDLE_VALUE then
         begin
         FileClose( EDRFile.CdrFH.FileHandle ) ;
-        EDRFile.CdrFH.FileHandle := THandle(-1) ;
+        EDRFile.CdrFH.FileHandle := INVALID_HANDLE_VALUE ;
         end ;
 
      { Create name of EDR file to hold imported file }
@@ -2157,9 +2159,9 @@ begin
      Main.ImportFile.CloseDataFile ;
 
      { Close dest. file }
-     if EDRFile.CdrFH.FileHandle >= 0 then begin
+     if EDRFile.CdrFH.FileHandle <> INVALID_HANDLE_VALUE then begin
         FileClose( EDRFile.CdrFH.FileHandle ) ;
-        EDRFile.CdrFH.FileHandle := THandle(-1) ;
+        EDRFile.CdrFH.FileHandle := INVALID_HANDLE_VALUE ;
         end ;
 
      Result := True ;
@@ -2506,7 +2508,7 @@ begin
 
      mnDisplayGrid.Checked := EDRFile.Settings.DisplayGrid ;
 
-     if (EDRFile.CDRFH.NumSamplesInFile > 0) and (EDRFile.CDRFH.FileHandle >=0) then begin
+     if (EDRFile.CDRFH.NumSamplesInFile > 0) and (EDRFile.CDRFH.FileHandle <> INVALID_HANDLE_VALUE) then begin
         mnViewSig.Enabled := True ;
         mnPageView.Enabled := True ;
         end

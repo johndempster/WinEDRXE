@@ -386,7 +386,7 @@ procedure TSealTestFrm.FormShow(Sender: TObject);
   Initialise form
   ---------------}
 var
-   iLeft,i,ch : Integer ;
+   i,ch : Integer ;
 begin
      t0 := 0 ;
      t0Max := 0 ;

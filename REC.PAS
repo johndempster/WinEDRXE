@@ -2232,7 +2232,6 @@ var
 begin
 
      // Create a new file if none open
-
      if EDRFIle.Cdrfh.FileHandle = INVALID_HANDLE_VALUE then
         begin
         EDRFile.CdrFH.FileName := Main.CreateIndexedFileName( EDRFile.Settings.RecentFiles[0] ) ;

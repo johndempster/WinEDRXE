@@ -16,6 +16,7 @@ unit Simchan;
   12.01.10 ... Simulation data file now correctly updated with ADCMaxValue
   13.08.12 ... Sampling interval can now be set in window
   15.03.24 ... Form position saved to INI file
+  01.11.26 ... New data file now created if none open
   }
 
 interface
@@ -205,6 +206,18 @@ var
    Done,FirstTime : Boolean ;
 begin
 
+     // Create a new file if none open
+     if EDRFIle.Cdrfh.FileHandle = INVALID_HANDLE_VALUE then
+        begin
+        EDRFile.CdrFH.FileName := Main.CreateIndexedFileName( EDRFile.Settings.RecentFiles[0] ) ;
+        EDRFile.CdrFH.FileName := ChangeFileExt( EDRFile.CdrFH.FileName, DataFileExtension ) ;
+        if not EDRFile.CreateNewDataFile( EDRFile.CdrFH ) then
+           begin
+           ShowMessage('Unable to create data file!') ;
+           Exit ;
+           end;
+        end ;
+
      { Set buttons to be active during simulation run }
      bStart.Enabled := False ;
      bAbort.Enabled := True ;
@@ -223,7 +236,8 @@ begin
      EDRFile.Settings.ADCSamplingInterval := edSamplingInterval.Value ;
 
      { Set scaling factor if this is an empty file }
-     if EDRFile.CdrFH.NumSamplesInFile = 0 then begin
+     if EDRFile.CdrFH.NumSamplesInFile = 0 then
+        begin
         EDRFile.CdrFH.dt := EDRFile.Settings.ADCSamplingInterval ;
         EDRFile.cdrFH.NumChannels := 1 ;
         EDRFile.CdrFH.NumChannels := scDisplay.NumChannels ;
